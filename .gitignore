@@ -1,5 +1,8 @@
-build
-.waf*
-.lock*
-src/python/termboxconfig.pyx
-src/python/termboxmodule.c
+*.o
+
+libtermbox.so
+termbox.sa
+
+/demo/keyboard
+/demo/output
+/demo/paint

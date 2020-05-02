@@ -1,3 +1,5 @@
+/* term.inl */
+
 enum {
 	T_ENTER_CA,
 	T_EXIT_CA,

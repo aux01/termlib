@@ -1,3 +1,5 @@
+/* bytebuffer.inl */
+
 struct bytebuffer {
 	char *buf;
 	int len;

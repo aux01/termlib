@@ -9,6 +9,7 @@ enum {
 	T_SGR0,
 	T_UNDERLINE,
 	T_BOLD,
+	T_ITALIC,
 	T_BLINK,
 	T_REVERSE,
 	T_ENTER_KEYPAD,
@@ -58,6 +59,7 @@ static const char *rxvt_256color_funcs[] = {
 	"\033[m",                   // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
 	"\033=",                    // T_ENTER_KEYPAD
@@ -101,6 +103,7 @@ static const char *eterm_funcs[] = {
 	"\033[m",                   // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
 	"",                         // T_ENTER_KEYPAD
@@ -144,6 +147,7 @@ static const char *screen_funcs[] = {
 	"\033[m",                   // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
@@ -187,6 +191,7 @@ static const char *rxvt_unicode_funcs[] = {
 	"\033[m\033(B",             // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
 	"\033=",                    // T_ENTER_KEYPAD
@@ -230,6 +235,7 @@ static const char *linux_funcs[] = {
 	"\033[0;10m",               // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
 	"",                         // T_ENTER_KEYPAD
@@ -273,6 +279,7 @@ static const char *xterm_funcs[] = {
 	"\033(B\033[m",             // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
@@ -459,6 +466,7 @@ static const int16_t ti_funcs[] = {
 	39,     // T_SGR0
 	36,     // T_UNDERLINE
 	27,     // T_BOLD
+	311,    // T_ITALIC
 	26,     // T_BLINK
 	34,     // T_REVERSE
 	89,     // T_ENTER_KEYPAD
@@ -492,6 +500,18 @@ static const int16_t ti_keys[] = {
 	83,     // TB_KEY_ARROW_RIGHT
 };
 
+// Loads terminal escape sequences from terminfo file or falls back on
+// pre-definitions above. The terminfo header consists of six 16-bit ints as
+// follows:
+//
+// 0 the magic number (octal 0432);
+// 1 the size, in bytes, of the names section;
+// 2 the number of bytes in the boolean section;
+// 3 the number of short integers in the numbers section;
+// 4 the number of offsets (short integers) in the strings section;
+// 5 the size, in bytes, of the string table.
+//
+// See term(5) manual for description of terminfo binary format.
 static int init_term(void) {
 	int i;
 	char *data = load_terminfo();

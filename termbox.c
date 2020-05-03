@@ -537,6 +537,8 @@ static void send_attr(uint16_t fg, uint16_t bg)
 			bytebuffer_puts(&output_buffer, funcs[T_BLINK]);
 		if (fg & TB_UNDERLINE)
 			bytebuffer_puts(&output_buffer, funcs[T_UNDERLINE]);
+		if (fg & TB_ITALIC)
+			bytebuffer_puts(&output_buffer, funcs[T_ITALIC]);
 		if ((fg & TB_REVERSE) || (bg & TB_REVERSE))
 			bytebuffer_puts(&output_buffer, funcs[T_REVERSE]);
 

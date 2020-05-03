@@ -8,7 +8,8 @@ reorganize, and add some refinements to the project.
  - [x] Replace waf-based build with simple Makefile.
  - [x] Remove Python extension related components. This is a C library only.
  - [x] Add an amalgamation build for packaging as a [single-file library][sfl].
- - [ ] Add support for italics, faint, blink, and reverse.
+ - [x] Add support for italic, faint, and crossed-out character styles.
+ - [x] Fix bug loading terminfo files that leave capabilities undefined (blink).
  - [ ] Reorganize source files into terminfo.c, terminput.c, and termbuffer.c
    with separate header files such that any could be used as single-file libs.
  - [ ] Support for scrolling buffer (rin/ind) and/or insert/delete line

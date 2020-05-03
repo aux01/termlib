@@ -579,7 +579,10 @@ static void sigwinch_handler(int xxx)
 {
 	(void) xxx;
 	const int zzz = 1;
-	write(winch_fds[1], &zzz, sizeof(int));
+	if (write(winch_fds[1], &zzz, sizeof(int)) < (ssize_t)sizeof(int)) {
+		// short write or error. resize event may not fire.
+		// TODO: log this
+	}
 }
 
 static void update_size(void)
@@ -669,10 +672,15 @@ static int wait_fill_event(struct tb_event *event, struct timeval *timeout)
 		if (FD_ISSET(winch_fds[0], &events)) {
 			event->type = TB_EVENT_RESIZE;
 			int zzz = 0;
-			read(winch_fds[0], &zzz, sizeof(int));
+			if (read(winch_fds[0], &zzz, sizeof(int)) < (ssize_t)sizeof(int)) {
+				// ignore short read / error
+				// could be due to signal.
+			}
 			buffer_size_change_request = 1;
 			get_term_size(&event->w, &event->h);
 			return TB_EVENT_RESIZE;
 		}
 	}
 }
+
+// vim: noexpandtab

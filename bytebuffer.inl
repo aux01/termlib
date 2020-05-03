@@ -57,7 +57,10 @@ static void bytebuffer_resize(struct bytebuffer *b, int len) {
 }
 
 static void bytebuffer_flush(struct bytebuffer *b, int fd) {
-	write(fd, b->buf, b->len);
+	if (write(fd, b->buf, b->len) < b->len) {
+		// short write or error. buffer likely not flushed properly.
+		// TODO: return error code; probably dont clear.
+	}
 	bytebuffer_clear(b);
 }
 
@@ -70,3 +73,5 @@ static void bytebuffer_truncate(struct bytebuffer *b, int n) {
 	memmove(b->buf, b->buf+n, nmove);
 	b->len -= n;
 }
+
+// vim: noexpandtab

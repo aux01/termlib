@@ -2,13 +2,14 @@
 #include <string.h>
 #include "../termbox.h"
 
-static const char chars[] = "nnnnnnnnnbbbbbbbbbuuuuuuuuuBBBBBBBBB";
+static const char chars[] = "nnnnnnnnnbbbbbbbbbuuuuuuuuuiiiiiiiiiBBBBBBBBB";
 
 static const uint16_t all_attrs[] = {
 	0,
 	TB_BOLD,
 	TB_UNDERLINE,
-	TB_BOLD | TB_UNDERLINE,
+	TB_ITALIC,
+	TB_BOLD | TB_UNDERLINE | TB_ITALIC,
 };
 
 static int next_char(int current) {
@@ -21,7 +22,7 @@ static int next_char(int current) {
 static void draw_line(int x, int y, uint16_t bg) {
 	int a, c;
 	int current_char = 0;
-	for (a = 0; a < 4; a++) {
+	for (a = 0; a < 5; a++) {
 		for (c = TB_DEFAULT; c <= TB_WHITE; c++) {
 			uint16_t fg = all_attrs[a] | c;
 			tb_change_cell(x, y, chars[current_char], fg, bg);
@@ -114,3 +115,5 @@ done:
 	tb_shutdown();
 	return 0;
 }
+
+// vim: noexpandtab

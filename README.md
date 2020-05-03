@@ -11,6 +11,7 @@ reorganize, and add some refinements to the project.
  - [ ] Add support for italics, faint, blink, and reverse.
  - [ ] Reorganize source files into terminfo.c, terminput.c, and termbuffer.c
    with separate header files such that any could be used as single-file libs.
+ - [ ] Support for scrolling buffer (rin/ind) and/or insert/delete line
 
 It's not yet clear whether the fork will end up being binary compatible with the
 original but maintaining source compatibility is a goal.

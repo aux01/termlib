@@ -62,3 +62,7 @@ clean:
 .SUFFIXES: .o .c
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
+
+tags: # ignore amalgamation sources
+	ctags -R --exclude='*amalgamation*' --totals
+.PHONY: tags

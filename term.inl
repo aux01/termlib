@@ -25,50 +25,260 @@ enum {
 
 // rxvt-256color
 static const char *rxvt_256color_keys[] = {
-	"\033[11~","\033[12~","\033[13~","\033[14~","\033[15~","\033[17~","\033[18~","\033[19~","\033[20~","\033[21~","\033[23~","\033[24~","\033[2~","\033[3~","\033[7~","\033[8~","\033[5~","\033[6~","\033[A","\033[B","\033[D","\033[C", 0
+	"\033[11~",                 // TB_KEY_F1
+	"\033[12~",                 // TB_KEY_F2
+	"\033[13~",                 // TB_KEY_F3
+	"\033[14~",                 // TB_KEY_F4
+	"\033[15~",                 // TB_KEY_F5
+	"\033[17~",                 // TB_KEY_F6
+	"\033[18~",                 // TB_KEY_F7
+	"\033[19~",                 // TB_KEY_F8
+	"\033[20~",                 // TB_KEY_F9
+	"\033[21~",                 // TB_KEY_F10
+	"\033[23~",                 // TB_KEY_F11
+	"\033[24~",                 // TB_KEY_F12
+	"\033[2~",                  // TB_KEY_INSERT
+	"\033[3~",                  // TB_KEY_DELETE
+	"\033[7~",                  // TB_KEY_HOME
+	"\033[8~",                  // TB_KEY_END
+	"\033[5~",                  // TB_KEY_PGUP
+	"\033[6~",                  // TB_KEY_PGDN
+	"\033[A",                   // TB_KEY_ARROW_UP
+	"\033[B",                   // TB_KEY_ARROW_DOWN
+	"\033[D",                   // TB_KEY_ARROW_LEFT
+	"\033[C",                   // TB_KEY_ARROW_RIGHT
+	0
 };
 static const char *rxvt_256color_funcs[] = {
-	"\0337\033[?47h", "\033[2J\033[?47l\0338", "\033[?25h", "\033[?25l", "\033[H\033[2J", "\033[m", "\033[4m", "\033[1m", "\033[5m", "\033[7m", "\033=", "\033>", ENTER_MOUSE_SEQ, EXIT_MOUSE_SEQ,
+	"\0337\033[?47h",           // T_ENTER_CA
+	"\033[2J\033[?47l\0338",    // T_EXIT_CA
+	"\033[?25h",                // T_SHOW_CURSOR
+	"\033[?25l",                // T_HIDE_CURSOR
+	"\033[H\033[2J",            // T_CLEAR_SCREEN
+	"\033[m",                   // T_SGR0
+	"\033[4m",                  // T_UNDERLINE
+	"\033[1m",                  // T_BOLD
+	"\033[5m",                  // T_BLINK
+	"\033[7m",                  // T_REVERSE
+	"\033=",                    // T_ENTER_KEYPAD
+	"\033>",                    // T_EXIT_KEYPAD
+	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
+	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
 
 // Eterm
 static const char *eterm_keys[] = {
-	"\033[11~","\033[12~","\033[13~","\033[14~","\033[15~","\033[17~","\033[18~","\033[19~","\033[20~","\033[21~","\033[23~","\033[24~","\033[2~","\033[3~","\033[7~","\033[8~","\033[5~","\033[6~","\033[A","\033[B","\033[D","\033[C", 0
+	"\033[11~",
+	"\033[12~",
+	"\033[13~",
+	"\033[14~",
+	"\033[15~",
+	"\033[17~",
+	"\033[18~",
+	"\033[19~",
+	"\033[20~",
+	"\033[21~",
+	"\033[23~",
+	"\033[24~",
+	"\033[2~",
+	"\033[3~",
+	"\033[7~",
+	"\033[8~",
+	"\033[5~",
+	"\033[6~",
+	"\033[A",
+	"\033[B",
+	"\033[D",
+	"\033[C",
+	0
 };
 static const char *eterm_funcs[] = {
-	"\0337\033[?47h", "\033[2J\033[?47l\0338", "\033[?25h", "\033[?25l", "\033[H\033[2J", "\033[m", "\033[4m", "\033[1m", "\033[5m", "\033[7m", "", "", "", "",
+	"\0337\033[?47h",           // T_ENTER_CA
+	"\033[2J\033[?47l\0338",    // T_EXIT_CA
+	"\033[?25h",                // T_SHOW_CURSOR
+	"\033[?25l",                // T_HIDE_CURSOR
+	"\033[H\033[2J",            // T_CLEAR_SCREEN
+	"\033[m",                   // T_SGR0
+	"\033[4m",                  // T_UNDERLINE
+	"\033[1m",                  // T_BOLD
+	"\033[5m",                  // T_BLINK
+	"\033[7m",                  // T_REVERSE
+	"",                         // T_ENTER_KEYPAD
+	"",                         // T_EXIT_KEYPAD
+	"",                         // T_ENTER_MOUSE
+	"",                         // T_EXIT_MOUSE
 };
 
 // screen
 static const char *screen_keys[] = {
-	"\033OP","\033OQ","\033OR","\033OS","\033[15~","\033[17~","\033[18~","\033[19~","\033[20~","\033[21~","\033[23~","\033[24~","\033[2~","\033[3~","\033[1~","\033[4~","\033[5~","\033[6~","\033OA","\033OB","\033OD","\033OC", 0
+	"\033OP",                   // TB_KEY_F1
+	"\033OQ",                   // TB_KEY_F2
+	"\033OR",                   // TB_KEY_F3
+	"\033OS",                   // TB_KEY_F4
+	"\033[15~",                 // TB_KEY_F5
+	"\033[17~",                 // TB_KEY_F6
+	"\033[18~",                 // TB_KEY_F7
+	"\033[19~",                 // TB_KEY_F8
+	"\033[20~",                 // TB_KEY_F9
+	"\033[21~",                 // TB_KEY_F10
+	"\033[23~",                 // TB_KEY_F11
+	"\033[24~",                 // TB_KEY_F12
+	"\033[2~",                  // TB_KEY_INSERT
+	"\033[3~",                  // TB_KEY_DELETE
+	"\033[1~",                  // TB_KEY_HOME
+	"\033[4~",                  // TB_KEY_END
+	"\033[5~",                  // TB_KEY_PGUP
+	"\033[6~",                  // TB_KEY_PGDN
+	"\033OA",                   // TB_KEY_ARROW_UP
+	"\033OB",                   // TB_KEY_ARROW_DOWN
+	"\033OD",                   // TB_KEY_ARROW_LEFT
+	"\033OC",                   // TB_KEY_ARROW_RIGHT
+	0
 };
 static const char *screen_funcs[] = {
-	"\033[?1049h", "\033[?1049l", "\033[34h\033[?25h", "\033[?25l", "\033[H\033[J", "\033[m", "\033[4m", "\033[1m", "\033[5m", "\033[7m", "\033[?1h\033=", "\033[?1l\033>", ENTER_MOUSE_SEQ, EXIT_MOUSE_SEQ,
+	"\033[?1049h",              // T_ENTER_CA
+	"\033[?1049l",              // T_EXIT_CA
+	"\033[34h\033[?25h",        // T_SHOW_CURSOR
+	"\033[?25l",                // T_HIDE_CURSOR
+	"\033[H\033[J",             // T_CLEAR_SCREEN
+	"\033[m",                   // T_SGR0
+	"\033[4m",                  // T_UNDERLINE
+	"\033[1m",                  // T_BOLD
+	"\033[5m",                  // T_BLINK
+	"\033[7m",                  // T_REVERSE
+	"\033[?1h\033=",            // T_ENTER_KEYPAD
+	"\033[?1l\033>",            // T_EXIT_KEYPAD
+	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
+	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
 
 // rxvt-unicode
 static const char *rxvt_unicode_keys[] = {
-	"\033[11~","\033[12~","\033[13~","\033[14~","\033[15~","\033[17~","\033[18~","\033[19~","\033[20~","\033[21~","\033[23~","\033[24~","\033[2~","\033[3~","\033[7~","\033[8~","\033[5~","\033[6~","\033[A","\033[B","\033[D","\033[C", 0
+	"\033[11~",                 // TB_KEY_F1
+	"\033[12~",                 // TB_KEY_F2
+	"\033[13~",                 // TB_KEY_F3
+	"\033[14~",                 // TB_KEY_F4
+	"\033[15~",                 // TB_KEY_F5
+	"\033[17~",                 // TB_KEY_F6
+	"\033[18~",                 // TB_KEY_F7
+	"\033[19~",                 // TB_KEY_F8
+	"\033[20~",                 // TB_KEY_F9
+	"\033[21~",                 // TB_KEY_F10
+	"\033[23~",                 // TB_KEY_F11
+	"\033[24~",                 // TB_KEY_F12
+	"\033[2~",                  // TB_KEY_INSERT
+	"\033[3~",                  // TB_KEY_DELETE
+	"\033[7~",                  // TB_KEY_HOME
+	"\033[8~",                  // TB_KEY_END
+	"\033[5~",                  // TB_KEY_PGUP
+	"\033[6~",                  // TB_KEY_PGDN
+	"\033[A",                   // TB_KEY_ARROW_UP
+	"\033[B",                   // TB_KEY_ARROW_DOWN
+	"\033[D",                   // TB_KEY_ARROW_LEFT
+	"\033[C",                   // TB_KEY_ARROW_RIGHT
+	0
 };
 static const char *rxvt_unicode_funcs[] = {
-	"\033[?1049h", "\033[r\033[?1049l", "\033[?25h", "\033[?25l", "\033[H\033[2J", "\033[m\033(B", "\033[4m", "\033[1m", "\033[5m", "\033[7m", "\033=", "\033>", ENTER_MOUSE_SEQ, EXIT_MOUSE_SEQ,
+	"\033[?1049h",              // T_ENTER_CA
+	"\033[r\033[?1049l",        // T_EXIT_CA
+	"\033[?25h",                // T_SHOW_CURSOR
+	"\033[?25l",                // T_HIDE_CURSOR
+	"\033[H\033[2J",            // T_CLEAR_SCREEN
+	"\033[m\033(B",             // T_SGR0
+	"\033[4m",                  // T_UNDERLINE
+	"\033[1m",                  // T_BOLD
+	"\033[5m",                  // T_BLINK
+	"\033[7m",                  // T_REVERSE
+	"\033=",                    // T_ENTER_KEYPAD
+	"\033>",                    // T_EXIT_KEYPAD
+	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
+	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
 
 // linux
 static const char *linux_keys[] = {
-	"\033[[A","\033[[B","\033[[C","\033[[D","\033[[E","\033[17~","\033[18~","\033[19~","\033[20~","\033[21~","\033[23~","\033[24~","\033[2~","\033[3~","\033[1~","\033[4~","\033[5~","\033[6~","\033[A","\033[B","\033[D","\033[C", 0
+	"\033[[A",                  // TB_KEY_F1
+	"\033[[B",                  // TB_KEY_F2
+	"\033[[C",                  // TB_KEY_F3
+	"\033[[D",                  // TB_KEY_F4
+	"\033[[E",                  // TB_KEY_F5
+	"\033[17~",                 // TB_KEY_F6
+	"\033[18~",                 // TB_KEY_F7
+	"\033[19~",                 // TB_KEY_F8
+	"\033[20~",                 // TB_KEY_F9
+	"\033[21~",                 // TB_KEY_F10
+	"\033[23~",                 // TB_KEY_F11
+	"\033[24~",                 // TB_KEY_F12
+	"\033[2~",                  // TB_KEY_INSERT
+	"\033[3~",                  // TB_KEY_DELETE
+	"\033[1~",                  // TB_KEY_HOME
+	"\033[4~",                  // TB_KEY_END
+	"\033[5~",                  // TB_KEY_PGUP
+	"\033[6~",                  // TB_KEY_PGDN
+	"\033[A",                   // TB_KEY_ARROW_UP
+	"\033[B",                   // TB_KEY_ARROW_DOWN
+	"\033[D",                   // TB_KEY_ARROW_LEFT
+	"\033[C",                   // TB_KEY_ARROW_RIGHT
+	0
 };
 static const char *linux_funcs[] = {
-	"", "", "\033[?25h\033[?0c", "\033[?25l\033[?1c", "\033[H\033[J", "\033[0;10m", "\033[4m", "\033[1m", "\033[5m", "\033[7m", "", "", "", "",
+	"",                         // T_ENTER_CA
+	"",                         // T_EXIT_CA
+	"\033[?25h\033[?0c",        // T_SHOW_CURSOR
+	"\033[?25l\033[?1c",        // T_HIDE_CURSOR
+	"\033[H\033[J",             // T_CLEAR_SCREEN
+	"\033[0;10m",               // T_SGR0
+	"\033[4m",                  // T_UNDERLINE
+	"\033[1m",                  // T_BOLD
+	"\033[5m",                  // T_BLINK
+	"\033[7m",                  // T_REVERSE
+	"",                         // T_ENTER_KEYPAD
+	"",                         // T_EXIT_KEYPAD
+	"",                         // T_ENTER_MOUSE
+	"",                         // T_EXIT_MOUSE
 };
 
 // xterm
 static const char *xterm_keys[] = {
-	"\033OP","\033OQ","\033OR","\033OS","\033[15~","\033[17~","\033[18~","\033[19~","\033[20~","\033[21~","\033[23~","\033[24~","\033[2~","\033[3~","\033OH","\033OF","\033[5~","\033[6~","\033OA","\033OB","\033OD","\033OC", 0
+	"\033OP",                   // TB_KEY_F1
+	"\033OQ",                   // TB_KEY_F2
+	"\033OR",                   // TB_KEY_F3
+	"\033OS",                   // TB_KEY_F4
+	"\033[15~",                 // TB_KEY_F5
+	"\033[17~",                 // TB_KEY_F6
+	"\033[18~",                 // TB_KEY_F7
+	"\033[19~",                 // TB_KEY_F8
+	"\033[20~",                 // TB_KEY_F9
+	"\033[21~",                 // TB_KEY_F10
+	"\033[23~",                 // TB_KEY_F11
+	"\033[24~",                 // TB_KEY_F12
+	"\033[2~",                  // TB_KEY_INSERT
+	"\033[3~",                  // TB_KEY_DELETE
+	"\033OH",                   // TB_KEY_HOME
+	"\033OF",                   // TB_KEY_END
+	"\033[5~",                  // TB_KEY_PGUP
+	"\033[6~",                  // TB_KEY_PGDN
+	"\033OA",                   // TB_KEY_ARROW_UP
+	"\033OB",                   // TB_KEY_ARROW_DOWN
+	"\033OD",                   // TB_KEY_ARROW_LEFT
+	"\033OC",                   // TB_KEY_ARROW_RIGHT
+	0
 };
 static const char *xterm_funcs[] = {
-	"\033[?1049h", "\033[?1049l", "\033[?12l\033[?25h", "\033[?25l", "\033[H\033[2J", "\033(B\033[m", "\033[4m", "\033[1m", "\033[5m", "\033[7m", "\033[?1h\033=", "\033[?1l\033>", ENTER_MOUSE_SEQ, EXIT_MOUSE_SEQ,
+	"\033[?1049h",              // T_ENTER_CA
+	"\033[?1049l",              // T_EXIT_CA
+	"\033[?12l\033[?25h",       // T_SHOW_CURSOR
+	"\033[?25l",                // T_HIDE_CURSOR
+	"\033[H\033[2J",            // T_CLEAR_SCREEN
+	"\033(B\033[m",             // T_SGR0
+	"\033[4m",                  // T_UNDERLINE
+	"\033[1m",                  // T_BOLD
+	"\033[5m",                  // T_BLINK
+	"\033[7m",                  // T_REVERSE
+	"\033[?1h\033=",            // T_ENTER_KEYPAD
+	"\033[?1l\033>",            // T_EXIT_KEYPAD
+	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
+	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
 
 static struct term {
@@ -309,3 +519,5 @@ static void shutdown_term(void) {
 		free(funcs);
 	}
 }
+
+// vim: noexpandtab

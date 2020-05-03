@@ -2,7 +2,7 @@
 #include <string.h>
 #include "../termbox.h"
 
-static const char chars[] = "nnnnnnnnnbbbbbbbbbfffffffffuuuuuuuuuiiiiiiiiiBBBBBBBBB";
+static const char chars[] = "nnnnnnnnnbbbbbbbbbfffffffffuuuuuuuuuiiiiiiiiicccccccccBBBBBBBBB";
 
 static const uint16_t all_attrs[] = {
 	0,
@@ -10,9 +10,10 @@ static const uint16_t all_attrs[] = {
 	TB_FAINT,
 	TB_UNDERLINE,
 	TB_ITALIC,
-	TB_BOLD | TB_FAINT | TB_UNDERLINE | TB_ITALIC,
+	TB_CROSSOUT,
+	TB_BOLD | TB_FAINT | TB_UNDERLINE | TB_ITALIC | TB_CROSSOUT,
 };
-static const all_attrs_n = sizeof(all_attrs) / sizeof(uint16_t);
+static const int all_attrs_n = sizeof(all_attrs) / sizeof(uint16_t);
 
 static int next_char(int current) {
 	current++;

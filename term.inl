@@ -15,11 +15,15 @@ enum {
 	T_REVERSE,
 	T_ENTER_KEYPAD,
 	T_EXIT_KEYPAD,
+
+	T_CROSSOUT,
 	T_ENTER_MOUSE,
 	T_EXIT_MOUSE,
+
 	T_FUNCS_NUM,
 };
 
+#define CROSSOUT "\x1b[9m"
 #define ENTER_MOUSE_SEQ "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define EXIT_MOUSE_SEQ "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
 
@@ -65,6 +69,7 @@ static const char *rxvt_256color_funcs[] = {
 	"\033[7m",                  // T_REVERSE
 	"\033=",                    // T_ENTER_KEYPAD
 	"\033>",                    // T_EXIT_KEYPAD
+	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -110,6 +115,7 @@ static const char *eterm_funcs[] = {
 	"\033[7m",                  // T_REVERSE
 	"",                         // T_ENTER_KEYPAD
 	"",                         // T_EXIT_KEYPAD
+	CROSSOUT,                   // T_CROSSOUT
 	"",                         // T_ENTER_MOUSE
 	"",                         // T_EXIT_MOUSE
 };
@@ -155,6 +161,7 @@ static const char *screen_funcs[] = {
 	"\033[7m",                  // T_REVERSE
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
 	"\033[?1l\033>",            // T_EXIT_KEYPAD
+	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -200,6 +207,7 @@ static const char *rxvt_unicode_funcs[] = {
 	"\033[7m",                  // T_REVERSE
 	"\033=",                    // T_ENTER_KEYPAD
 	"\033>",                    // T_EXIT_KEYPAD
+	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -245,6 +253,7 @@ static const char *linux_funcs[] = {
 	"\033[7m",                  // T_REVERSE
 	"",                         // T_ENTER_KEYPAD
 	"",                         // T_EXIT_KEYPAD
+	CROSSOUT,                   // T_CROSSOUT
 	"",                         // T_ENTER_MOUSE
 	"",                         // T_EXIT_MOUSE
 };
@@ -290,6 +299,7 @@ static const char *xterm_funcs[] = {
 	"\033[7m",                  // T_REVERSE
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
 	"\033[?1l\033>",            // T_EXIT_KEYPAD
+	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -556,13 +566,14 @@ static int init_term(void) {
 	keys[TB_KEYS_NUM] = 0;
 
 	funcs = malloc(sizeof(const char*) * T_FUNCS_NUM);
-	// the last two entries are reserved for mouse. because the table offset is
-	// not there, the two entries have to fill in manually
-	for (i = 0; i < T_FUNCS_NUM-2; i++) {
+	// the last three entries are reserved for mouse and terminfo extensions.
+	// because the table offset is not there, the entries have to fill in manually
+	for (i = 0; i < T_FUNCS_NUM-3; i++) {
 		funcs[i] = terminfo_copy_string(data,
 			str_offset + 2 * ti_funcs[i], table_offset);
 	}
 
+	funcs[T_FUNCS_NUM-3] = CROSSOUT;
 	funcs[T_FUNCS_NUM-2] = ENTER_MOUSE_SEQ;
 	funcs[T_FUNCS_NUM-1] = EXIT_MOUSE_SEQ;
 
@@ -577,10 +588,10 @@ static void shutdown_term(void) {
 		for (i = 0; i < TB_KEYS_NUM; i++) {
 			free((void*)keys[i]);
 		}
-		// the last two entries are reserved for mouse. because the table offset
-		// is not there, the two entries have to fill in manually and do not
-		// need to be freed.
-		for (i = 0; i < T_FUNCS_NUM-2; i++) {
+		// the last three entries are reserved for mouse and terminfo extensions.
+		// because the table offset is not there, the entries have to fill in
+		// manually and do not need to be freed.
+		for (i = 0; i < T_FUNCS_NUM-3; i++) {
 			free((void*)funcs[i]);
 		}
 		free(keys);

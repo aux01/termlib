@@ -129,6 +129,7 @@ extern "C" {
 #define TB_REVERSE   0x0400
 #define TB_ITALIC    0x0800
 #define TB_FAINT     0x1000
+#define TB_CROSSOUT  0x2000
 
 /* A cell, single conceptual entity on the terminal screen. The terminal screen
  * is basically a 2d array of cells. It has the following fields:

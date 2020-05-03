@@ -9,6 +9,7 @@ enum {
 	T_SGR0,
 	T_UNDERLINE,
 	T_BOLD,
+	T_FAINT,
 	T_ITALIC,
 	T_BLINK,
 	T_REVERSE,
@@ -103,6 +104,7 @@ static const char *eterm_funcs[] = {
 	"\033[m",                   // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[2m",                  // T_FAINT
 	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
@@ -147,6 +149,7 @@ static const char *screen_funcs[] = {
 	"\033[m",                   // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[2m",                  // T_FAINT
 	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
@@ -191,6 +194,7 @@ static const char *rxvt_unicode_funcs[] = {
 	"\033[m\033(B",             // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[2m",                  // T_FAINT
 	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
@@ -235,6 +239,7 @@ static const char *linux_funcs[] = {
 	"\033[0;10m",               // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[2m",                  // T_FAINT
 	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
@@ -279,6 +284,7 @@ static const char *xterm_funcs[] = {
 	"\033(B\033[m",             // T_SGR0
 	"\033[4m",                  // T_UNDERLINE
 	"\033[1m",                  // T_BOLD
+	"\033[2m",                  // T_FAINT
 	"\033[3m",                  // T_ITALIC
 	"\033[5m",                  // T_BLINK
 	"\033[7m",                  // T_REVERSE
@@ -474,6 +480,7 @@ static const int16_t ti_funcs[] = {
 	39,     // T_SGR0
 	36,     // T_UNDERLINE
 	27,     // T_BOLD
+	30,     // T_FAINT
 	311,    // T_ITALIC
 	26,     // T_BLINK
 	34,     // T_REVERSE

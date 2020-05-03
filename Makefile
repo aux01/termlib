@@ -19,6 +19,9 @@ AMAL_OBJS = amalgamation/termbox.o
 all: $(OBJS) $(LIBS) $(DEMO_OBJS) $(DEMO_CMDS)
 .PHONY: all
 
+# Rebuild termbox.o when deps change
+termbox.o: termbox.h bytebuffer.inl term.inl input.inl
+
 # Shared and static libraries
 $(SO_NAME): $(OBJS)
 	$(CC) -shared -o $@ $(OBJS)

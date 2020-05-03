@@ -449,14 +449,47 @@ static const char *terminfo_copy_string(char *data, int str, int table) {
 	return dst;
 }
 
+// Note: The terminfo capability index numbers come from ncurses term.h.
 static const int16_t ti_funcs[] = {
-	28, 40, 16, 13, 5, 39, 36, 27, 26, 34, 89, 88,
+	28,     // T_ENTER_CA
+	40,     // T_EXIT_CA
+	16,     // T_SHOW_CURSOR
+	13,     // T_HIDE_CURSOR
+	5,      // T_CLEAR_SCREEN
+	39,     // T_SGR0
+	36,     // T_UNDERLINE
+	27,     // T_BOLD
+	26,     // T_BLINK
+	34,     // T_REVERSE
+	89,     // T_ENTER_KEYPAD
+	88,     // T_EXIT_KEYPAD
 };
 
+
+// Note: The terminfo capability index numbers come from ncurses term.h.
 static const int16_t ti_keys[] = {
-	66, 68 /* apparently not a typo; 67 is F10 for whatever reason */, 69,
-	70, 71, 72, 73, 74, 75, 67, 216, 217, 77, 59, 76, 164, 82, 81, 87, 61,
-	79, 83,
+	66,     // TB_KEY_F1
+	68,     // TB_KEY_F2 /* apparently not a typo; 67 is F10 for whatever reason */
+	69,     // TB_KEY_F3
+	70,     // TB_KEY_F4
+	71,     // TB_KEY_F5
+	72,     // TB_KEY_F6
+	73,     // TB_KEY_F7
+	74,     // TB_KEY_F8
+	75,     // TB_KEY_F9
+	67,     // TB_KEY_F10
+	216,    // TB_KEY_F11
+	217,    // TB_KEY_F12
+	77,     // TB_KEY_INSERT
+	59,     // TB_KEY_DELETE
+	76,     // TB_KEY_HOME
+	164,    // TB_KEY_END
+	82,     // TB_KEY_PGUP
+	81,     // TB_KEY_PGDN
+	87,     // TB_KEY_ARROW_UP
+	61,     // TB_KEY_ARROW_DOWN
+	79,     // TB_KEY_ARROW_LEFT
+	83,     // TB_KEY_ARROW_RIGHT
 };
 
 static int init_term(void) {

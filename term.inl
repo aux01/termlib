@@ -449,6 +449,14 @@ static char *load_terminfo(void) {
 
 static const char *terminfo_copy_string(char *data, int str, int table) {
 	const int16_t off = *(int16_t*)(data + str);
+	if (off == -1) {
+		// the terminfo file does not define this capability; use blank
+		// string. note we still have to malloc since it will be freed.
+		char *dst = malloc(sizeof(char));
+		*dst = '\0';
+		return dst;
+	}
+
 	const char *src = data + table + off;
 	int len = strlen(src);
 	char *dst = malloc(len+1);

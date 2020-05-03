@@ -2,15 +2,17 @@
 #include <string.h>
 #include "../termbox.h"
 
-static const char chars[] = "nnnnnnnnnbbbbbbbbbuuuuuuuuuiiiiiiiiiBBBBBBBBB";
+static const char chars[] = "nnnnnnnnnbbbbbbbbbfffffffffuuuuuuuuuiiiiiiiiiBBBBBBBBB";
 
 static const uint16_t all_attrs[] = {
 	0,
 	TB_BOLD,
+	TB_FAINT,
 	TB_UNDERLINE,
 	TB_ITALIC,
-	TB_BOLD | TB_UNDERLINE | TB_ITALIC,
+	TB_BOLD | TB_FAINT | TB_UNDERLINE | TB_ITALIC,
 };
+static const all_attrs_n = sizeof(all_attrs) / sizeof(uint16_t);
 
 static int next_char(int current) {
 	current++;
@@ -22,7 +24,7 @@ static int next_char(int current) {
 static void draw_line(int x, int y, uint16_t bg) {
 	int a, c;
 	int current_char = 0;
-	for (a = 0; a < 5; a++) {
+	for (a = 0; a < all_attrs_n; a++) {
 		for (c = TB_DEFAULT; c <= TB_WHITE; c++) {
 			uint16_t fg = all_attrs[a] | c;
 			tb_change_cell(x, y, chars[current_char], fg, bg);

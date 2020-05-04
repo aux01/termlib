@@ -66,8 +66,8 @@ enum {
 
 #define EUNSUPPORTED_TERM -1
 
-// rxvt-256color
-static const char *rxvt_256color_keys[] = {
+// rxvt-256color and rxvt-unicode
+static const char *rxvt_keys[] = {
 	"\033[11~",                 // TB_KEY_F1
 	"\033[12~",                 // TB_KEY_F2
 	"\033[13~",                 // TB_KEY_F3
@@ -99,6 +99,18 @@ static const char *rxvt_256color_funcs[] = {
 	"\033[?25l",                // T_HIDE_CURSOR
 	"\033[H\033[2J",            // T_CLEAR_SCREEN
 	"\033[m",                   // T_SGR0
+	"\033=",                    // T_ENTER_KEYPAD
+	"\033>",                    // T_EXIT_KEYPAD
+	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
+	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
+};
+static const char *rxvt_unicode_funcs[] = {
+	"\033[?1049h",              // T_ENTER_CA
+	"\033[r\033[?1049l",        // T_EXIT_CA
+	"\033[?25h",                // T_SHOW_CURSOR
+	"\033[?25l",                // T_HIDE_CURSOR
+	"\033[H\033[2J",            // T_CLEAR_SCREEN
+	"\033[m\033(B",             // T_SGR0
 	"\033=",                    // T_ENTER_KEYPAD
 	"\033>",                    // T_EXIT_KEYPAD
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
@@ -179,45 +191,6 @@ static const char *screen_funcs[] = {
 	"\033[m",                   // T_SGR0
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
 	"\033[?1l\033>",            // T_EXIT_KEYPAD
-	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
-	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
-};
-
-// rxvt-unicode
-static const char *rxvt_unicode_keys[] = {
-	"\033[11~",                 // TB_KEY_F1
-	"\033[12~",                 // TB_KEY_F2
-	"\033[13~",                 // TB_KEY_F3
-	"\033[14~",                 // TB_KEY_F4
-	"\033[15~",                 // TB_KEY_F5
-	"\033[17~",                 // TB_KEY_F6
-	"\033[18~",                 // TB_KEY_F7
-	"\033[19~",                 // TB_KEY_F8
-	"\033[20~",                 // TB_KEY_F9
-	"\033[21~",                 // TB_KEY_F10
-	"\033[23~",                 // TB_KEY_F11
-	"\033[24~",                 // TB_KEY_F12
-	"\033[2~",                  // TB_KEY_INSERT
-	"\033[3~",                  // TB_KEY_DELETE
-	"\033[7~",                  // TB_KEY_HOME
-	"\033[8~",                  // TB_KEY_END
-	"\033[5~",                  // TB_KEY_PGUP
-	"\033[6~",                  // TB_KEY_PGDN
-	"\033[A",                   // TB_KEY_ARROW_UP
-	"\033[B",                   // TB_KEY_ARROW_DOWN
-	"\033[D",                   // TB_KEY_ARROW_LEFT
-	"\033[C",                   // TB_KEY_ARROW_RIGHT
-	0
-};
-static const char *rxvt_unicode_funcs[] = {
-	"\033[?1049h",              // T_ENTER_CA
-	"\033[r\033[?1049l",        // T_EXIT_CA
-	"\033[?25h",                // T_SHOW_CURSOR
-	"\033[?25l",                // T_HIDE_CURSOR
-	"\033[H\033[2J",            // T_CLEAR_SCREEN
-	"\033[m\033(B",             // T_SGR0
-	"\033=",                    // T_ENTER_KEYPAD
-	"\033>",                    // T_EXIT_KEYPAD
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -305,10 +278,10 @@ static struct term {
 	const char **keys;
 	const char **funcs;
 } terms[] = {
-	{"rxvt-256color", rxvt_256color_keys, rxvt_256color_funcs},
+	{"rxvt-256color", rxvt_keys, rxvt_256color_funcs},
 	{"Eterm", eterm_keys, eterm_funcs},
 	{"screen", screen_keys, screen_funcs},
-	{"rxvt-unicode", rxvt_unicode_keys, rxvt_unicode_funcs},
+	{"rxvt-unicode", rxvt_keys, rxvt_unicode_funcs},
 	{"linux", linux_keys, linux_funcs},
 	{"xterm", xterm_keys, xterm_funcs},
 	{0, 0, 0},
@@ -347,7 +320,7 @@ static int init_term_builtin(void)
 		/* let's do some heuristic, maybe it's a compatible terminal */
 		if (try_compatible(term, "xterm", xterm_keys, xterm_funcs) == 0)
 			return 0;
-		if (try_compatible(term, "rxvt", rxvt_unicode_keys, rxvt_unicode_funcs) == 0)
+		if (try_compatible(term, "rxvt", rxvt_keys, rxvt_unicode_funcs) == 0)
 			return 0;
 		if (try_compatible(term, "linux", linux_keys, linux_funcs) == 0)
 			return 0;

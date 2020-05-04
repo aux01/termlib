@@ -538,7 +538,8 @@ static void send_attr(uint16_t fg, uint16_t bg)
 			WRITE_LITERAL(";" SGR_TYPO_ITALIC);
 		if (fg & TB_UNDERLINE)
 			WRITE_LITERAL(";" SGR_TYPO_UNDERLINE);
-		if (bg & TB_BOLD) // TODO: use TB_BLINK const
+		// bg & TB_BOLD is for compatibility with original termbox
+		if ((fg & TB_BLINK) || (bg & TB_BLINK) || (bg & TB_BOLD))
 			WRITE_LITERAL(";" SGR_TYPO_BLINK);
 		if ((fg & TB_REVERSE) || (bg & TB_REVERSE))
 			WRITE_LITERAL(";" SGR_TYPO_REVERSE);

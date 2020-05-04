@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <string.h>
+#include <assert.h>
 
 // Read an entire file into a string or return NULL if an error occurs.
 // Caller must free the string returned.
@@ -134,6 +135,7 @@ int setupterm(char *term, int fd) {
 		strtbl_len   = header[5], // size in bytes of the string table
 		num_size     = magic == TI_ALT_MAGIC ? 4 : 2; // TODO: handle int32 nums?
 
+	assert(magic == TI_MAGIC);
 	// TODO bail if magic is wrong
 
 	TERMTYPE *type = &tb_term->type;
@@ -157,11 +159,45 @@ int setupterm(char *term, int fd) {
 	return 0;
 }
 
+int tigetflag(int cap) {
+	if (!tb_term) return -1;
+	if (cap < 0 || cap > tb_term->type.num_bools) return -1;
+
+	return tb_term->type.bools[cap];
+}
+
+int tigetnum(int cap) {
+	if (!tb_term) return -1;
+	if (cap < 0 || cap > tb_term->type.num_nums) return -1;
+
+	return tb_term->type.nums[cap];
+}
+
+char *tigetstr(int cap) {
+	if (!tb_term) return NULL;
+	if (cap < 0 || cap > tb_term->type.num_strings) return NULL;
+
+	int offset = tb_term->type.str_offs[cap];
+	if (offset < 0) return NULL;
+	// TODO: check offset isn't larger than str_table
+
+	return tb_term->type.str_table + tb_term->type.str_offs[cap];
+}
+
 #ifdef TESTNOW
 int main(void) {
 	int rc = setupterm(NULL, 1);
 	setupterm(NULL, 1);
+	printf("term_names: %s\n", tb_term->type.term_names);
 	printf("str 27 = %s\n", tb_term->type.str_table + tb_term->type.str_offs[27]);
+	printf("tigetflag(tb_back_color_erase) = %d\n", tigetflag(tb_back_color_erase));
+	printf("tigetflag(tb_auto_right_margin) = %d\n", tigetflag(tb_auto_right_margin));
+	printf("tigetflag(tb_has_status_line) = %d\n", tigetflag(tb_has_status_line));
+	printf("tigetnum(tb_columns) = %d\n", tigetnum(tb_columns));
+	printf("tigetnum(tb_init_tabs) = %d\n", tigetnum(tb_init_tabs));
+	printf("tigetnum(tb_buttons) = %d\n", tigetnum(tb_buttons));
+	printf("tigetstr(tb_bell) = %s\n", tigetstr(tb_bell));
+	printf("tigetstr(tb_set_a_background) = %s\n", tigetstr(tb_set_a_background));
 	return rc;
 }
 #endif

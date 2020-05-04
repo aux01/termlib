@@ -20,11 +20,11 @@
  *     setupterm(NULL, 1, NULL);
  */
 int setupterm(char *term, int fd);
+int tigetflag(int cap);
+int tigetnum(int cap);
+char *tigetstr(int cap);
 
 /*
-int tigetflag(char *capname);
-int tigetnum(char *capname);
-char *tigetstr(char *capname);
 char *tparm(char *cap, long p1, long p2, long p3, long p4, long p5, long p6,
         long p7, long p8, long p9);
 */

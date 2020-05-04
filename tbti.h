@@ -8,7 +8,9 @@
  * loading and string processing interface. It implements loading and parsing of
  * binary terminfo files as described by term(5).
  *
- * https://pubs.opengroup.org/onlinepubs/007908799/xcurses/term.h.html
+ * See also:
+ *   <https://pubs.opengroup.org/onlinepubs/007908799/xcurses/term.h.html>
+ *
  */
 #include <stdint.h>
 
@@ -17,21 +19,22 @@
  * terminal name, or the TERM environment variable when term is NULL.
  *
  * Simplest invocation uses TERM and standard output:
- *     setupterm(NULL, 1, NULL);
+ *     tb_setupterm(NULL, 1, NULL);
+ *
+ * Ncurses counterpart: setupterm().
  */
-int setupterm(char *term, int fd);
-int tigetflag(int cap);
-int tigetnum(int cap);
-char *tigetstr(int cap);
+int tb_setupterm(char *term, int fd);
 
 /*
-char *tparm(char *cap, long p1, long p2, long p3, long p4, long p5, long p6,
-        long p7, long p8, long p9);
-*/
+ * Read terminfo defined capabilities for the current terminal.
+ * Each function takes one of the capability name values defined in this file.
+ *
+ * Ncurses counterpart: tigetflag(), tigetnum(), tigetstr().
+ * */
+int   tb_getflag(int cap);
+int   tb_getnum(int cap);
+char *tb_getstr(int cap);
 
-#define BOOLCOUNT 44
-#define NUMCOUNT  39
-#define STRCOUNT  414
 
 typedef struct termtype {
     char    *term_names;          /* names for terminal separated by "|" chars */

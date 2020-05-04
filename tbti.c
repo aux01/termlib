@@ -97,11 +97,11 @@ static char *terminfo_load_data(const char *term) {
 }
 
 #define TI_MAGIC 0432
-#define TI_ALT_MAGIC 542
+#define TI_ALT_MAGIC 542  // TODO: version of terminfo with 32-bit int nums?
 
 static TERMINAL *tb_term;
 
-int setupterm(char *term, int fd) {
+int tb_setupterm(char *term, int fd) {
 	if (!term) term = getenv("TERM");
 	if (!term) return -1;
 
@@ -132,8 +132,7 @@ int setupterm(char *term, int fd) {
 		bools_len    = header[2], // size in bytes of the bools section
 		nums_count   = header[3], // count of shorts in nums section
 		stroff_count = header[4], // count of shorts in stroffs section
-		strtbl_len   = header[5], // size in bytes of the string table
-		num_size     = magic == TI_ALT_MAGIC ? 4 : 2; // TODO: handle int32 nums?
+		strtbl_len   = header[5]; // size in bytes of the string table
 
 	assert(magic == TI_MAGIC);
 	// TODO bail if magic is wrong
@@ -159,21 +158,21 @@ int setupterm(char *term, int fd) {
 	return 0;
 }
 
-int tigetflag(int cap) {
+int tb_getflag(int cap) {
 	if (!tb_term) return -1;
 	if (cap < 0 || cap > tb_term->type.num_bools) return -1;
 
 	return tb_term->type.bools[cap];
 }
 
-int tigetnum(int cap) {
+int tb_getnum(int cap) {
 	if (!tb_term) return -1;
 	if (cap < 0 || cap > tb_term->type.num_nums) return -1;
 
 	return tb_term->type.nums[cap];
 }
 
-char *tigetstr(int cap) {
+char *tb_getstr(int cap) {
 	if (!tb_term) return NULL;
 	if (cap < 0 || cap > tb_term->type.num_strings) return NULL;
 
@@ -186,18 +185,23 @@ char *tigetstr(int cap) {
 
 #ifdef TESTNOW
 int main(void) {
-	int rc = setupterm(NULL, 1);
-	setupterm(NULL, 1);
+	int rc = tb_setupterm(NULL, 1);
+	tb_setupterm(NULL, 1);
+
 	printf("term_names: %s\n", tb_term->type.term_names);
 	printf("str 27 = %s\n", tb_term->type.str_table + tb_term->type.str_offs[27]);
-	printf("tigetflag(tb_back_color_erase) = %d\n", tigetflag(tb_back_color_erase));
-	printf("tigetflag(tb_auto_right_margin) = %d\n", tigetflag(tb_auto_right_margin));
-	printf("tigetflag(tb_has_status_line) = %d\n", tigetflag(tb_has_status_line));
-	printf("tigetnum(tb_columns) = %d\n", tigetnum(tb_columns));
-	printf("tigetnum(tb_init_tabs) = %d\n", tigetnum(tb_init_tabs));
-	printf("tigetnum(tb_buttons) = %d\n", tigetnum(tb_buttons));
-	printf("tigetstr(tb_bell) = %s\n", tigetstr(tb_bell));
-	printf("tigetstr(tb_set_a_background) = %s\n", tigetstr(tb_set_a_background));
+
+	printf("tb_getflag(tb_back_color_erase) = %d\n", tb_getflag(tb_back_color_erase));
+	printf("tb_getflag(tb_auto_right_margin) = %d\n", tb_getflag(tb_auto_right_margin));
+	printf("tb_getflag(tb_has_status_line) = %d\n", tb_getflag(tb_has_status_line));
+
+	printf("tb_getnum(tb_columns) = %d\n", tb_getnum(tb_columns));
+	printf("tb_getnum(tb_init_tabs) = %d\n", tb_getnum(tb_init_tabs));
+	printf("tb_getnum(tb_buttons) = %d\n", tb_getnum(tb_buttons));
+
+	printf("tb_getstr(tb_bell) = %s\n", tb_getstr(tb_bell));
+	printf("tb_getstr(tb_set_a_background) = %s\n", tb_getstr(tb_set_a_background));
+
 	return rc;
 }
 #endif

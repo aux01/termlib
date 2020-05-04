@@ -116,28 +116,33 @@ static char *terminfo_load_data(const char *term) {
 
 static tb_terminal *tb_term;
 
-int tb_setupterm(char *term, int fd) {
-	if (!term) term = getenv("TERM");
-	if (!term) return -1;
 
-	if (tb_term && strcmp(term, tb_term->termname) == 0) {
+int tb_setupterm(char *termname, int fd) {
+	if (!termname) return -1;
+
+	if (tb_term && strcmp(termname, tb_term->termname) == 0) {
 		return 0;
 	} else if (tb_term) {
 		// TODO: free tb_term struct and members
 	}
 
-	char *data = terminfo_load_data(term);
-	if (!data) {
-		return -2;
-	}
-
 	tb_term = malloc(sizeof(tb_terminal));
-	memset(tb_term, 0, sizeof(tb_terminal));
+	return tb_loadterm(tb_term, termname, fd);
+}
 
-	tb_term->termdata = data;
-	tb_term->termname = (char *)malloc(strlen(term) + 1);
-	strcpy(tb_term->termname, term);
-	tb_term->fd = fd;
+int tb_loadterm(tb_terminal *term, char *termname, int fd) {
+	if (!termname) termname = getenv("TERM");
+	if (!termname) return -1;
+
+	char *data = terminfo_load_data(termname);
+	if (!data) return -2;
+
+	memset(term, 0, sizeof(tb_terminal));
+
+	term->termdata = data;
+	term->termname = (char *)malloc(strlen(termname) + 1);
+	strcpy(term->termname, termname);
+	term->fd = fd;
 
 	int16_t header[6];
 	memcpy(header, data, sizeof(header));
@@ -149,10 +154,10 @@ int tb_setupterm(char *term, int fd) {
 		stroff_count = header[4], // count of shorts in stroffs section
 		strtbl_len   = header[5]; // size in bytes of the string table
 
-	assert(magic == TI_MAGIC);
 	// TODO bail if magic is wrong
+	assert(magic == TI_MAGIC);
 
-	tb_termtype *type = &tb_term->type;
+	tb_termtype *type = &term->type;
 	type->term_names = data + sizeof(header);
 
 	type->bools = (int8_t*)(type->term_names + names_len);
@@ -171,6 +176,12 @@ int tb_setupterm(char *term, int fd) {
 	// TODO load extended capabilities
 
 	return 0;
+}
+
+void tb_freeterm(tb_terminal *term) {
+	free(term->termname); term->termname = NULL;
+	free(term->termdata); term->termdata = NULL;
+	free(term);
 }
 
 int tb_getflag(int cap) {

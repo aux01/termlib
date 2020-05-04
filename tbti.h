@@ -15,8 +15,41 @@
 #include <stdint.h>
 
 /*
- * Read the terminfo database and set up the terminfo structures for the given
- * terminal name, or the TERM environment variable when term is NULL.
+ * Struct tb_termtype is an in-memory version of a terminfo file.
+ */
+typedef struct tb_termtype {
+    char    *term_names;          // names for terminal separated by "|" chars
+    int8_t  *bools;               // array of boolean values
+    int16_t *nums;                // array of integer values
+    int16_t *str_offs;            // array of string offsets
+    char    *str_table;           // pointer to string table
+
+    uint16_t num_bools;
+    uint16_t num_nums;
+    uint16_t num_strings;
+
+    char  *ext_str_table;         // pointer to extended string table
+    char  **ext_names;            // corresponding names
+
+    uint16_t ext_bools;           // count extensions to bools
+    uint16_t ext_nums;            // count extensions to numbers
+    uint16_t ext_strings;         // count extensions to strings
+} tb_termtype;
+
+/*
+ * Struct tb_terminal holds terminal type information bound to a specific
+ * file descriptor.
+ */
+typedef struct tb_terminal {
+    tb_termtype type;             // terminal type description
+    short       fd;               // file description being written to
+    char *      termname;         // term name used in setupterm
+    char *      termdata;         // raw terminfo data loaded from file
+} tb_terminal;
+
+/*
+ * Read the terminfo database and set up the terminal info structures for the
+ * given terminal name, or the TERM environment variable when term is NULL.
  *
  * Simplest invocation uses TERM and standard output:
  *     tb_setupterm(NULL, 1, NULL);
@@ -26,7 +59,18 @@
  *
  * Ncurses counterpart: setupterm().
  */
-int tb_setupterm(char *term, int fd);
+int tb_setupterm(char *termname, int fd);
+
+/*
+ * Load terminfo structures without setting the current global terminal.
+ * Useful when building tools that inspect terminfo files.
+ */
+int tb_loadterm(tb_terminal *term, char *termname, int fd);
+
+/*
+ * Free memory associated with a terminal info structure.
+ */
+void tb_freeterm(tb_terminal *term);
 
 /*
  * Read terminfo defined capabilities for the current terminal.
@@ -46,32 +90,6 @@ char *tb_getstr(int cap);
  * case NULL is returned. The returned string must be freed with free(3).
  */
 char *tb_parmn(char *ps, int c, ...);
-
-typedef struct tb_termtype {
-    char    *term_names;          /* names for terminal separated by "|" chars */
-    int8_t  *bools;               /* array of boolean values */
-    int16_t *nums;                /* array of integer values */
-    int16_t *str_offs;            /* array of string offsets */
-    char    *str_table;           /* pointer to string table */
-
-    uint16_t num_bools;
-    uint16_t num_nums;
-    uint16_t num_strings;
-
-    char  *ext_str_table;         /* pointer to extended string table */
-    char  **ext_names;            /* corresponding names */
-
-    uint16_t ext_bools;           /* count extensions to bools */
-    uint16_t ext_nums;            /* count extensions to numbers */
-    uint16_t ext_strings;         /* count extensions to strings */
-} tb_termtype;
-
-typedef struct tb_terminal {          /* describe an actual terminal */
-    tb_termtype type;             /* terminal type description */
-    short       fd;               /* file description being written to */
-    char *      termname;         /* term name used in setupterm */
-    char *      termdata;
-} tb_terminal;
 
 // Boolean capability names
 #define tb_auto_left_margin               0

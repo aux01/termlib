@@ -13,7 +13,18 @@ static char *test_setupterm() {
 	return 0;
 }
 
-static char *test_setupterm_loads_term_names() {
+static char *test_setupterm_no_realloc_same_term() {
+	tb_terminal *orig = tb_term;
+	mu_assert("tb_term is already setup", tb_term != NULL);
+
+	int rc = tb_setupterm("xterm-color", 1);
+	mu_assert("tb_setupterm succeeds", rc == 0);
+
+	mu_assert("tb_term is not reallocated", tb_term == orig);
+	return 0;
+}
+
+static char *test_setupterm_load_term_names() {
 	int rc = strcmp("xterm-color|generic \"ANSI\" color xterm (X Window System)",
 	            tb_term->type.term_names);
 	mu_assert("term_names", rc == 0);
@@ -26,10 +37,21 @@ static char *test_setupterm_missing_terminfo_file() {
 	return 0;
 }
 
+static tb_terminal *t;
+static char *test_loadterm_and_freeterm() {
+	t = malloc(sizeof(tb_terminal));
+	int rc = tb_loadterm(t, "xterm-color", 1);
+	mu_assert("tb_loadterm succeeds", rc == 0);
+	tb_freeterm(t); t = NULL;
+	return 0;
+}
+
 static char *all_tests() {
 	mu_run_test(test_setupterm);
-	mu_run_test(test_setupterm_loads_term_names);
+	mu_run_test(test_setupterm_no_realloc_same_term);
+	mu_run_test(test_setupterm_load_term_names);
 	mu_run_test(test_setupterm_missing_terminfo_file);
+	mu_run_test(test_loadterm_and_freeterm);
 	return 0;
 }
 

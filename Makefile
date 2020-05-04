@@ -50,6 +50,10 @@ amalgamation/termbox.o: amalgamation/termbox.c amalgamation/termbox.h
 	$(CC) $(CFLAGS) -c amalgamation/termbox.c -o $@
 .PHONY: amalgamation
 
+test:
+	$(MAKE) -C test clean all
+.PHONY: test
+
 # Clean everything
 clean:
 	rm -f $(DEMO_OBJS)
@@ -57,6 +61,7 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(LIBS)
 	rm -f $(AMAL_OBJS)
+.PHONY: clean
 
 # Implicit rule to build object files from .c source files
 .SUFFIXES: .o .c

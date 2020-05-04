@@ -21,6 +21,9 @@
  * Simplest invocation uses TERM and standard output:
  *     tb_setupterm(NULL, 1, NULL);
  *
+ * Returns 0 on success, -1 if no terminal string is set, -2 if the terminfo
+ * file cannot be found.
+ *
  * Ncurses counterpart: setupterm().
  */
 int tb_setupterm(char *term, int fd);

@@ -115,7 +115,7 @@ int tb_setupterm(char *term, int fd) {
 
 	char *data = terminfo_load_data(term);
 	if (!data) {
-		return -1;
+		return -2;
 	}
 
 	tb_term = malloc(sizeof(TERMINAL));

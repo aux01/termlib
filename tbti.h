@@ -35,6 +35,14 @@ int   tb_getflag(int cap);
 int   tb_getnum(int cap);
 char *tb_getstr(int cap);
 
+/*
+ * Process terminfo parameterized string.
+ * The c argument specifies the number of variadic arguments that follow.
+ *
+ * Returns a newly allocated processed string unless ps is NULL, in which
+ * case NULL is returned. The returned string must be freed with free(3).
+ */
+char *tb_parmn(char *ps, int c, ...);
 
 typedef struct termtype {
     char    *term_names;          /* names for terminal separated by "|" chars */

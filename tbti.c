@@ -2,6 +2,8 @@
 
 #include "tbti.h"
 
+#include <stdint.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -183,6 +185,254 @@ char *tb_getstr(int cap) {
 	return tb_term->type.str_table + tb_term->type.str_offs[cap];
 }
 
+/*
+ * Parameterized string processing
+ *
+ * Yep, terminfo capability string processing requires interpreting an entire
+ * semi-sophisticated stack language with arithmetic, logical, bit, and unary
+ * operations, as well as variables and conditionals. fml.
+ *
+ * See terminfo(5) "Parameterized Strings" for the language description.
+ *
+ * The tinfo/lib_tparm.c source in ncurses includes some additional color along
+ * with the ncurses implementation:
+ *
+ *    <https://github.com/mirror/ncurses/blob/master/ncurses/tinfo/lib_tparm.c>
+ *
+ * The implementation below is based on the golang tcell project's:
+ *
+ *    <https://github.com/gdamore/tcell/blob/master/terminfo/terminfo.go>
+ *
+ */
+
+typedef struct stk_el {
+	int type;
+	union {
+		char *str;
+		int   num;
+	} val;
+} stk_el;
+
+#define stk_str 1
+#define stk_num 2
+
+#define TB_PARM_STACK_MAX  32          // max stack size (number of elements)
+#define TB_PARM_STRING_MAX 64          // max size of int converted to string
+#define TB_PARM_OUTPUT_MAX 4096        // max output string size
+#define TB_PARM_PARAMS_MAX 9           // max number of params
+
+static stk_el stk[TB_PARM_STACK_MAX];
+static int stk_pos = 0;
+
+// Push a string onto the stack.
+// The string must be heap allocated and must also be freed by the caller after pop.
+// Returns 0 if successful, -1 on stack overflow.
+static int stk_push_str(char *str) {
+	if (stk_pos >= TB_PARM_STACK_MAX)
+		return -1;
+
+	stk_el *el = &stk[stk_pos++];
+	el->type = stk_str;
+	el->val.str = str;
+
+	return 0;
+}
+
+// Pop a string off the stack.
+// Returns an empty string on stack underflow.
+// The string returned must be freed by the caller.
+static char *stk_pop_str(void) {
+	if (stk_pos <= 0) return calloc(1, 1);
+
+	stk_el *el = &stk[stk_pos--];
+	if (el->type == stk_str) {
+		return el->val.str;
+	} else {
+		char *buf = malloc(TB_PARM_STRING_MAX);
+		snprintf(buf, TB_PARM_STRING_MAX, "%d", el->val.num);
+		return buf;
+	}
+}
+
+// Push a number onto the stack.
+// Returns 0 when successful, -1 on stack overflow.
+static int stk_push_num(int num) {
+	if (stk_pos >= TB_PARM_STACK_MAX) return -1;
+
+	stk_el *el = &stk[stk_pos++];
+	el->type = stk_num;
+	el->val.num  = num;
+
+	return 0;
+}
+
+// Pop a number off the stack.
+// Returns 0 on stack underflow.
+static int stk_pop_num() {
+	if (stk_pos <= 0) return 0;
+
+	stk_el *el = &stk[--stk_pos];
+	if (el->type == stk_num) {
+		return el->val.num;
+	} else {
+		return atoi(el->val.str);
+	}
+}
+
+static char *svars[26]; // static variables
+
+char *tb_parmn(char *s, int c, ...) {
+	if (!s) return NULL;
+
+	// Load varg params into fixed size int array for easier referencing.
+	va_list ap;
+	va_start(ap, c);
+	int params[9] = {0};
+	for (int i = 0; i < 9 && i < c; i++) {
+		params[i] = va_arg(ap, int);
+	}
+	va_end(ap);
+
+	// Variables used in instruction processing
+	int ai = 0, bi = 0;              // unary, arithmetic, binary op vars
+	char *str;                       // string pointer var
+	char sstr[TB_PARM_STRING_MAX];   // stack allocated string
+	int i;                           // loop counter
+
+	// Dynamic variables
+	char *dvars[26] = {0};
+
+	// output buffer and pos
+	int pos = 0;
+	char *buf = (char*)calloc(1, TB_PARM_OUTPUT_MAX);
+
+	// pointer to current input char
+	char *pch = s;
+
+	for (;*pch;) {
+		if (*pch != '%') {
+			buf[pos++] = *pch++;
+			continue;
+		}
+		pch++; // skip over '%'
+
+		switch (*pch++) {
+		case '%':
+			buf[pos++] = *pch;
+			break;
+		case 'i':
+			// increment both params
+			params[0]++;
+			params[1]++;
+			break;
+		case 'c': case 's':
+			// pop char or string, write to output buffer
+			str = stk_pop_str();
+			for (i = 0; str[i] && pos < TB_PARM_OUTPUT_MAX; i++) {
+				buf[pos++] = str[i];
+			}
+			free(str);
+			break;
+		case 'd':
+			// pop int, print
+			ai = stk_pop_num();
+			snprintf(sstr, TB_PARM_STRING_MAX, "%d", ai);
+			for (i = 0; sstr[i] && pos < TB_PARM_OUTPUT_MAX; i++) {
+				buf[pos++] = sstr[i];
+			}
+			break;
+		case '0': case '1': case '2': case '3': case '4':
+		case 'x': case 'X': case 'o': case ':':
+			// TODO: we lost the specifier so need to split these
+			// cases or something..
+			// TODO: pop int or string and print formatted
+			break;
+		case 'p':
+			// push parameter
+			ai = *pch++ - '1';
+			if (ai >= 0 && ai < TB_PARM_PARAMS_MAX) {
+				stk_push_num(params[ai]);
+			} else {
+				stk_push_num(0);
+			}
+			break;
+		case 'P':
+			// pop & store variable
+			if (*pch >= 'A' && *pch <= 'Z') {
+				svars[*pch-'A'] = stk_pop_str();
+			} else if (*pch >= 'a' && *pch <= 'z') {
+				dvars[*pch-'a'] = stk_pop_str();
+			}
+			pch++;
+			break;
+		case 'g':
+			// recall and push variable
+			if (*pch >= 'A' && *pch <= 'Z') {
+				stk_push_str(svars[*pch-'A']);
+				// NOTE: string is on stack AND in svars now;
+				//       be careful with free()
+			} else if (*pch >= 'a' && *pch <= 'z') {
+				stk_push_str(dvars[*pch-'a']);
+				// NOTE: string is on stack AND in dvars now;
+				//       be careful with free()
+			}
+			pch++;
+			break;
+		case '\'':
+			// push literal char
+			str = calloc(1, 2);
+			str[0] = *pch++;
+			stk_push_str(str);
+			pch++; // must be ' but we don't check
+			break;
+		case '{':
+			// push int
+			ai = 0;
+			for (;*pch >= '0' && *pch <= '9';) {
+				ai *= 10;
+				ai += *pch - '0';
+				pch++;
+			}
+			pch++; // must be } but we don't check
+			stk_push_num(ai);
+			break;
+		case 'l':
+			str = stk_pop_str();
+			stk_push_num(strlen(str));
+			free(str);
+			break;
+		case '+':
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai+bi);
+			break;
+		case '-':
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai-bi);
+			break;
+		case '*':
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai*bi);
+			break;
+		case '/':
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(bi ? ai/bi : 0);
+			break;
+		default:
+			// TODO: ???
+			fprintf(stderr, "unhandled char: 0x%0x\n", *(pch-1));
+		}
+	}
+
+	// TODO: free strings left on the stack
+	// TODO: free dynamic variables
+
+	return buf;
+}
+
 #ifdef TESTNOW
 int main(void) {
 	int rc = tb_setupterm(NULL, 1);
@@ -202,6 +452,8 @@ int main(void) {
 	printf("tb_getstr(tb_bell) = %s\n", tb_getstr(tb_bell));
 	printf("tb_getstr(tb_set_a_background) = %s\n", tb_getstr(tb_set_a_background));
 
+	printf("tb_parmn(\"[%%p1%%d@\",1, 42) = %s\n", tb_parmn("[%p1%d@", 1, 42));
+	printf("tb_parmn(\"[%%i%%p1%%dd\", 1, 42) = %s\n", tb_parmn("[%i%p1%dd", 1, 42));
 	return rc;
 }
 #endif

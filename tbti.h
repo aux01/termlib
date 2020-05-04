@@ -47,7 +47,7 @@ char *tb_getstr(int cap);
  */
 char *tb_parmn(char *ps, int c, ...);
 
-typedef struct termtype {
+typedef struct tb_termtype {
     char    *term_names;          /* names for terminal separated by "|" chars */
     int8_t  *bools;               /* array of boolean values */
     int16_t *nums;                /* array of integer values */
@@ -64,14 +64,14 @@ typedef struct termtype {
     uint16_t ext_bools;           /* count extensions to bools */
     uint16_t ext_nums;            /* count extensions to numbers */
     uint16_t ext_strings;         /* count extensions to strings */
-} TERMTYPE;
+} tb_termtype;
 
-typedef struct term {           /* describe an actual terminal */
-    TERMTYPE    type;           /* terminal type description */
-    short       fd;             /* file description being written to */
-    char *      termname;       /* term name used in setupterm */
+typedef struct tb_terminal {          /* describe an actual terminal */
+    tb_termtype type;             /* terminal type description */
+    short       fd;               /* file description being written to */
+    char *      termname;         /* term name used in setupterm */
     char *      termdata;
-} TERMINAL;
+} tb_terminal;
 
 // Boolean capability names
 #define tb_auto_left_margin               0

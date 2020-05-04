@@ -114,7 +114,7 @@ static char *terminfo_load_data(const char *term) {
 #define TI_MAGIC 0432
 #define TI_ALT_MAGIC 542  // TODO: version of terminfo with 32-bit int nums?
 
-static TERMINAL *tb_term;
+static tb_terminal *tb_term;
 
 int tb_setupterm(char *term, int fd) {
 	if (!term) term = getenv("TERM");
@@ -131,8 +131,8 @@ int tb_setupterm(char *term, int fd) {
 		return -2;
 	}
 
-	tb_term = malloc(sizeof(TERMINAL));
-	memset(tb_term, 0, sizeof(TERMINAL));
+	tb_term = malloc(sizeof(tb_terminal));
+	memset(tb_term, 0, sizeof(tb_terminal));
 
 	tb_term->termdata = data;
 	tb_term->termname = (char *)malloc(strlen(term) + 1);
@@ -152,7 +152,7 @@ int tb_setupterm(char *term, int fd) {
 	assert(magic == TI_MAGIC);
 	// TODO bail if magic is wrong
 
-	TERMTYPE *type = &tb_term->type;
+	tb_termtype *type = &tb_term->type;
 	type->term_names = data + sizeof(header);
 
 	type->bools = (int8_t*)(type->term_names + names_len);

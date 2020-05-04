@@ -10,6 +10,7 @@ reorganize, and add some refinements to the project.
  - [x] Add an amalgamation build for packaging as a [single-file library][sfl].
  - [x] Add support for italic, faint, and crossed-out character styles.
  - [x] Fix bug loading terminfo files that leave capabilities undefined (blink).
+ - [x] Don't use terminfo for SGR (color, bold, italic, underline, etc).
  - [ ] Reorganize source files into terminfo.c, terminput.c, and termbuffer.c
    with separate header files such that any could be used as single-file libs.
  - [ ] Support for scrolling buffer (rin/ind) and/or insert/delete line

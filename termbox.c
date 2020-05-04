@@ -390,7 +390,7 @@ static void write_sgr(uint16_t fg, uint16_t bg) {
 	case TB_OUTPUT_256:
 	case TB_OUTPUT_216:
 	case TB_OUTPUT_GRAYSCALE:
-		WRITE_LITERAL("\033[");
+		WRITE_LITERAL(SGR_OPEN);
 		if (fg != TB_DEFAULT) {
 			WRITE_LITERAL("38;5;");
 			WRITE_INT(fg);
@@ -402,11 +402,11 @@ static void write_sgr(uint16_t fg, uint16_t bg) {
 			WRITE_LITERAL("48;5;");
 			WRITE_INT(bg);
 		}
-		WRITE_LITERAL("m");
+		WRITE_LITERAL(SGR_CLOSE);
 		break;
 	case TB_OUTPUT_NORMAL:
 	default:
-		WRITE_LITERAL("\033[");
+		WRITE_LITERAL(SGR_OPEN);
 		if (fg != TB_DEFAULT) {
 			WRITE_LITERAL("3");
 			WRITE_INT(fg - 1);
@@ -418,7 +418,7 @@ static void write_sgr(uint16_t fg, uint16_t bg) {
 			WRITE_LITERAL("4");
 			WRITE_INT(bg - 1);
 		}
-		WRITE_LITERAL("m");
+		WRITE_LITERAL(SGR_CLOSE);
 		break;
 	}
 }
@@ -500,8 +500,6 @@ static void send_attr(uint16_t fg, uint16_t bg)
 #define LAST_ATTR_INIT 0xFFFF
 	static uint16_t lastfg = LAST_ATTR_INIT, lastbg = LAST_ATTR_INIT;
 	if (fg != lastfg || bg != lastbg) {
-		bytebuffer_puts(&output_buffer, funcs[T_SGR0]);
-
 		uint16_t fgcol;
 		uint16_t bgcol;
 
@@ -531,20 +529,23 @@ static void send_attr(uint16_t fg, uint16_t bg)
 			bgcol = bg & 0x0F;
 		}
 
+		WRITE_LITERAL((SGR_OPEN SGR_TYPO_RESET));
 		if (fg & TB_BOLD)
-			bytebuffer_puts(&output_buffer, funcs[T_BOLD]);
-		if (bg & TB_BOLD)
-			bytebuffer_puts(&output_buffer, funcs[T_BLINK]);
+			WRITE_LITERAL(";" SGR_TYPO_BOLD);
 		if (fg & TB_FAINT)
-			bytebuffer_puts(&output_buffer, funcs[T_FAINT]);
+			WRITE_LITERAL(";" SGR_TYPO_FAINT);
 		if (fg & TB_ITALIC)
-			bytebuffer_puts(&output_buffer, funcs[T_ITALIC]);
+			WRITE_LITERAL(";" SGR_TYPO_ITALIC);
 		if (fg & TB_UNDERLINE)
-			bytebuffer_puts(&output_buffer, funcs[T_UNDERLINE]);
-		if (fg & TB_CROSSOUT)
-			bytebuffer_puts(&output_buffer, funcs[T_CROSSOUT]);
+			WRITE_LITERAL(";" SGR_TYPO_UNDERLINE);
+		// bg & TB_BOLD is for compatibility with original termbox
+		if ((fg & TB_BLINK) || (bg & TB_BLINK) || (bg & TB_BOLD))
+			WRITE_LITERAL(";" SGR_TYPO_BLINK);
 		if ((fg & TB_REVERSE) || (bg & TB_REVERSE))
-			bytebuffer_puts(&output_buffer, funcs[T_REVERSE]);
+			WRITE_LITERAL(";" SGR_TYPO_REVERSE);
+		if (fg & TB_CROSSOUT)
+			WRITE_LITERAL(";" SGR_TYPO_CROSSOUT);
+		WRITE_LITERAL(SGR_CLOSE);
 
 		write_sgr(fgcol, bgcol);
 

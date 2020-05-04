@@ -58,6 +58,8 @@ static char *terminfo_try_path(const char *path, const char *term) {
 
 // Read binary terminfo file.
 static char *terminfo_load_data(const char *term) {
+	char *data;
+
 	// if TERMINFO is set, no other directory should be searched
 	const char *terminfo = getenv("TERMINFO");
 	if (terminfo) {
@@ -69,8 +71,7 @@ static char *terminfo_load_data(const char *term) {
 	if (home) {
 		char fn[4096]; fn[sizeof(fn)-1]=0;
 		snprintf(fn, sizeof(fn), "%s/.terminfo", home);
-		char *data = terminfo_try_path(fn, term);
-		if (data) {
+		if ((data = terminfo_try_path(fn, term))) {
 			return data;
 		}
 	}
@@ -94,8 +95,20 @@ static char *terminfo_load_data(const char *term) {
 		}
 	}
 
-	// fallback to /usr/share/terminfo
-	return terminfo_try_path("/usr/share/terminfo", term);
+	// search in system paths
+	// TODO: may be different on different systems; use `infocmp -D' to ls
+	char *paths[] = {
+		"/etc/terminfo",
+		"/lib/terminfo",
+		"/usr/share/terminfo",
+		""
+	};
+	for (int i = 0; paths[i][0]; i++) {
+		data = terminfo_try_path(paths[i], term);
+		if (data) return data;
+	}
+
+	return NULL;
 }
 
 #define TI_MAGIC 0432

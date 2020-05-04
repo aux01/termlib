@@ -52,23 +52,15 @@ enum {
 	T_HIDE_CURSOR,
 	T_CLEAR_SCREEN,
 	T_SGR0,
-	T_UNDERLINE,
-	T_BOLD,
-	T_FAINT,
-	T_ITALIC,
-	T_BLINK,
-	T_REVERSE,
 	T_ENTER_KEYPAD,
 	T_EXIT_KEYPAD,
 
-	T_CROSSOUT,
 	T_ENTER_MOUSE,
 	T_EXIT_MOUSE,
 
 	T_FUNCS_NUM,
 };
 
-#define CROSSOUT "\x1b[9m"
 #define ENTER_MOUSE_SEQ "\x1b[?1000h\x1b[?1002h\x1b[?1015h\x1b[?1006h"
 #define EXIT_MOUSE_SEQ "\x1b[?1006l\x1b[?1015l\x1b[?1002l\x1b[?1000l"
 
@@ -107,14 +99,8 @@ static const char *rxvt_256color_funcs[] = {
 	"\033[?25l",                // T_HIDE_CURSOR
 	"\033[H\033[2J",            // T_CLEAR_SCREEN
 	"\033[m",                   // T_SGR0
-	"\033[4m",                  // T_UNDERLINE
-	"\033[1m",                  // T_BOLD
-	"\033[3m",                  // T_ITALIC
-	"\033[5m",                  // T_BLINK
-	"\033[7m",                  // T_REVERSE
 	"\033=",                    // T_ENTER_KEYPAD
 	"\033>",                    // T_EXIT_KEYPAD
-	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -152,15 +138,8 @@ static const char *eterm_funcs[] = {
 	"\033[?25l",                // T_HIDE_CURSOR
 	"\033[H\033[2J",            // T_CLEAR_SCREEN
 	"\033[m",                   // T_SGR0
-	"\033[4m",                  // T_UNDERLINE
-	"\033[1m",                  // T_BOLD
-	"\033[2m",                  // T_FAINT
-	"\033[3m",                  // T_ITALIC
-	"\033[5m",                  // T_BLINK
-	"\033[7m",                  // T_REVERSE
 	"",                         // T_ENTER_KEYPAD
 	"",                         // T_EXIT_KEYPAD
-	CROSSOUT,                   // T_CROSSOUT
 	"",                         // T_ENTER_MOUSE
 	"",                         // T_EXIT_MOUSE
 };
@@ -198,15 +177,8 @@ static const char *screen_funcs[] = {
 	"\033[?25l",                // T_HIDE_CURSOR
 	"\033[H\033[J",             // T_CLEAR_SCREEN
 	"\033[m",                   // T_SGR0
-	"\033[4m",                  // T_UNDERLINE
-	"\033[1m",                  // T_BOLD
-	"\033[2m",                  // T_FAINT
-	"\033[3m",                  // T_ITALIC
-	"\033[5m",                  // T_BLINK
-	"\033[7m",                  // T_REVERSE
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
 	"\033[?1l\033>",            // T_EXIT_KEYPAD
-	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -244,15 +216,8 @@ static const char *rxvt_unicode_funcs[] = {
 	"\033[?25l",                // T_HIDE_CURSOR
 	"\033[H\033[2J",            // T_CLEAR_SCREEN
 	"\033[m\033(B",             // T_SGR0
-	"\033[4m",                  // T_UNDERLINE
-	"\033[1m",                  // T_BOLD
-	"\033[2m",                  // T_FAINT
-	"\033[3m",                  // T_ITALIC
-	"\033[5m",                  // T_BLINK
-	"\033[7m",                  // T_REVERSE
 	"\033=",                    // T_ENTER_KEYPAD
 	"\033>",                    // T_EXIT_KEYPAD
-	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -290,15 +255,8 @@ static const char *linux_funcs[] = {
 	"\033[?25l\033[?1c",        // T_HIDE_CURSOR
 	"\033[H\033[J",             // T_CLEAR_SCREEN
 	"\033[0;10m",               // T_SGR0
-	"\033[4m",                  // T_UNDERLINE
-	"\033[1m",                  // T_BOLD
-	"\033[2m",                  // T_FAINT
-	"\033[3m",                  // T_ITALIC
-	"\033[5m",                  // T_BLINK
-	"\033[7m",                  // T_REVERSE
 	"",                         // T_ENTER_KEYPAD
 	"",                         // T_EXIT_KEYPAD
-	CROSSOUT,                   // T_CROSSOUT
 	"",                         // T_ENTER_MOUSE
 	"",                         // T_EXIT_MOUSE
 };
@@ -336,15 +294,8 @@ static const char *xterm_funcs[] = {
 	"\033[?25l",                // T_HIDE_CURSOR
 	"\033[H\033[2J",            // T_CLEAR_SCREEN
 	"\033(B\033[m",             // T_SGR0
-	"\033[4m",                  // T_UNDERLINE
-	"\033[1m",                  // T_BOLD
-	"\033[2m",                  // T_FAINT
-	"\033[3m",                  // T_ITALIC
-	"\033[5m",                  // T_BLINK
-	"\033[7m",                  // T_REVERSE
 	"\033[?1h\033=",            // T_ENTER_KEYPAD
 	"\033[?1l\033>",            // T_EXIT_KEYPAD
-	CROSSOUT,                   // T_CROSSOUT
 	ENTER_MOUSE_SEQ,            // T_ENTER_MOUSE
 	EXIT_MOUSE_SEQ,             // T_EXIT_MOUSE
 };
@@ -533,12 +484,6 @@ static const int16_t ti_funcs[] = {
 	13,     // T_HIDE_CURSOR
 	5,      // T_CLEAR_SCREEN
 	39,     // T_SGR0
-	36,     // T_UNDERLINE
-	27,     // T_BOLD
-	30,     // T_FAINT
-	311,    // T_ITALIC
-	26,     // T_BLINK
-	34,     // T_REVERSE
 	89,     // T_ENTER_KEYPAD
 	88,     // T_EXIT_KEYPAD
 };
@@ -611,14 +556,13 @@ static int init_term(void) {
 	keys[TB_KEYS_NUM] = 0;
 
 	funcs = malloc(sizeof(const char*) * T_FUNCS_NUM);
-	// the last three entries are reserved for mouse and terminfo extensions.
+	// the last two entries are reserved for mouse extensions.
 	// because the table offset is not there, the entries have to fill in manually
-	for (i = 0; i < T_FUNCS_NUM-3; i++) {
+	for (i = 0; i < T_FUNCS_NUM-2; i++) {
 		funcs[i] = terminfo_copy_string(data,
 			str_offset + 2 * ti_funcs[i], table_offset);
 	}
 
-	funcs[T_FUNCS_NUM-3] = CROSSOUT;
 	funcs[T_FUNCS_NUM-2] = ENTER_MOUSE_SEQ;
 	funcs[T_FUNCS_NUM-1] = EXIT_MOUSE_SEQ;
 
@@ -633,10 +577,10 @@ static void shutdown_term(void) {
 		for (i = 0; i < TB_KEYS_NUM; i++) {
 			free((void*)keys[i]);
 		}
-		// the last three entries are reserved for mouse and terminfo extensions.
+		// the last two entries are reserved for mouse extensions.
 		// because the table offset is not there, the entries have to fill in
 		// manually and do not need to be freed.
-		for (i = 0; i < T_FUNCS_NUM-3; i++) {
+		for (i = 0; i < T_FUNCS_NUM-2; i++) {
 			free((void*)funcs[i]);
 		}
 		free(keys);

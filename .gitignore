@@ -7,4 +7,6 @@ termbox.sa
 /demo/output
 /demo/paint
 
+/test/*_test
+
 /tags

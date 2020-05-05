@@ -63,10 +63,11 @@ int main(void) {
 
 	// It's also possible for an SGR value to turn its attributes off.
 	// This lets you reset specific attributes while leaving others in tact:
-	n = tb_sgr_unpack(codes, TB_NEGATE|TB_BOLD|TB_REVERSE);
-	assert(n == 2);
+	n = tb_sgr_unpack(codes, TB_NEGATE|TB_BOLD|TB_REVERSE|TB_RED);
+	assert(n == 3);
 	assert(codes[0] == 22); // bold off (normal intensity)
 	assert(codes[1] == 27); // reverse off
+	assert(codes[2] == 39); // foreground color off
 
 	// There's also the concept of default foreground and background colors
 	// that may be different from any of the 8 base colors:

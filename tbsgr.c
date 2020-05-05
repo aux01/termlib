@@ -35,13 +35,18 @@ int tb_sgr_unpack(uint16_t codes[], uint32_t attrs) {
         uint32_t colormode = (attrs&TB_CM_MASK);
         uint16_t color = (attrs&TB_COLOR_MASK);
 
-        if (colormode == TB_8 || colormode == TB_BRIGHT) {
+        if (neg) {
+                // negate colors by setting to default bg/fg
+                if (attrs&TB_BG) codes[pos++] = 49;
+                else             codes[pos++] = 39;
+
+        } else if (colormode == TB_8 || colormode == TB_BRIGHT) {
                 // TODO: if (color > 7) color = ??
                 color += 30;                              // foreground colors
                 if (attrs&TB_BG)            color += 10;  // background colors
                 if (colormode == TB_BRIGHT) color += 60;  // bright colors
-
                 codes[pos++] = color;
+
         } else if (colormode >= TB_216 && colormode < TB_HIGH) {
                 if (attrs&TB_BG)           codes[pos++] = 48; // set bg
                 else                       codes[pos++] = 38; // set fg

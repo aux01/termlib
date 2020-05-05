@@ -126,8 +126,15 @@ int tb_setupterm(char *termname, int fd) {
 		// TODO: free tb_term struct and members
 	}
 
-	tb_term = malloc(sizeof(tb_terminal));
-	return tb_loadterm(tb_term, termname, fd);
+	tb_terminal *term = malloc(sizeof(tb_terminal));
+	int rc = tb_loadterm(term, termname, fd);
+	if (rc < 0) {
+		free(term);
+		return rc;
+	}
+
+	tb_term = term;
+	return rc;
 }
 
 int tb_loadterm(tb_terminal *term, char *termname, int fd) {
@@ -144,6 +151,7 @@ int tb_loadterm(tb_terminal *term, char *termname, int fd) {
 	strcpy(term->termname, termname);
 	term->fd = fd;
 
+	// TODO: check that there's actually this much data loaded from the file
 	int16_t header[6];
 	memcpy(header, data, sizeof(header));
 
@@ -154,8 +162,9 @@ int tb_loadterm(tb_terminal *term, char *termname, int fd) {
 		stroff_count = header[4], // count of shorts in stroffs section
 		strtbl_len   = header[5]; // size in bytes of the string table
 
-	// TODO bail if magic is wrong
-	assert(magic == TI_MAGIC);
+	if (magic != TI_MAGIC) {
+		return -3;
+	}
 
 	tb_termtype *type = &term->type;
 	type->term_names = data + sizeof(header);

@@ -1,0 +1,23 @@
+#!/bin/sh
+# Usage: runtest <testname>...
+set -eu
+
+cd "$(dirname "$0")"
+
+oks=0 fails=0
+while [ $# -gt 0 ]; do
+    printf "test: %-20s%s" "$1" "..."
+    if out=$(./"$1" 2>&1); then
+        oks=$(( oks+1 ))
+        echo " OK"
+    else
+        fails=$(( fails+1 ))
+        echo " FAILED"
+        echo "$out" | sed 's/^/    /'
+    fi
+    shift
+done
+
+echo "Ran $(( oks+fails )) tests: $oks ok, $fails failed."
+
+test "$fails" -eq 0

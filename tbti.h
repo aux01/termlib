@@ -62,17 +62,6 @@ typedef struct tb_terminal {
 int tb_setupterm(char *termname, int fd);
 
 /*
- * Load terminfo structures without setting the current global terminal.
- * Useful when building tools that inspect terminfo files.
- */
-int tb_loadterm(tb_terminal *term, char *termname, int fd);
-
-/*
- * Free memory associated with a terminal info structure.
- */
-void tb_freeterm(tb_terminal *term);
-
-/*
  * Read terminfo defined capabilities for the current terminal.
  * Each function takes one of the capability name values defined in this file.
  *
@@ -90,6 +79,13 @@ char *tb_getstr(int cap);
  * case NULL is returned. The returned string must be freed with free(3).
  */
 char *tb_parmn(char *ps, int c, ...);
+
+/*
+ * Load terminfo structures without setting the current global terminal.
+ * Useful when building tools that inspect terminfo files.
+ */
+int tb_loadterm(tb_terminal *term, char *termname, int fd);
+void tb_freeterm(tb_terminal *term);
 
 // Boolean capability names
 #define tb_auto_left_margin               0

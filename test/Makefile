@@ -5,7 +5,7 @@ CC      = cc
 CFLAGS  = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Og -g
 LDFLAGS =
 
-TESTS   = tbti_setupterm_test tbti_getcaps_test
+TESTS   = tbti_setupterm_test tbti_getcaps_test tbsgr_test
 
 test: clean all
 all: build

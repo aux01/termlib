@@ -4,8 +4,10 @@
 CC      = cc
 CFLAGS  = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Og -g
 LDFLAGS =
+LDLIBS  = -lm
 
-TESTS   = tbti_setupterm_test tbti_getcaps_test tbsgr_test
+TESTS   = tbti_setupterm_test tbti_getcaps_test \
+          tbsgr_ints_test tbsgr_encode_test
 
 test: clean all
 all: build
@@ -18,5 +20,5 @@ clean:
 # Implicit rule to build object files from .c source files
 .SUFFIXES: .c
 .c:
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 

@@ -1,4 +1,9 @@
+#define _POSIX_C_SOURCE 200112L
+
 #include "tbsgr.h"
+
+#include <string.h>
+#include <math.h>
 
 int tb_sgr_ints(uint16_t codes[], uint32_t attrs) {
         int pos = 0;
@@ -51,4 +56,71 @@ int tb_sgr_ints(uint16_t codes[], uint32_t attrs) {
         }
 
         return pos;
+}
+
+// Simple itoa that only handles positive numbers.
+// Returns the number of chars written to buf not including the \0 terminator.
+static inline int uitoa(uint16_t n, char *buf) {
+        int sz = floor(log10(n)) + 1; // length of string
+        int i = sz;                   // start at end
+        do {
+                buf[--i] = n % 10 + '0';
+        } while ((n /= 10) > 0);
+        buf[sz] = '\0';
+        return sz;
+}
+
+// Emit string characters for an SGR value.
+// This lets us keep the uint32_t -> string logic in one place but allow writing
+// to different types of mediums (FILE, fd, char* buffer, etc.).
+int tb_sgr_encode(void *p, void (*func)(void *, char *, int), uint32_t attrs) {
+        uint16_t codes[TB_SGR_ELMS_MAX];
+        int ncodes = tb_sgr_ints(codes, attrs);
+        if (ncodes == 0) return 0;
+
+        int sz = 0;
+
+        // write SGR open: "\e["
+        func(p, TB_SGR_OPEN, sizeof(TB_SGR_OPEN) - 1);
+        sz += sizeof(TB_SGR_OPEN) - 1;
+
+        // write formatting codes separated by ";"
+        int n;
+        char buf[8];
+        for (int i = 0; i < ncodes; i++) {
+                if (i > 0) {
+                        // write SGR separator: ";"
+                        func(p, TB_SGR_SEP, sizeof(TB_SGR_SEP) - 1);
+                        sz += sizeof(TB_SGR_SEP) - 1;
+                }
+                n = uitoa(codes[i], buf);
+                func(p, buf, n);
+                sz += n;
+        }
+
+        // write SGR close: "m"
+        func(p, TB_SGR_CLOSE, sizeof(TB_SGR_CLOSE) - 1);
+        sz += sizeof(TB_SGR_CLOSE) - 1;
+
+        return sz;
+}
+
+
+struct strbuf {
+        int pos;
+        char *str;
+};
+
+static void strbuf_write(void *dest, char *src, int n) {
+        struct strbuf *buf = (struct strbuf*)dest;
+        memcpy(buf->str + buf->pos, src, n);
+        buf->pos += n;
+}
+
+int tb_sgr_strcpy(char *dest, uint32_t attrs) {
+        struct strbuf buf = { 0, dest };
+        int sz = tb_sgr_encode(&buf, strbuf_write, attrs);
+        dest[sz] = '\0';
+        return sz;
+
 }

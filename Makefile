@@ -4,6 +4,7 @@
 CC        = cc
 CFLAGS    = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Os -fpic
 LDFLAGS   =
+LDLIBS    = -lm
 
 OBJS      = termbox.o utf8.o tbti.o tbsgr.o
 SO_NAME   = libtermbox.so
@@ -30,11 +31,11 @@ $(SA_NAME): $(OBJS)
 
 # Demo programs
 demo/keyboard: demo/keyboard.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $@.o -o $@
+	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
 demo/output: demo/output.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $@.o -o $@
+	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
 demo/paint: demo/paint.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $@.o -o $@
+	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
 
 # Targets for building the single file source library.
 # The termbox.c and .h files can be copied directly into

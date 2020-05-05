@@ -12,6 +12,7 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
 
 /*
  * Foreground/text attributes.
@@ -86,18 +87,48 @@
  * Fixed buffer size constants.
  *
  */
-#define TB_SGR_ELMS_MAX 16        // max num of format codes in a SGR sequence
+#define TB_SGR_ELMS_MAX 16   // max number of format codes in a SGR sequence
+#define TB_SGR_STR_MAX  128  // max bytes in a single SGR sequence string
 
 /*
  * SGR sequence construction strings.
  *
  */
-#define tb_sgr_open            "\x1b["
-#define tb_sgr_close           "m"
+#define TB_SGR_OPEN            "\x1b["
+#define TB_SGR_CLOSE           "m"
+#define TB_SGR_SEP             ";"
 
 /*
- * Encode the SGR value into an array of ints formatting codes.
+ * Write SGR attributes as an escape sequence to a file-like object.
+ * tb_sgr_write() is like write(2); tb_sgr_fwrite() is like fwrite(3).
+ *
+ * Returns lengths and error information like to write(2) and fwrite(3).
+ */
+int      tb_sgr_write(int fd, uint32_t attrs);
+unsigned tb_sgr_fwrite(FILE *stream, uint32_t attrs);
+
+/*
+ * Write SGR attributes as an escape sequence to the char buffer pointed to
+ * by dest. There must be TB_SGR_STR_MAX bytes available after dest or a buffer
+ * overflow could occur.
+ *
+ * Returns the number of bytes written after dest.
+ */
+int tb_sgr_strcpy(char *dest, uint32_t attrs);
+
+/* Generic SGR value encoder. Takes a pointer to anything and a function that
+ * will be called with the pointer any time chars should be emitted. This is
+ * used to implement the tb_sgr_write, tb_sgr_fwrite, and tb_sgr_strcpy
+ * functions and may be useful if you're writing to a custom buffer object.
+ *
+ * Returns the number of bytes sent to func.
+ */
+int tb_sgr_encode(void *p, void (*func)(void *, char *, int), uint32_t attrs);
+
+/*
+ * Encode the SGR value into an array of int formatting codes.
  * The codes buffer should be able to hold up to TB_SGR_ELMS_MAX.
+ *
  * Returns the number of formatting code ints written to the codes buffer.
  */
 int tb_sgr_ints(uint16_t codes[], uint32_t attrs);

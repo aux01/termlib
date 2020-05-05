@@ -5,7 +5,7 @@ CC        = cc
 CFLAGS    = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Os -fpic
 LDFLAGS   =
 
-OBJS      = termbox.o utf8.o
+OBJS      = termbox.o utf8.o tbti.o
 SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)

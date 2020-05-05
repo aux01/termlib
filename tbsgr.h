@@ -99,15 +99,6 @@
 #define TB_SGR_SEP             ";"
 
 /*
- * Write SGR attributes as an escape sequence to a file-like object.
- * tb_sgr_write() is like write(2); tb_sgr_fwrite() is like fwrite(3).
- *
- * Returns lengths and error information like to write(2) and fwrite(3).
- */
-int      tb_sgr_write(int fd, uint32_t attrs);
-unsigned tb_sgr_fwrite(FILE *stream, uint32_t attrs);
-
-/*
  * Write SGR attributes as an escape sequence to the char buffer pointed to
  * by dest. There must be TB_SGR_STR_MAX bytes available after dest or a buffer
  * overflow could occur.
@@ -115,6 +106,24 @@ unsigned tb_sgr_fwrite(FILE *stream, uint32_t attrs);
  * Returns the number of bytes written after dest.
  */
 int tb_sgr_strcpy(char *dest, uint32_t attrs);
+
+/*
+ * Write SGR attributes as an escape sequence to a file descriptor.
+ * Behaves similar to write(2).
+ *
+ * Returns number of bytes written if successful, -1 on error.
+ * Error information should be available via errno(2).
+ */
+int tb_sgr_write(int fd, uint32_t attrs);
+
+/*
+ * Write SGR attributes as an escape sequence to a FILE stream.
+ * Behaves similar to fwrite(2).
+ *
+ * Returns number of bytes written if successful, -1 on error.
+ * Error information should be available via ferror(3) and feof(3).
+ */
+int tb_sgr_fwrite(FILE *stream, uint32_t attrs);
 
 /* Generic SGR value encoder. Takes a pointer to anything and a function that
  * will be called with the pointer any time chars should be emitted. This is

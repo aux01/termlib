@@ -56,6 +56,7 @@ static void test_sgr_encode() {
 	assert(n == strlen(expect));
 }
 
+// Write SGR to string buffer.
 static void test_sgr_strcpy() {
 	char buf[TB_SGR_STR_MAX];
 
@@ -82,6 +83,55 @@ static void test_sgr_strcpy() {
 	assert(n == strlen(expect));
 }
 
+// Write SGR to file descriptor.
+static void test_sgr_write() {
+	int n = tb_sgr_write(1, TB_BOLD|TB_RED);
+	char *expect = "\x1b[1;31m";
+	assert((unsigned)n == strlen(expect));
+
+	// More complicated example using more codes
+	n = tb_sgr_write(1,
+	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
+	                  TB_216|TB_BG|128);
+	expect = "\x1b[1;3;4;48;5;144m";
+	assert((unsigned)n == strlen(expect));
+
+	// Empty SGR value shouldn't generate any output
+	n = tb_sgr_write(1, 0);
+	expect = "";
+	assert((unsigned)n == strlen(expect));
+
+	// Write error
+	n = tb_sgr_write(37, TB_BOLD|TB_RED);
+	assert(errno != 0);
+	assert(n == -1);
+}
+
+// Write SGR to file descriptor.
+static void test_sgr_fwrite() {
+	int n = tb_sgr_fwrite(stdout, TB_BOLD|TB_RED);
+	char *expect = "\x1b[1;31m";
+	printf("n = %d\n", n);
+	assert((unsigned)n == strlen(expect));
+
+	// More complicated example using more codes
+	n = tb_sgr_fwrite(stdout,
+	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
+	                  TB_216|TB_BG|128);
+	expect = "\x1b[1;3;4;48;5;144m";
+	assert((unsigned)n == strlen(expect));
+
+	// Empty SGR value shouldn't generate any output
+	n = tb_sgr_fwrite(stdout, 0);
+	expect = "";
+	assert((unsigned)n == strlen(expect));
+
+	// Write error
+	n = tb_sgr_fwrite(stdin, TB_BOLD|TB_RED);
+	assert(n == -1);
+	assert(ferror(stdin) != 0);
+}
+
 int main(void) {
 	// make stdout line buffered
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
@@ -89,6 +139,8 @@ int main(void) {
 	test_uitoa();
 	test_sgr_encode();
 	test_sgr_strcpy();
+	test_sgr_write();
+	test_sgr_fwrite();
 
 	return 0;
 }

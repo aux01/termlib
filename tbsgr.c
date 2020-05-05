@@ -2,6 +2,9 @@
 
 #include "tbsgr.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
 #include <string.h>
 
 int tb_sgr_ints(uint16_t codes[], uint32_t attrs) {
@@ -132,4 +135,66 @@ int tb_sgr_strcpy(char *dest, uint32_t attrs) {
         dest[sz] = '\0';
         return sz;
 
+}
+
+
+struct fdinfo {
+        int fd;
+        int err;
+        int sz;
+};
+
+// Note: be careful not to accidentally clear errno since that's
+// how the caller of tb_sgr_write() will access error info.
+static void fd_write(void *dest, char *src, int n) {
+        struct fdinfo *f = dest;
+        if (f->err) return;
+
+        int sz = write(f->fd, src, n);
+        if (sz == -1) {
+                f->err = errno;
+                return;
+        }
+
+        f->sz += sz;
+}
+
+int tb_sgr_write(int fd, uint32_t attrs) {
+        struct fdinfo f = { fd, 0, 0 };
+        tb_sgr_encode(&f, fd_write, attrs);
+        if (f.err) {
+                return -1;
+        }
+        return f.sz;
+}
+
+
+
+struct streaminfo {
+        FILE *stream;
+        int sz;
+        int err;
+        int eof;
+};
+
+static void stream_write(void *dest, char *src, int n) {
+        struct streaminfo *f = dest;
+        if (f->err || f->eof) return;
+
+        size_t sz = fwrite(src, 1, n, f->stream);
+        f->sz += sz;
+
+        if (sz < (size_t)n) {
+                f->eof = feof(f->stream);
+                f->err = ferror(f->stream);
+        }
+}
+
+int tb_sgr_fwrite(FILE *stream, uint32_t attrs) {
+        struct streaminfo f = { stream, 0, 0, 0 };
+        tb_sgr_encode(&f, stream_write, attrs);
+        if (f.err || f.eof) {
+                return -1;
+        }
+        return f.sz;
 }

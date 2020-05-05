@@ -71,3 +71,7 @@ clean:
 tags: # ignore amalgamation sources
 	ctags -R --exclude='*amalgamation*' --totals
 .PHONY: tags
+
+Caps: # fetch latest curses Caps file from GitHub
+	curl -o $@ https://raw.githubusercontent.com/ThomasDickey/ncurses-snapshots/master/include/Caps
+.PHONY: Caps

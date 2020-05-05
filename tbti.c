@@ -114,41 +114,24 @@ static char *terminfo_load_data(const char *term) {
 #define TI_MAGIC 0432
 #define TI_ALT_MAGIC 542  // TODO: version of terminfo with 32-bit int nums?
 
-static tb_terminal *tb_term;
-
-
-int tb_setupterm(char *termname, int fd) {
-	if (!termname) return -1;
-
-	if (tb_term && strcmp(termname, tb_term->termname) == 0) {
-		return 0;
-	} else if (tb_term) {
-		// TODO: free tb_term struct and members
-	}
-
-	tb_terminal *term = malloc(sizeof(tb_terminal));
-	int rc = tb_loadterm(term, termname, fd);
-	if (rc < 0) {
-		free(term);
-		return rc;
-	}
-
-	tb_term = term;
-	return rc;
-}
-
-int tb_loadterm(tb_terminal *term, char *termname, int fd) {
+tb_term *tb_setupterm(const char *termname, int fd, int *err) {
 	if (!termname) termname = getenv("TERM");
-	if (!termname) return -1;
+	if (!termname) {
+		if (err) *err = TB_ERR_TERM_NOT_SET;
+		return NULL;
+	}
 
 	char *data = terminfo_load_data(termname);
-	if (!data) return -2;
+	if (!data) {
+		if (err) *err = TB_ERR_FILE_NOT_FOUND;
+		return NULL;
+	}
 
-	memset(term, 0, sizeof(tb_terminal));
+	tb_term *term = calloc(1, sizeof(tb_term));
 
-	term->termdata = data;
-	term->termname = (char *)malloc(strlen(termname) + 1);
-	strcpy(term->termname, termname);
+	term->data = data;
+	term->name = (char *)malloc(strlen(termname) + 1);
+	strcpy(term->name, termname);
 	term->fd = fd;
 
 	// TODO: check that there's actually this much data loaded from the file
@@ -163,59 +146,64 @@ int tb_loadterm(tb_terminal *term, char *termname, int fd) {
 		strtbl_len   = header[5]; // size in bytes of the string table
 
 	if (magic != TI_MAGIC) {
-		return -3;
+		if (err) *err = TB_ERR_FILE_INVALID;
+		tb_freeterm(term);
+		return NULL;
 	}
 
-	tb_termtype *type = &term->type;
-	type->term_names = data + sizeof(header);
+	tb_terminfo *info = &term->info;
+	info->names = data + sizeof(header);
 
-	type->bools = (int8_t*)(type->term_names + names_len);
-	type->num_bools = (uint16_t)bools_len;
+	info->bools = (int8_t*)(info->names + names_len);
+	info->num_bools = (uint16_t)bools_len;
 
-	type->nums = (int16_t*)(type->bools + type->num_bools + ((names_len + bools_len) % 2));
-	type->num_nums = (uint16_t)nums_count;
+	info->nums = (int16_t*)(info->bools + info->num_bools + ((names_len + bools_len) % 2));
+	info->num_nums = (uint16_t)nums_count;
 
-	type->str_offs = type->nums + nums_count;
-	type->num_strings = stroff_count;
+	info->str_offs = info->nums + nums_count;
+	info->num_strings = stroff_count;
 
-	type->str_table = (char *)(type->str_offs + stroff_count);
+	info->str_table = (char *)(info->str_offs + stroff_count);
 
-	type->ext_str_table = type->str_table + strtbl_len;
+	info->ext_str_table = info->str_table + strtbl_len;
 
 	// TODO load extended capabilities
 
-	return 0;
+	if (err) *err = 0;
+	return term;
 }
 
-void tb_freeterm(tb_terminal *term) {
-	free(term->termname); term->termname = NULL;
-	free(term->termdata); term->termdata = NULL;
+// Most tb_terminfo members point into the data member and so must not be freed
+// directly. String returned from tb_getstr are invalid after tb_freeterm.
+void tb_freeterm(tb_term *term) {
+	free(term->name); term->name = NULL;
+	free(term->data); term->data = NULL;
 	free(term);
 }
 
-int tb_getflag(int cap) {
-	if (!tb_term) return -1;
-	if (cap < 0 || cap > tb_term->type.num_bools) return -1;
+int tb_getflag(tb_term *t, int cap) {
+	if (!t) return -1;
+	if (cap < 0 || cap > t->info.num_bools) return -1;
 
-	return tb_term->type.bools[cap];
+	return t->info.bools[cap];
 }
 
-int tb_getnum(int cap) {
-	if (!tb_term) return -1;
-	if (cap < 0 || cap > tb_term->type.num_nums) return -1;
+int tb_getnum(tb_term *t, int cap) {
+	if (!t) return -1;
+	if (cap < 0 || cap > t->info.num_nums) return -1;
 
-	return tb_term->type.nums[cap];
+	return t->info.nums[cap];
 }
 
-char *tb_getstr(int cap) {
-	if (!tb_term) return NULL;
-	if (cap < 0 || cap > tb_term->type.num_strings) return NULL;
+char *tb_getstr(tb_term *t, int cap) {
+	if (!t) return NULL;
+	if (cap < 0 || cap > t->info.num_strings) return NULL;
 
-	int offset = tb_term->type.str_offs[cap];
+	int offset = t->info.str_offs[cap];
 	if (offset < 0) return NULL;
 	// TODO: check offset isn't larger than str_table
 
-	return tb_term->type.str_table + tb_term->type.str_offs[cap];
+	return t->info.str_table + t->info.str_offs[cap];
 }
 
 /*

@@ -129,7 +129,7 @@ static void strbuf_write(void *dest, char *src, int n) {
         buf->pos += n;
 }
 
-int tb_sgr_strcpy(char *dest, uint32_t attrs) {
+int tb_sgr_str(char *dest, uint32_t attrs) {
         struct strbuf buf = { 0, dest };
         int sz = tb_sgr_encode(&buf, strbuf_write, attrs);
         dest[sz] = '\0';

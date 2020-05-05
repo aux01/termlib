@@ -105,7 +105,7 @@
  *
  * Returns the number of bytes written after dest.
  */
-int tb_sgr_strcpy(char *dest, uint32_t attrs);
+int tb_sgr_str(char *dest, uint32_t attrs);
 
 /*
  * Write SGR attributes as an escape sequence to a file descriptor.

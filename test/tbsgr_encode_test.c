@@ -57,17 +57,17 @@ static void test_sgr_encode() {
 }
 
 // Write SGR to string buffer.
-static void test_sgr_strcpy() {
+static void test_sgr_str() {
 	char buf[TB_SGR_STR_MAX];
 
-	unsigned n = tb_sgr_strcpy(buf, TB_BOLD|TB_RED);
+	unsigned n = tb_sgr_str(buf, TB_BOLD|TB_RED);
 	printf("n = %d, str = %s\n", n, buf);
 	char *expect = "\x1b[1;31m";
 	assert(strcmp(expect, buf) == 0);
 	assert(n == strlen(expect));
 
 	// More complicated example using more codes
-	n = tb_sgr_strcpy(buf,
+	n = tb_sgr_str(buf,
 	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
 	                  TB_216|TB_BG|128);
 	printf("n = %d, str = %s\n", n, buf);
@@ -76,7 +76,7 @@ static void test_sgr_strcpy() {
 	assert(n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = tb_sgr_strcpy(buf, 0);
+	n = tb_sgr_str(buf, 0);
 	printf("n = %d, str = %s\n", n, buf);
 	expect = "";
 	assert(strcmp(expect, buf) == 0);
@@ -138,7 +138,7 @@ int main(void) {
 
 	test_uitoa();
 	test_sgr_encode();
-	test_sgr_strcpy();
+	test_sgr_str();
 	test_sgr_write();
 	test_sgr_fwrite();
 

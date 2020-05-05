@@ -135,9 +135,9 @@ int tb_sgr_fwrite(FILE *stream, uint32_t attrs);
 int tb_sgr_encode(void *p, void (*func)(void *, char *, int), uint32_t attrs);
 
 /*
- * Encode the SGR value into an array of int formatting codes.
+ * Unpack a SGR value into an array of int formatting codes.
  * The codes buffer should be able to hold up to TB_SGR_ELMS_MAX.
  *
  * Returns the number of formatting code ints written to the codes buffer.
  */
-int tb_sgr_ints(uint16_t codes[], uint32_t attrs);
+int tb_sgr_unpack(uint16_t codes[], uint32_t attrs);

@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <string.h>
 
-int tb_sgr_ints(uint16_t codes[], uint32_t attrs) {
+int tb_sgr_unpack(uint16_t codes[], uint32_t attrs) {
         int pos = 0;
 
         // flip on/off attributes off instead of on
@@ -87,7 +87,7 @@ static inline int uitoa(uint16_t n, char *buf) {
 // to different types of mediums (FILE, fd, char* buffer, etc.).
 int tb_sgr_encode(void *p, void (*func)(void *, char *, int), uint32_t attrs) {
         uint16_t codes[TB_SGR_ELMS_MAX];
-        int ncodes = tb_sgr_ints(codes, attrs);
+        int ncodes = tb_sgr_unpack(codes, attrs);
         if (ncodes == 0) return 0;
 
         int sz = 0;

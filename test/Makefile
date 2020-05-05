@@ -7,7 +7,7 @@ LDFLAGS =
 LDLIBS  =
 
 TESTS   = tbti_setupterm_test tbti_getcaps_test \
-          tbsgr_ints_test tbsgr_encode_test tbsgr_attrs_test
+          tbsgr_unpack_test tbsgr_encode_test tbsgr_attrs_test
 
 test: clean all
 all: build

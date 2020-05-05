@@ -195,7 +195,7 @@ char *tb_parmn(char *ps, int c, ...);
 #define tb_cr        2    // carriage return (P*) (P*)
 #define tb_csr       3    // change region to line #1 to line #2 (P)
 #define tb_tbc       4    // clear all tab stops (P)
-#define tb_clear     5    // clear screen and home cursor (P*)
+#define tb_clear_seq 5    // clear screen and home cursor (P*)
 #define tb_el        6    // clear to end of line (P)
 #define tb_ed        7    // clear to end of screen (P*)
 #define tb_hpa       8    // horizontal position #1, absolute (P)

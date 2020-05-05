@@ -3,7 +3,6 @@
 #include "tbsgr.h"
 
 #include <string.h>
-#include <math.h>
 
 int tb_sgr_ints(uint16_t codes[], uint32_t attrs) {
         int pos = 0;
@@ -58,16 +57,26 @@ int tb_sgr_ints(uint16_t codes[], uint32_t attrs) {
         return pos;
 }
 
+
 // Simple itoa that only handles positive numbers.
 // Returns the number of chars written to buf not including the \0 terminator.
 static inline int uitoa(uint16_t n, char *buf) {
-        int sz = floor(log10(n)) + 1; // length of string
-        int i = sz;                   // start at end
+        // write numerics into string backwards
+        int i = 0;
         do {
-                buf[--i] = n % 10 + '0';
+                buf[i++] = n % 10 + '0';
         } while ((n /= 10) > 0);
-        buf[sz] = '\0';
-        return sz;
+        buf[i] = '\0';
+
+        // now reverse it
+        for (int j = 0; j < i / 2; j++) {
+                int k = i - j - 1;
+                char a = buf[j];
+                buf[j] = buf[k];
+                buf[k] = a;
+        }
+
+        return i;
 }
 
 // Emit string characters for an SGR value.

@@ -4,7 +4,7 @@
 CC      = cc
 CFLAGS  = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Og -g
 LDFLAGS =
-LDLIBS  = -lm
+LDLIBS  =
 
 TESTS   = tbti_setupterm_test tbti_getcaps_test \
           tbsgr_ints_test tbsgr_encode_test

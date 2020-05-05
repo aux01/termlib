@@ -4,7 +4,7 @@
 CC        = cc
 CFLAGS    = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Os -fpic
 LDFLAGS   =
-LDLIBS    = -lm
+LDLIBS    =
 
 OBJS      = termbox.o utf8.o tbti.o tbsgr.o
 SO_NAME   = libtermbox.so

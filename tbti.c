@@ -471,20 +471,6 @@ int main(void) {
 	int rc = tb_setupterm(NULL, 1);
 	tb_setupterm(NULL, 1);
 
-	printf("term_names: %s\n", tb_term->type.term_names);
-	printf("str 27 = %s\n", tb_term->type.str_table + tb_term->type.str_offs[27]);
-
-	printf("tb_getflag(tb_back_color_erase) = %d\n", tb_getflag(tb_back_color_erase));
-	printf("tb_getflag(tb_auto_right_margin) = %d\n", tb_getflag(tb_auto_right_margin));
-	printf("tb_getflag(tb_has_status_line) = %d\n", tb_getflag(tb_has_status_line));
-
-	printf("tb_getnum(tb_columns) = %d\n", tb_getnum(tb_columns));
-	printf("tb_getnum(tb_init_tabs) = %d\n", tb_getnum(tb_init_tabs));
-	printf("tb_getnum(tb_buttons) = %d\n", tb_getnum(tb_buttons));
-
-	printf("tb_getstr(tb_bell) = %s\n", tb_getstr(tb_bell));
-	printf("tb_getstr(tb_set_a_background) = %s\n", tb_getstr(tb_set_a_background));
-
 	printf("tb_parmn(\"[%%p1%%d@\",1, 42) = %s\n", tb_parmn("[%p1%d@", 1, 42));
 	printf("tb_parmn(\"[%%i%%p1%%dd\", 1, 42) = %s\n", tb_parmn("[%i%p1%dd", 1, 42));
 	return rc;

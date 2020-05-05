@@ -43,25 +43,27 @@ int main(void) {
 	assert(tb_term->type.num_strings == 413);
 
 	// read boolean capabilities with the tb_getflag() function:
-	int yes = tb_getflag(tb_has_meta_key),
-	    no  = tb_getflag(tb_hard_copy);
-	assert(yes == 1);
-	assert(no == 0);
+	int has_meta_key     = tb_getflag(tb_km),
+	    back_color_erase = tb_getflag(tb_bce),
+	    hard_copy        = tb_getflag(tb_hc);
+	assert(has_meta_key == 1);
+	assert(back_color_erase == 0);
+	assert(hard_copy == 0);
 
 	// read numeric capabilities with the tb_getnum() function:
-	int max_colors = tb_getnum(tb_max_colors);
-	assert(max_colors == 8);
+	int colors = tb_getnum(tb_colors);
+	assert(colors == 8);
 
 	// numeric capabilities not specified in the terminfo file return -1:
-	int width_status_line = tb_getnum(tb_width_status_line);
+	int width_status_line = tb_getnum(tb_wsl);
 	assert(width_status_line == -1);
 
 	// read string capabilities with the tb_getstr() function:
-	char *clr_eol = tb_getstr(tb_clr_eol);
+	char *clr_eol = tb_getstr(tb_el);
 	assert(strcmp("\x1b[K", clr_eol) == 0);
 
 	// string capabilties not specified in the terminfo file return NULL:
-	char *insert_padding = tb_getstr(tb_insert_padding);
+	char *insert_padding = tb_getstr(tb_ip);
 	assert(insert_padding == NULL);
 
 	// you can use tb_loadterm instead of tb_setupterm to load terminfo

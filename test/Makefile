@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 CC      = cc
-CFLAGS  = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Og -g
+CFLAGS  = -std=c99 -Wall -Wextra -Wno-missing-field-initializers -D_XOPEN_SOURCE -Og -g
 LDFLAGS =
 LDLIBS  =
 

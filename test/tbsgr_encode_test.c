@@ -16,10 +16,10 @@ static void test_uitoa() {
 // struct to hold a string buffer and current position
 struct testbuf {
 	int pos;
-	char str[TB_SGR_STR_MAX];
+	char str[SGR_STR_MAX];
 };
 
-// write callback passed to tb_sgr_encode
+// write callback passed to sgr_encode
 static void testbuf_write(void *dest, char *src, int n) {
 	struct testbuf *buf = (struct testbuf*)dest;
 	memcpy(buf->str + buf->pos, src, n);
@@ -27,9 +27,10 @@ static void testbuf_write(void *dest, char *src, int n) {
 }
 
 static void test_sgr_encode() {
-	// Check that tb_sgr_encode() calls the write callback
+	// Check that sgr_encode() calls the write callback
 	struct testbuf buf = {0};
-	unsigned n = tb_sgr_encode(&buf, testbuf_write, TB_BOLD|TB_RED);
+	unsigned n = sgr_encode(&buf, testbuf_write,
+	                        (sgr_t){SGR_BOLD|SGR_FG,SGR_RED});
 	printf("n = %d, str = %s\n", n, buf.str);
 	char *expect = "\x1b[1;31m";
 	assert(strcmp(expect, buf.str) == 0);
@@ -37,10 +38,10 @@ static void test_sgr_encode() {
 
 	// More complicated example using more codes
 	buf.pos = 0;
-	memset(buf.str, 0, TB_SGR_STR_MAX);
-	n = tb_sgr_encode(&buf, testbuf_write,
-	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
-	                  TB_216|TB_BG|128);
+	memset(buf.str, 0, SGR_STR_MAX);
+	n = sgr_encode(&buf, testbuf_write, (sgr_t){
+	                  SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|
+	                  SGR_BG216, 0, 128 });
 	printf("n = %d, str = %s\n", n, buf.str);
 	expect = "\x1b[1;3;4;48;5;144m";
 	assert(strcmp(expect, buf.str) == 0);
@@ -48,8 +49,8 @@ static void test_sgr_encode() {
 
 	// Empty SGR value shouldn't generate any output
 	buf.pos = 0;
-	memset(buf.str, 0, TB_SGR_STR_MAX);
-	n = tb_sgr_encode(&buf, testbuf_write, 0);
+	memset(buf.str, 0, SGR_STR_MAX);
+	n = sgr_encode(&buf, testbuf_write, (sgr_t){0});
 	printf("n = %d, str = %s\n", n, buf.str);
 	expect = "";
 	assert(strcmp(expect, buf.str) == 0);
@@ -58,25 +59,27 @@ static void test_sgr_encode() {
 
 // Write SGR to string buffer.
 static void test_sgr_str() {
-	char buf[TB_SGR_STR_MAX];
+	char buf[SGR_STR_MAX];
 
-	unsigned n = tb_sgr_str(buf, TB_BOLD|TB_RED);
+	unsigned n = sgr_str(buf, (sgr_t){SGR_BOLD|SGR_FG, SGR_RED});
 	printf("n = %d, str = %s\n", n, buf);
 	char *expect = "\x1b[1;31m";
 	assert(strcmp(expect, buf) == 0);
 	assert(n == strlen(expect));
 
 	// More complicated example using more codes
-	n = tb_sgr_str(buf,
-	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
-	                  TB_216|TB_BG|128);
+	n = sgr_str(buf, (sgr_t){
+		.at = SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216,
+		.fg = 0,
+		.bg = 128
+	});
 	printf("n = %d, str = %s\n", n, buf);
 	expect = "\x1b[1;3;4;48;5;144m";
 	assert(strcmp(expect, buf) == 0);
 	assert(n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = tb_sgr_str(buf, 0);
+	n = sgr_str(buf, (sgr_t){0});
 	printf("n = %d, str = %s\n", n, buf);
 	expect = "";
 	assert(strcmp(expect, buf) == 0);
@@ -85,49 +88,51 @@ static void test_sgr_str() {
 
 // Write SGR to file descriptor.
 static void test_sgr_write() {
-	int n = tb_sgr_write(1, TB_BOLD|TB_RED);
+	int n = sgr_write(1, (sgr_t){SGR_BOLD|SGR_FG,SGR_RED});
 	char *expect = "\x1b[1;31m";
 	assert((unsigned)n == strlen(expect));
 
 	// More complicated example using more codes
-	n = tb_sgr_write(1,
-	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
-	                  TB_216|TB_BG|128);
+	n = sgr_write(1, (sgr_t){
+		.at = SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216,
+		.bg = 128
+	});
 	expect = "\x1b[1;3;4;48;5;144m";
 	assert((unsigned)n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = tb_sgr_write(1, 0);
+	n = sgr_write(1, (sgr_t){0});
 	expect = "";
 	assert((unsigned)n == strlen(expect));
 
 	// Write error
-	n = tb_sgr_write(37, TB_BOLD|TB_RED);
+	n = sgr_write(37, (sgr_t){SGR_BOLD, SGR_RED});
 	assert(errno != 0);
 	assert(n == -1);
 }
 
 // Write SGR to file descriptor.
 static void test_sgr_fwrite() {
-	int n = tb_sgr_fwrite(stdout, TB_BOLD|TB_RED);
+	int n = sgr_fwrite(stdout, (sgr_t){SGR_BOLD|SGR_FG, SGR_RED});
 	char *expect = "\x1b[1;31m";
 	printf("n = %d\n", n);
 	assert((unsigned)n == strlen(expect));
 
 	// More complicated example using more codes
-	n = tb_sgr_fwrite(stdout,
-	                  TB_BOLD|TB_ITALIC|TB_UNDERLINE|
-	                  TB_216|TB_BG|128);
+	n = sgr_fwrite(stdout, (sgr_t){
+		.at = SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216,
+		.bg = 128
+	});
 	expect = "\x1b[1;3;4;48;5;144m";
 	assert((unsigned)n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = tb_sgr_fwrite(stdout, 0);
+	n = sgr_fwrite(stdout, (sgr_t){0});
 	expect = "";
 	assert((unsigned)n == strlen(expect));
 
 	// Write error
-	n = tb_sgr_fwrite(stdin, TB_BOLD|TB_RED);
+	n = sgr_fwrite(stdin, (sgr_t){SGR_BOLD, SGR_RED});
 	assert(n == -1);
 	assert(ferror(stdin) != 0);
 }

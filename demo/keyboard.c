@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include "../termbox.h"
 
 struct key {
@@ -521,8 +522,11 @@ void draw_keyboard()
 	if (inputmode & TB_INPUT_ALT)
 		sprintf(inputmode_str, "TB_INPUT_ALT");
 
-	if (inputmode & TB_INPUT_MOUSE)
-		sprintf(inputmode_str, "%s | TB_INPUT_MOUSE", inputmode_str);
+	if (inputmode & TB_INPUT_MOUSE) {
+                char temp[32];
+                strcpy(temp, inputmode_str);
+		sprintf(inputmode_str, "%s | TB_INPUT_MOUSE", temp);
+        }
 
 	printf_tb(3, 18, TB_WHITE, TB_DEFAULT, "Input mode: %s", inputmode_str);
 }

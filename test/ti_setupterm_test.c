@@ -1,4 +1,4 @@
-#include "../tbti.c"
+#include "../ti.c"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,18 +12,18 @@ int main(void) {
 	setenv("TERMINFO", "./terminfo", 1);
 
 	// loading a file that doesn't exist causes an error
-	tb_term *t = tb_setupterm("xterm-nooooope", 1, &err);
+	ti_term *t = ti_setupterm("xterm-nooooope", 1, &err);
 	assert(t == NULL);
-	assert(err == TB_ERR_FILE_NOT_FOUND);
+	assert(err == TI_ERR_FILE_NOT_FOUND);
 
 	// loading a file that exists but isn't a terminfo file causes an error
-	t = tb_setupterm("xterm-badfile", 1, &err);
+	t = ti_setupterm("xterm-badfile", 1, &err);
 	assert(t == NULL);
-	assert(err == TB_ERR_FILE_INVALID);
+	assert(err == TI_ERR_FILE_INVALID);
 
-	// load the terminfo data into the global tb_term struct and associate
+	// load the terminfo data into the global ti_term struct and associate
 	// with standard output:
-	t = tb_setupterm("xterm-color", 1, &err);
+	t = ti_setupterm("xterm-color", 1, &err);
 	assert(t != NULL);
 	assert(err == 0);
 
@@ -39,15 +39,15 @@ int main(void) {
 	assert(t->info.num_strings == 413);
 
 	// read some capabilities to verify the db is being processed correctly
-	int has_meta_key = tb_getflag(t, tb_km);
+	int has_meta_key = ti_getflag(t, ti_km);
 	assert(has_meta_key == 1);
-	int colors = tb_getnum(t, tb_colors);
+	int colors = ti_getnum(t, ti_colors);
 	assert(colors == 8);
-	char *clr_eol = tb_getstr(t, tb_el);
+	char *clr_eol = ti_getstr(t, ti_el);
 	assert(strcmp("\x1b[K", clr_eol) == 0);
 
 	// when you're done, remember to free terminal info memory:
-	tb_freeterm(t);
+	ti_freeterm(t);
 
 	return 0;
 }

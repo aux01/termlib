@@ -22,11 +22,10 @@ db=$(
 
 
 # Reformat lines into CPP defines
-def='{o="#define tb_"$3"\t"$1"\t//";for(i=5;i<=NF;i++){o=o" "$i};print o}'
+def='{o="#define ti_"$3"\t"$1"\t//";for(i=5;i<=NF;i++){o=o" "$i};print o}'
 format_defines() {
     nl -s ' ' -w 1 -v 0 |
         awk "$def" |
-        sed 's/tb_clear/tb_clear_seq/' | # func name collision
         column -s'	' -t
 }
 

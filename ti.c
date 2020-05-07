@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200112L
 
-#include "tbti.h"
+#include "ti.h"
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -114,20 +114,20 @@ static char *terminfo_load_data(const char *term) {
 #define TI_MAGIC 0432
 #define TI_ALT_MAGIC 542  // TODO: version of terminfo with 32-bit int nums?
 
-tb_term *tb_setupterm(const char *termname, int fd, int *err) {
+ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 	if (!termname) termname = getenv("TERM");
 	if (!termname) {
-		if (err) *err = TB_ERR_TERM_NOT_SET;
+		if (err) *err = TI_ERR_TERM_NOT_SET;
 		return NULL;
 	}
 
 	char *data = terminfo_load_data(termname);
 	if (!data) {
-		if (err) *err = TB_ERR_FILE_NOT_FOUND;
+		if (err) *err = TI_ERR_FILE_NOT_FOUND;
 		return NULL;
 	}
 
-	tb_term *term = calloc(1, sizeof(tb_term));
+	ti_term *term = calloc(1, sizeof(ti_term));
 
 	term->data = data;
 	term->name = (char *)malloc(strlen(termname) + 1);
@@ -146,12 +146,12 @@ tb_term *tb_setupterm(const char *termname, int fd, int *err) {
 		strtbl_len   = header[5]; // size in bytes of the string table
 
 	if (magic != TI_MAGIC) {
-		if (err) *err = TB_ERR_FILE_INVALID;
-		tb_freeterm(term);
+		if (err) *err = TI_ERR_FILE_INVALID;
+		ti_freeterm(term);
 		return NULL;
 	}
 
-	tb_terminfo *info = &term->info;
+	ti_terminfo *info = &term->info;
 	info->names = data + sizeof(header);
 
 	info->bools = (int8_t*)(info->names + names_len);
@@ -173,29 +173,29 @@ tb_term *tb_setupterm(const char *termname, int fd, int *err) {
 	return term;
 }
 
-// Most tb_terminfo members point into the data member and so must not be freed
-// directly. String returned from tb_getstr are invalid after tb_freeterm.
-void tb_freeterm(tb_term *term) {
+// Most ti_terminfo members point into the data member and so must not be freed
+// directly. String returned from ti_getstr are invalid after ti_freeterm.
+void ti_freeterm(ti_term *term) {
 	free(term->name); term->name = NULL;
 	free(term->data); term->data = NULL;
 	free(term);
 }
 
-int tb_getflag(tb_term *t, int cap) {
+int ti_getflag(ti_term *t, int cap) {
 	if (!t) return -1;
 	if (cap < 0 || cap > t->info.num_bools) return -1;
 
 	return t->info.bools[cap];
 }
 
-int tb_getnum(tb_term *t, int cap) {
+int ti_getnum(ti_term *t, int cap) {
 	if (!t) return -1;
 	if (cap < 0 || cap > t->info.num_nums) return -1;
 
 	return t->info.nums[cap];
 }
 
-char *tb_getstr(tb_term *t, int cap) {
+char *ti_getstr(ti_term *t, int cap) {
 	if (!t) return NULL;
 	if (cap < 0 || cap > t->info.num_strings) return NULL;
 
@@ -237,19 +237,19 @@ typedef struct stk_el {
 #define stk_str 1
 #define stk_num 2
 
-#define TB_PARM_STACK_MAX  32          // max stack size (number of elements)
-#define TB_PARM_STRING_MAX 64          // max size of int converted to string
-#define TB_PARM_OUTPUT_MAX 4096        // max output string size
-#define TB_PARM_PARAMS_MAX 9           // max number of params
+#define TI_PARM_STACK_MAX  32          // max stack size (number of elements)
+#define TI_PARM_STRING_MAX 64          // max size of int converted to string
+#define TI_PARM_OUTPUT_MAX 4096        // max output string size
+#define TI_PARM_PARAMS_MAX 9           // max number of params
 
-static stk_el stk[TB_PARM_STACK_MAX];
+static stk_el stk[TI_PARM_STACK_MAX];
 static int stk_pos = 0;
 
 // Push a string onto the stack.
 // The string must be heap allocated and must also be freed by the caller after pop.
 // Returns 0 if successful, -1 on stack overflow.
 static int stk_push_str(char *str) {
-	if (stk_pos >= TB_PARM_STACK_MAX)
+	if (stk_pos >= TI_PARM_STACK_MAX)
 		return -1;
 
 	stk_el *el = &stk[stk_pos++];
@@ -269,8 +269,8 @@ static char *stk_pop_str(void) {
 	if (el->type == stk_str) {
 		return el->val.str;
 	} else {
-		char *buf = malloc(TB_PARM_STRING_MAX);
-		snprintf(buf, TB_PARM_STRING_MAX, "%d", el->val.num);
+		char *buf = malloc(TI_PARM_STRING_MAX);
+		snprintf(buf, TI_PARM_STRING_MAX, "%d", el->val.num);
 		return buf;
 	}
 }
@@ -278,7 +278,7 @@ static char *stk_pop_str(void) {
 // Push a number onto the stack.
 // Returns 0 when successful, -1 on stack overflow.
 static int stk_push_num(int num) {
-	if (stk_pos >= TB_PARM_STACK_MAX) return -1;
+	if (stk_pos >= TI_PARM_STACK_MAX) return -1;
 
 	stk_el *el = &stk[stk_pos++];
 	el->type = stk_num;
@@ -302,7 +302,7 @@ static int stk_pop_num() {
 
 static char *svars[26]; // static variables
 
-char *tb_parmn(char *s, int c, ...) {
+char *ti_parmn(char *s, int c, ...) {
 	if (!s) return NULL;
 
 	// Load varg params into fixed size int array for easier referencing.
@@ -317,7 +317,7 @@ char *tb_parmn(char *s, int c, ...) {
 	// Variables used in instruction processing
 	int ai = 0, bi = 0;              // unary, arithmetic, binary op vars
 	char *str;                       // string pointer var
-	char sstr[TB_PARM_STRING_MAX];   // stack allocated string
+	char sstr[TI_PARM_STRING_MAX];   // stack allocated string
 	int i;                           // loop counter
 
 	// Dynamic variables
@@ -325,7 +325,7 @@ char *tb_parmn(char *s, int c, ...) {
 
 	// output buffer and pos
 	int pos = 0;
-	char *buf = (char*)calloc(1, TB_PARM_OUTPUT_MAX);
+	char *buf = (char*)calloc(1, TI_PARM_OUTPUT_MAX);
 
 	// pointer to current input char
 	char *pch = s;
@@ -349,7 +349,7 @@ char *tb_parmn(char *s, int c, ...) {
 		case 'c': case 's':
 			// pop char or string, write to output buffer
 			str = stk_pop_str();
-			for (i = 0; str[i] && pos < TB_PARM_OUTPUT_MAX; i++) {
+			for (i = 0; str[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = str[i];
 			}
 			free(str);
@@ -357,8 +357,8 @@ char *tb_parmn(char *s, int c, ...) {
 		case 'd':
 			// pop int, print
 			ai = stk_pop_num();
-			snprintf(sstr, TB_PARM_STRING_MAX, "%d", ai);
-			for (i = 0; sstr[i] && pos < TB_PARM_OUTPUT_MAX; i++) {
+			snprintf(sstr, TI_PARM_STRING_MAX, "%d", ai);
+			for (i = 0; sstr[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = sstr[i];
 			}
 			break;
@@ -371,7 +371,7 @@ char *tb_parmn(char *s, int c, ...) {
 		case 'p':
 			// push parameter
 			ai = *pch++ - '1';
-			if (ai >= 0 && ai < TB_PARM_PARAMS_MAX) {
+			if (ai >= 0 && ai < TI_PARM_PARAMS_MAX) {
 				stk_push_num(params[ai]);
 			} else {
 				stk_push_num(0);
@@ -456,11 +456,11 @@ char *tb_parmn(char *s, int c, ...) {
 
 #ifdef TESTNOW
 int main(void) {
-	int rc = tb_setupterm(NULL, 1);
-	tb_setupterm(NULL, 1);
+	int rc = ti_setupterm(NULL, 1);
+	ti_setupterm(NULL, 1);
 
-	printf("tb_parmn(\"[%%p1%%d@\",1, 42) = %s\n", tb_parmn("[%p1%d@", 1, 42));
-	printf("tb_parmn(\"[%%i%%p1%%dd\", 1, 42) = %s\n", tb_parmn("[%i%p1%dd", 1, 42));
+	printf("ti_parmn(\"[%%p1%%d@\",1, 42) = %s\n", ti_parmn("[%p1%d@", 1, 42));
+	printf("ti_parmn(\"[%%i%%p1%%dd\", 1, 42) = %s\n", ti_parmn("[%i%p1%dd", 1, 42));
 	return rc;
 }
 #endif

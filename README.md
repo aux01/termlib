@@ -24,7 +24,7 @@ Major planned and completed changes:
  - [x] Don't use terminfo for SGR color, bold, italic, underline, etc.
    (See [fb2b0c3][fb2] for explanation)
  - [x] Split out SFL for loading terminfo capabilities.
-   (See [tbti.h](https://github.com/aux01/termbaux/blob/master/tbti.h))
+   (See [ti.h](https://github.com/aux01/termbaux/blob/master/ti.h))
  - [x] Split out SFL for generating SGR sequences.
    (See [sgr.h](https://github.com/aux01/termbaux/blob/master/sgr.h))
  - [ ] Split out SFL for keyboard and mouse input handling.

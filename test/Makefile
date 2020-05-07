@@ -6,7 +6,7 @@ CFLAGS  = -std=c99 -Wall -Wextra -Wno-missing-field-initializers -D_XOPEN_SOURCE
 LDFLAGS =
 LDLIBS  =
 
-TESTS   = tbti_setupterm_test tbti_getcaps_test \
+TESTS   = ti_setupterm_test ti_getcaps_test \
           sgr_unpack_test sgr_encode_test sgr_attrs_test
 
 test: clean all

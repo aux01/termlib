@@ -1,5 +1,5 @@
 /* term.inl */
-#include "tbti.h"
+#include "ti.h"
 
 // SGR sequence construction
 #define SGR_OPEN            "\x1b["
@@ -67,58 +67,58 @@ enum {
 
 #define EUNSUPPORTED_TERM -1
 
-static tb_term *term;
+static ti_term *term;
 static const char **keys;
 static const char **funcs;
 
 #define TB_KEYS_NUM 22
 
 static const int16_t ti_funcs[] = {
-	tb_smcup,         // T_ENTER_CA
-	tb_rmcup,         // T_EXIT_CA
-	tb_cnorm,         // T_SHOW_CURSOR
-	tb_civis,         // T_HIDE_CURSOR
-	tb_clear_seq,     // T_CLEAR_SCREEN
-	tb_sgr0,          // T_SGR0
-	tb_smkx,          // T_ENTER_KEYPAD
-	tb_rmkx,          // T_EXIT_KEYPAD
+	ti_smcup,         // T_ENTER_CA
+	ti_rmcup,         // T_EXIT_CA
+	ti_cnorm,         // T_SHOW_CURSOR
+	ti_civis,         // T_HIDE_CURSOR
+	ti_clear,         // T_CLEAR_SCREEN
+	ti_sgr0,          // T_SGR0
+	ti_smkx,          // T_ENTER_KEYPAD
+	ti_rmkx,          // T_EXIT_KEYPAD
 };
 
 
 static const int16_t ti_keys[] = {
-	tb_kf1,           // TB_KEY_F1
-	tb_kf2,           // TB_KEY_F2
-	tb_kf3,           // TB_KEY_F3
-	tb_kf4,           // TB_KEY_F4
-	tb_kf5,           // TB_KEY_F5
-	tb_kf6,           // TB_KEY_F6
-	tb_kf7,           // TB_KEY_F7
-	tb_kf8,           // TB_KEY_F8
-	tb_kf9,           // TB_KEY_F9
-	tb_kf10,          // TB_KEY_F10
-	tb_kf11,          // TB_KEY_F11
-	tb_kf12,          // TB_KEY_F12
-	tb_kich1,         // TB_KEY_INSERT
-	tb_kdch1,         // TB_KEY_DELETE
-	tb_khome,         // TB_KEY_HOME
-	tb_kend,          // TB_KEY_END
-	tb_kpp,           // TB_KEY_PGUP
-	tb_knp,           // TB_KEY_PGDN
-	tb_kcuu1,         // TB_KEY_ARROW_UP
-	tb_kcud1,         // TB_KEY_ARROW_DOWN
-	tb_kcub1,         // TB_KEY_ARROW_LEFT
-	tb_kcuf1,         // TB_KEY_ARROW_RIGHT
+	ti_kf1,           // TB_KEY_F1
+	ti_kf2,           // TB_KEY_F2
+	ti_kf3,           // TB_KEY_F3
+	ti_kf4,           // TB_KEY_F4
+	ti_kf5,           // TB_KEY_F5
+	ti_kf6,           // TB_KEY_F6
+	ti_kf7,           // TB_KEY_F7
+	ti_kf8,           // TB_KEY_F8
+	ti_kf9,           // TB_KEY_F9
+	ti_kf10,          // TB_KEY_F10
+	ti_kf11,          // TB_KEY_F11
+	ti_kf12,          // TB_KEY_F12
+	ti_kich1,         // TB_KEY_INSERT
+	ti_kdch1,         // TB_KEY_DELETE
+	ti_khome,         // TB_KEY_HOME
+	ti_kend,          // TB_KEY_END
+	ti_kpp,           // TB_KEY_PGUP
+	ti_knp,           // TB_KEY_PGDN
+	ti_kcuu1,         // TB_KEY_ARROW_UP
+	ti_kcud1,         // TB_KEY_ARROW_DOWN
+	ti_kcub1,         // TB_KEY_ARROW_LEFT
+	ti_kcuf1,         // TB_KEY_ARROW_RIGHT
 };
 
 // Loads terminal escape sequences from terminfo.
 static int init_term(void) {
 	int err;
-	term = tb_setupterm(NULL, 1, &err);
+	term = ti_setupterm(NULL, 1, &err);
 	if (!term) return EUNSUPPORTED_TERM;
 
 	keys = malloc(sizeof(char*) * (TB_KEYS_NUM+1));
 	for (int i = 0; i < TB_KEYS_NUM; i++) {
-		keys[i] = tb_getstr(term, ti_keys[i]);
+		keys[i] = ti_getstr(term, ti_keys[i]);
 	}
 	keys[TB_KEYS_NUM] = 0;
 
@@ -126,7 +126,7 @@ static int init_term(void) {
 	// the last two entries are reserved for mouse extensions.
 	// because the table offset is not there, the entries have to fill in manually
 	for (int i = 0; i < T_FUNCS_NUM-2; i++) {
-		funcs[i] = tb_getstr(term, ti_funcs[i]);
+		funcs[i] = ti_getstr(term, ti_funcs[i]);
 	}
 
 	funcs[T_FUNCS_NUM-2] = ENTER_MOUSE_SEQ;
@@ -138,7 +138,7 @@ static int init_term(void) {
 static void shutdown_term(void) {
 	free(keys);  keys = NULL;
 	free(funcs); funcs = NULL;
-	tb_freeterm(term); term = NULL;
+	ti_freeterm(term); term = NULL;
 }
 
 // vim: noexpandtab

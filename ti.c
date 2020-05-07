@@ -454,15 +454,4 @@ char *ti_parmn(char *s, int c, ...) {
 	return buf;
 }
 
-#ifdef TESTNOW
-int main(void) {
-	int rc = ti_setupterm(NULL, 1);
-	ti_setupterm(NULL, 1);
-
-	printf("ti_parmn(\"[%%p1%%d@\",1, 42) = %s\n", ti_parmn("[%p1%d@", 1, 42));
-	printf("ti_parmn(\"[%%i%%p1%%dd\", 1, 42) = %s\n", ti_parmn("[%i%p1%dd", 1, 42));
-	return rc;
-}
-#endif
-
 // vim: noexpandtab

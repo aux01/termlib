@@ -7,19 +7,25 @@ reorganize, and add some refinements to the project.
 
  - [x] Replace waf-based build with simple Makefile.
  - [x] Remove Python extension related components. This is a C library only.
- - [x] Add an amalgamation build for packaging as a [single-file library][sfl].
+ - [x] Add an amalgamation build for packaging as a [Single-File Library][sfl].
  - [x] Add support for italic, faint, and crossed-out character styles.
- - [x] Fix bug loading terminfo files that leave capabilities undefined (blink).
- - [x] Don't use terminfo for SGR (color, bold, italic, underline, etc).
- - [ ] Reorganize source files into terminfo.c, terminput.c, and termbuffer.c
-   with separate header files such that any could be used as single-file libs.
- - [ ] Support for scrolling buffer (rin/ind) and/or insert/delete line
+ - [x] Fix bug loading terminfo files that leave capabilities undefined (blink)
+ - [x] Don't use terminfo for SGR color, bold, italic, underline, etc.
+   (See [fb2b0c3][fb2] for explanation)
+ - [x] Split out SFL for loading terminfo capabilities.
+   (See [tbti.h](https://github.com/aux01/termbaux/blob/master/tbti.h))
+ - [x] Split out SFL for generating SGR sequences.
+   (See [tbsgr.h](https://github.com/aux01/termbaux/blob/master/tbti.h))
+ - [ ] Split out SFL for keyboard and mouse input handling.
+ - [ ] Support for scrolling buffer (rin/ind) and/or insert/delete line.
 
-It's not yet clear whether the fork will end up being binary compatible with the
-original but maintaining source compatibility is a goal.
+The fork is not binary compatible with the original termbox library but seeks to
+maintain source compatibility. In most cases, existing Termbox programs should
+be able to switch to Termbaux by changing a couple includes and linker flags.
 
 [og]:  https://github.com/nsf/termbox
 [sfl]: https://github.com/nothings/single_file_libs
+[fb2]: https://github.com/aux01/termbaux/commit/fb2b0c3b6fd2897a3ec5b52a72497ca7ff0fcffe
 
 ### Basic interface
 

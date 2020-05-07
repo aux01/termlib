@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "tbsgr.h"
+#include "sgr.h"
 
 /* for shared objects */
 #if __GNUC__ >= 4

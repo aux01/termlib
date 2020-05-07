@@ -1,6 +1,15 @@
+/*
+ *
+ * sgr.c
+ *
+ * See sgr.h for usage and interface documentation.
+ *
+ *
+ */
+
 #define _POSIX_C_SOURCE 200112L
 
-#include "tbsgr.h"
+#include "sgr.h"
 
 #include <stdio.h>
 #include <unistd.h>

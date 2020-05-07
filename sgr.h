@@ -1,6 +1,6 @@
 /*
  *
- * tbsgr.h
+ * sgr.h
  *
  * Generate ANSI/ECMA-48/VT10x escape sequences for controlling typographic
  * features like bold, italic, underline, faint, blink, reverse, and cross-out;

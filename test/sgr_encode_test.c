@@ -1,4 +1,4 @@
-#include "../tbsgr.c"
+#include "../sgr.c"
 
 #include <stdio.h>
 #include <stdlib.h>

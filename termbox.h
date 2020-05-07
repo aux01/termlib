@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "tbsgr.h"
 
 /* for shared objects */
 #if __GNUC__ >= 4
@@ -135,13 +136,11 @@ extern "C" {
 /* A cell, single conceptual entity on the terminal screen. The terminal screen
  * is basically a 2d array of cells. It has the following fields:
  *  - 'ch' is a unicode character
- *  - 'fg' foreground color and attributes
- *  - 'bg' background color and attributes
+ *  - 'sgr' includes typographical and color information
  */
 struct tb_cell {
 	uint32_t ch;
-	uint16_t fg;
-	uint16_t bg;
+	sgr_t    sgr;
 };
 
 #define TB_EVENT_KEY    1
@@ -322,3 +321,5 @@ SO_IMPORT int tb_utf8_unicode_to_char(char *out, uint32_t c);
 #ifdef __cplusplus
 }
 #endif
+
+// vim: noexpandtab

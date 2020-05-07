@@ -80,7 +80,8 @@ void updateAndRedrawAll(int mx, int my) {
 	tb_clear();
 	if (mx != -1 && my != -1) {
 		backbuf[bbw*my+mx].ch = runes[curRune];
-		backbuf[bbw*my+mx].fg = colors[curCol];
+		backbuf[bbw*my+mx].sgr.at |= SGR_BG;
+		backbuf[bbw*my+mx].sgr.bg = colors[curCol] - 1;
 	}
 	memcpy(tb_cell_buffer(), backbuf, sizeof(struct tb_cell)*bbw*bbh);
 	int h = tb_height();

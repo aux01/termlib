@@ -51,11 +51,9 @@ static int lasty = LAST_COORD_INIT;
 static int cursor_x = -1;
 static int cursor_y = -1;
 
-static uint16_t background = TB_DEFAULT;
-static uint16_t foreground = TB_DEFAULT;
+static sgr_t default_sgr = { 0 };
 
 static void write_cursor(int x, int y);
-static void write_sgr(uint16_t fg, uint16_t bg);
 
 static void cellbuf_init(struct cellbuf *buf, int width, int height);
 static void cellbuf_resize(struct cellbuf *buf, int width, int height);
@@ -64,7 +62,7 @@ static void cellbuf_free(struct cellbuf *buf);
 
 static void update_size(void);
 static void update_term_size(void);
-static void send_attr(uint16_t fg, uint16_t bg);
+static void send_attr(sgr_t sgr);
 static void send_char(int x, int y, uint32_t c);
 static void send_clear(void);
 static void sigwinch_handler(int xxx);
@@ -192,7 +190,7 @@ void tb_present(void)
 				continue;
 			}
 			memcpy(front, back, sizeof(struct tb_cell));
-			send_attr(back->fg, back->bg);
+			send_attr(back->sgr);
 			if (w > 1 && x >= front_buffer.width - (w - 1)) {
 				// Not enough room for wide ch, so send spaces
 				for (i = x; i < front_buffer.width; ++i) {
@@ -203,8 +201,7 @@ void tb_present(void)
 				for (i = 1; i < w; ++i) {
 					front = &CELL(&front_buffer, x + i, y);
 					front->ch = 0;
-					front->fg = back->fg;
-					front->bg = back->bg;
+					front->sgr = back->sgr;
 				}
 			}
 			x += w;
@@ -238,9 +235,71 @@ void tb_put_cell(int x, int y, const struct tb_cell *cell)
 	CELL(&back_buffer, x, y) = *cell;
 }
 
+static void sgr_set_fg(sgr_t *sgr, uint16_t fg) {
+	uint16_t fgcol = fg&0xFF;
+	if (fgcol != TB_DEFAULT) {
+		sgr->fg = fgcol;
+
+		// XXX Logic kept verbatim from original send_attr()
+		// implementation for compatibility. Some odd decisions
+		// i dont totally understand here. -aux01
+		if (outputmode == TB_OUTPUT_NORMAL) {
+			sgr->fg -= 1;
+			sgr->at |= SGR_FG;
+		} else if (outputmode == TB_OUTPUT_256) {
+			sgr->at |= SGR_FG256;
+		} else if (outputmode == TB_OUTPUT_216) {
+			if (fgcol > 215) sgr->fg = 7;
+			sgr->at |= SGR_FG216;
+		} else if (outputmode == TB_OUTPUT_GRAYSCALE) {
+			if (fgcol > 23) sgr->fg = 23;
+			sgr->at |= SGR_FG24;
+		}
+	}
+}
+
+static void sgr_set_bg(sgr_t *sgr, uint16_t bg) {
+	uint16_t bgcol = bg&0xFF;
+	if (bgcol != TB_DEFAULT) {
+		sgr->bg = bgcol;
+
+		// XXX Logic kept verbatim from original send_attr()
+		// implementation for compatibility. Some odd decisions
+		// i dont totally understand here. -aux01
+		if (outputmode == TB_OUTPUT_NORMAL) {
+			sgr->bg -= 1;
+			sgr->at |= SGR_BG;
+		} else if (outputmode == TB_OUTPUT_256) {
+			sgr->at |= SGR_BG256;
+		} else if (outputmode == TB_OUTPUT_216) {
+			if (bgcol > 215) sgr->bg = 0;
+			sgr->at |= SGR_BG216;
+		} else if (outputmode == TB_OUTPUT_GRAYSCALE) {
+			if (bgcol > 23) sgr->bg = 0;
+			sgr->at |= SGR_BG24;
+		}
+	}
+}
+
 void tb_change_cell(int x, int y, uint32_t ch, uint16_t fg, uint16_t bg)
 {
-	struct tb_cell c = {ch, fg, bg};
+	sgr_t sgr = {0};
+
+	if (fg&TB_BOLD)      sgr.at |= SGR_BOLD;
+	if (fg&TB_FAINT)     sgr.at |= SGR_FAINT;
+	if (fg&TB_ITALIC)    sgr.at |= SGR_ITALIC;
+	if (fg&TB_UNDERLINE) sgr.at |= SGR_UNDERLINE;
+	if (fg&TB_CROSSOUT)  sgr.at |= SGR_STRIKE;
+
+	if (fg&TB_BLINK || bg&TB_BLINK || bg&TB_BOLD)
+		sgr.at |= SGR_BLINK;
+	if (fg&TB_REVERSE || bg&TB_REVERSE)
+		sgr.at |= SGR_REVERSE;
+
+	sgr_set_fg(&sgr, fg);
+	sgr_set_bg(&sgr, bg);
+
+	struct tb_cell c = {ch, sgr};
 	tb_put_cell(x, y, &c);
 }
 
@@ -345,10 +404,10 @@ int tb_select_output_mode(int mode)
 	return outputmode;
 }
 
-void tb_set_clear_attributes(uint16_t fg, uint16_t bg)
-{
-	foreground = fg;
-	background = bg;
+void tb_set_clear_attributes(uint16_t fg, uint16_t bg) {
+	default_sgr = (sgr_t){0};
+	sgr_set_fg(&default_sgr, fg);
+	sgr_set_bg(&default_sgr, bg);
 }
 
 /* -------------------------------------------------------- */
@@ -378,49 +437,6 @@ static void write_cursor(int x, int y) {
 	WRITE_LITERAL(";");
 	WRITE_INT(x+1);
 	WRITE_LITERAL("H");
-}
-
-static void write_sgr(uint16_t fg, uint16_t bg) {
-	char buf[32];
-
-	if (fg == TB_DEFAULT && bg == TB_DEFAULT)
-		return;
-
-	switch (outputmode) {
-	case TB_OUTPUT_256:
-	case TB_OUTPUT_216:
-	case TB_OUTPUT_GRAYSCALE:
-		WRITE_LITERAL(SGR_OPEN);
-		if (fg != TB_DEFAULT) {
-			WRITE_LITERAL("38;5;");
-			WRITE_INT(fg);
-			if (bg != TB_DEFAULT) {
-				WRITE_LITERAL(";");
-			}
-		}
-		if (bg != TB_DEFAULT) {
-			WRITE_LITERAL("48;5;");
-			WRITE_INT(bg);
-		}
-		WRITE_LITERAL(SGR_CLOSE);
-		break;
-	case TB_OUTPUT_NORMAL:
-	default:
-		WRITE_LITERAL(SGR_OPEN);
-		if (fg != TB_DEFAULT) {
-			WRITE_LITERAL("3");
-			WRITE_INT(fg - 1);
-			if (bg != TB_DEFAULT) {
-				WRITE_LITERAL(";");
-			}
-		}
-		if (bg != TB_DEFAULT) {
-			WRITE_LITERAL("4");
-			WRITE_INT(bg - 1);
-		}
-		WRITE_LITERAL(SGR_CLOSE);
-		break;
-	}
 }
 
 static void cellbuf_init(struct cellbuf *buf, int width, int height)
@@ -463,8 +479,7 @@ static void cellbuf_clear(struct cellbuf *buf)
 
 	for (i = 0; i < ncells; ++i) {
 		buf->cells[i].ch = ' ';
-		buf->cells[i].fg = foreground;
-		buf->cells[i].bg = background;
+		buf->cells[i].sgr = default_sgr;
 	}
 }
 
@@ -495,63 +510,20 @@ static void update_term_size(void)
 	termh = sz.ws_row;
 }
 
-static void send_attr(uint16_t fg, uint16_t bg)
+static void send_attr(sgr_t sgr)
 {
-#define LAST_ATTR_INIT 0xFFFF
-	static uint16_t lastfg = LAST_ATTR_INIT, lastbg = LAST_ATTR_INIT;
-	if (fg != lastfg || bg != lastbg) {
-		uint16_t fgcol;
-		uint16_t bgcol;
-
-		switch (outputmode) {
-		case TB_OUTPUT_256:
-			fgcol = fg & 0xFF;
-			bgcol = bg & 0xFF;
-			break;
-
-		case TB_OUTPUT_216:
-			fgcol = fg & 0xFF; if (fgcol > 215) fgcol = 7;
-			bgcol = bg & 0xFF; if (bgcol > 215) bgcol = 0;
-			fgcol += 0x10;
-			bgcol += 0x10;
-			break;
-
-		case TB_OUTPUT_GRAYSCALE:
-			fgcol = fg & 0xFF; if (fgcol > 23) fgcol = 23;
-			bgcol = bg & 0xFF; if (bgcol > 23) bgcol = 0;
-			fgcol += 0xe8;
-			bgcol += 0xe8;
-			break;
-
-		case TB_OUTPUT_NORMAL:
-		default:
-			fgcol = fg & 0x0F;
-			bgcol = bg & 0x0F;
-		}
-
-		WRITE_LITERAL((SGR_OPEN SGR_TYPO_RESET));
-		if (fg & TB_BOLD)
-			WRITE_LITERAL(";" SGR_TYPO_BOLD);
-		if (fg & TB_FAINT)
-			WRITE_LITERAL(";" SGR_TYPO_FAINT);
-		if (fg & TB_ITALIC)
-			WRITE_LITERAL(";" SGR_TYPO_ITALIC);
-		if (fg & TB_UNDERLINE)
-			WRITE_LITERAL(";" SGR_TYPO_UNDERLINE);
-		// bg & TB_BOLD is for compatibility with original termbox
-		if ((fg & TB_BLINK) || (bg & TB_BLINK) || (bg & TB_BOLD))
-			WRITE_LITERAL(";" SGR_TYPO_BLINK);
-		if ((fg & TB_REVERSE) || (bg & TB_REVERSE))
-			WRITE_LITERAL(";" SGR_TYPO_REVERSE);
-		if (fg & TB_CROSSOUT)
-			WRITE_LITERAL(";" SGR_TYPO_CROSSOUT);
-		WRITE_LITERAL(SGR_CLOSE);
-
-		write_sgr(fgcol, bgcol);
-
-		lastfg = fg;
-		lastbg = bg;
+	static sgr_t last = {0,0,0};
+	if (memcmp(&sgr, &last, sizeof(sgr_t)) == 0) {
+		return;
 	}
+
+	bytebuffer_append(&output_buffer, funcs[T_SGR0], strlen(funcs[T_SGR0]));
+
+	bytebuffer_reserve(&output_buffer, output_buffer.len + SGR_STR_MAX);
+	int sz = sgr_str(output_buffer.buf + output_buffer.len, sgr);
+	output_buffer.len += sz;
+
+	last = sgr;
 }
 
 static void send_char(int x, int y, uint32_t c)
@@ -567,7 +539,7 @@ static void send_char(int x, int y, uint32_t c)
 
 static void send_clear(void)
 {
-	send_attr(foreground, background);
+	send_attr(default_sgr);
 	bytebuffer_puts(&output_buffer, funcs[T_CLEAR_SCREEN]);
 	if (!IS_CURSOR_HIDDEN(cursor_x, cursor_y))
 		write_cursor(cursor_x, cursor_y);

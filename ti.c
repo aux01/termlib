@@ -1,3 +1,13 @@
+/*
+ *
+ * ti.c - Minimal, standalone terminfo(5) processor.
+ * Copyright (c) 2020, Auxrelius I <aux01@aux.life>
+ *
+ * See ti.h for usage and interface documentation.
+ *
+ *
+ */
+
 #define _POSIX_C_SOURCE 200112L
 
 #include "ti.h"

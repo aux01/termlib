@@ -1,6 +1,7 @@
 /*
  *
  * sgr.c
+ * Copyright (c) 2020, Auxrelius I <aux01@aux.life>
  *
  * See sgr.h for usage and interface documentation.
  *

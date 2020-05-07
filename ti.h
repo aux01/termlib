@@ -1,8 +1,7 @@
 /*
  *
- * ti.h
- *
- * Minimal, standalone terminfo(5) processor.
+ * ti.h - Minimal, standalone terminfo(5) processor.
+ * Copyright (c) 2020, Auxrelius I <aux01@aux.life>
  *
  * This library can be used as a replacement for much of the ncurses terminfo
  * loading and string processing interface. It implements loading and parsing of
@@ -44,8 +43,8 @@ typedef struct ti_terminfo {
 typedef struct ti_term {
     ti_terminfo info;             // terminfo description
     short       fd;               // file descriptor to write to
-    char *      name;         // term name used in setupterm
-    char *      data;         // raw terminfo data loaded from file
+    char *      name;             // term name used in setupterm
+    char *      data;             // raw terminfo data loaded from file
 } ti_term;
 
 /*

@@ -1,10 +1,11 @@
 /*
  *
- * sgr.h
+ * sgr.h - Select Graphic Rendition (SGR) escape sequence generation library
+ * Copyright (c) 2020, Auxrelius I <aux01@aux.life>
  *
- * Generate ANSI/ECMA-48/VT10x escape sequences for controlling typographic
- * features like bold, italic, underline, faint, blink, reverse, and cross-out;
- * as well as foreground and background colors in a variety of color modes.
+ * Generate ANSI/ECMA-48/VT escape sequences for controlling typographic
+ * features--like bold, italic, underline, faint, blink, reverse, and cross-out;
+ * as well as foreground and background colors--in a variety of color modes.
  *
  * This library generates SGR escape sequences only. It does not attempt to
  * query terminfo for terminal capability strings.

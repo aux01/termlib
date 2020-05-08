@@ -81,32 +81,75 @@ int main(void) {
 	assert(strcmp(buf, "1") == 0);
 	assert(n == strlen(buf));
 
-	// %pn  = push param n on stack
-	// %+   = pop int, pop int, add, push int
+	// MATH OPERATORS ================================================
+
+	// %pn = push param n on stack
+	// %+  = pop int, pop int, add, push int
 	n = ti_parmn(buf, "%p1%p2%+%d", 2, 40, 2);
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "42") == 0);
 	assert(n == strlen(buf));
 
-	// %pn  = push param n on stack
-	// %-   = pop int, pop int, add, push int
+	// %pn = push param n on stack
+	// %-  = pop int, pop int, add, push int
 	n = ti_parmn(buf, "%p1%p2%-%d", 2, 40, 2);
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "38") == 0);
 	assert(n == strlen(buf));
 
-	// %pn  = push param n on stack
-	// %*   = pop int, pop int, multiply, push int
+	// %pn = push param n on stack
+	// %*  = pop int, pop int, multiply, push int
 	n = ti_parmn(buf, "%p1%p2%*%d", 2, 40, 2);
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "80") == 0);
 	assert(n == strlen(buf));
 
-	// %pn  = push param n on stack
-	// %/   = pop int, pop int, multiply, push int
+	// %pn = push param n on stack
+	// %/  = pop int, pop int, multiply, push int
 	n = ti_parmn(buf, "%p1%p2%/%d", 2, 40, 2);
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "20") == 0);
+	assert(n == strlen(buf));
+
+	// %pn = push param n on stack
+	// %m  = pop int, pop int, mod, push int
+	n = ti_parmn(buf, "%p1%p2%m%d", 2, 40, 7);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "5") == 0);
+	assert(n == strlen(buf));
+
+	// BITWISE OPERATORS =============================================
+
+	// %pn = push param n on stack
+	// %&  = pop int, pop int, binary and, push int
+	// %x  = pop int, print hex lower
+	n = ti_parmn(buf, "%p1%p2%&%x", 2, 0xff, 0x0a);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "a") == 0);
+	assert(n == strlen(buf));
+
+	// %pn  = push param n on stack
+	// %|   = pop int, pop int, binary or, push int
+	// %X  = pop int, print hex upper
+	n = ti_parmn(buf, "%p1%p2%|%X", 2, 0xf1, 0x0a);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "FB") == 0);
+	assert(n == strlen(buf));
+
+	// %pn  = push param n on stack
+	// %^   = pop int, pop int, xor, push int
+	// %x  = pop int, print hex upper
+	n = ti_parmn(buf, "%p1%p2%^%x", 2, 0xf1, 0x0a);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "fb") == 0);
+	assert(n == strlen(buf));
+
+	// %pn  = push param n on stack
+	// %~   = pop int, bit complement, push int
+	// %d   = pop int, print hex upper
+	n = ti_parmn(buf, "%p1%~%d", 1, 5);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "-6") == 0);
 	assert(n == strlen(buf));
 
 	// FORMATTED OUTPUT OPERATORS ====================================

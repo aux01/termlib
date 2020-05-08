@@ -462,6 +462,35 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 			ai = stk_pop_num();
 			stk_push_num(bi ? ai/bi : 0);
 			break;
+		case 'm':
+			// pop int, pop int, mod, push int
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai%bi);
+			break;
+		case '&':
+			// pop int, pop int, binary and, push int
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai&bi);
+			break;
+		case '|':
+			// pop int, pop int, binary or, push int
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai|bi);
+			break;
+		case '^':
+			// pop int, pop int, binary xor, push int
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai^bi);
+			break;
+		case '~':
+			// pop int, pop int, bit complement, push int
+			ai = stk_pop_num();
+			stk_push_num(~ai);
+			break;
 
 		case '0': case '1': case '2': case '3': case '4':
 		case 'x': case 'X': case 'o': case ':': case ' ':
@@ -476,7 +505,6 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 
 			pch--;
 			if (*pch == ':') pch++;
-			fmt[fpos++] = *pch++;
 
 			while (*pch=='+'||*pch=='-'||*pch=='#'||*pch==' ') {
 				char fch = *pch++;

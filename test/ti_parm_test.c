@@ -152,6 +152,60 @@ int main(void) {
 	assert(strcmp(buf, "-6") == 0);
 	assert(n == strlen(buf));
 
+	// LOGICAL OPERATORS =============================================
+
+	// %pn = push param n on stack
+	// %!  = pop int, logical not, push bool
+	// %x  = pop int, print hex
+	n = ti_parmn(buf, "%p1%!%x", 1, 5);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%p1%!%x", 1, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "1") == 0);
+	assert(n == strlen(buf));
+
+	// %pn = push param n on stack
+	// %=  = pop int, compare, push bool
+	// %d  = pop int, print decimal
+	n = ti_parmn(buf, "%p1%p2%=%d", 2, 5, 5);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "1") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%p1%p2%=%d", 2, 5, 4);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0") == 0);
+	assert(n == strlen(buf));
+
+	// %pn = push param n on stack
+	// %>  = pop int, greater than, push bool
+	// %d  = pop int, print decimal
+	n = ti_parmn(buf, "%p1%p2%>%d", 2, 10, 5);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "1") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%p1%p2%>%d", 2, 5, 10);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0") == 0);
+	assert(n == strlen(buf));
+
+	// %pn = push param n on stack
+	// %>  = pop int, less than, push bool
+	// %d  = pop int, print decimal
+	n = ti_parmn(buf, "%p1%p2%<%d", 2, 10, 5);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%p1%p2%<%d", 2, 5, 10);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "1") == 0);
+	assert(n == strlen(buf));
+
 	// FORMATTED OUTPUT OPERATORS ====================================
 
 	// %i    = increment first two params by one

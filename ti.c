@@ -328,6 +328,7 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 
 	// variables used in instruction processing
 	int ai = 0, bi = 0;              // unary, arithmetic, binary op vars
+	char *as, *bs;                   // logical compare strs
 	char *str;                       // string pointer var
 	char sstr[TI_PARM_STRING_MAX];   // stack allocated string
 	int i;                           // loop counter
@@ -490,6 +491,31 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 			// pop int, pop int, bit complement, push int
 			ai = stk_pop_num();
 			stk_push_num(~ai);
+			break;
+		case '!':
+			// pop int, pop int, logical not, push bool
+			ai = stk_pop_num();
+			stk_push_num(!ai);
+			break;
+		case '=':
+			// pop str, pop str, compare, push bool
+			bs = stk_pop_str();
+			as = stk_pop_str();
+			stk_push_num(strcmp(bs, as)==0);
+			free(bs); bs = NULL;
+			free(as); as = NULL;
+			break;
+		case '>':
+			// pop int, pop int, greater than, push bool
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai>bi);
+			break;
+		case '<':
+			// pop int, pop int, greater than, push bool
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai<bi);
 			break;
 
 		case '0': case '1': case '2': case '3': case '4':

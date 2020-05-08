@@ -103,10 +103,51 @@ int main(void) {
 	assert(n == strlen(buf));
 
 	// %pn  = push param n on stack
-	// %*   = pop int, pop int, multiply, push int
+	// %/   = pop int, pop int, multiply, push int
 	n = ti_parmn(buf, "%p1%p2%/%d", 2, 40, 2);
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "20") == 0);
+	assert(n == strlen(buf));
+
+	// FORMATTED OUTPUT OPERATORS ====================================
+
+	// %i    = increment first two params by one
+	// %pn   = push param n on stack
+	// %Fx   = pop int off stack and print formatted
+	n = ti_parmn(buf, "%p1%:+03x", 1, 76);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "04c") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%p1%:-02X", 1, 76);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "4C") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%p1%04o", 1, 32);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0040") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%'z'% 4s", 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "   z") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%'z'%:+ 4s", 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "   z") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parmn(buf, "%'z'%:- 4s", 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "z   ") == 0);
+	assert(n == strlen(buf));
+
+	// not sure why . is allowed since there's no float fmt code
+	n = ti_parmn(buf, "%p1%1.1d", 1, 32);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "32") == 0);
 	assert(n == strlen(buf));
 
 	// when you're done, remember to free terminal info memory:

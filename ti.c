@@ -331,6 +331,8 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 	char *str;                       // string pointer var
 	char sstr[TI_PARM_STRING_MAX];   // stack allocated string
 	int i;                           // loop counter
+	char fmt[16];                    // format code buffer
+	int fpos;                        // format code bufer pos
 
 	// dynamic variables
 	char *dvars[26] = {0};
@@ -363,6 +365,7 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 			break;
 		case 'c': case 's':
 			// pop char or string, write to output buffer
+			// optimized version of formatted output operator below
 			str = stk_pop_str();
 			for (i = 0; str[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = str[i];
@@ -372,18 +375,13 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 			break;
 		case 'd':
 			// pop int, print
+			// optimized version of formatted output operator below
 			ai = stk_pop_num();
 			snprintf(sstr, TI_PARM_STRING_MAX, "%d", ai);
 			for (i = 0; sstr[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = sstr[i];
 				nwrite++;
 			}
-			break;
-		case '0': case '1': case '2': case '3': case '4':
-		case 'x': case 'X': case 'o': case ':':
-			// TODO: we lost the specifier so need to split these
-			// cases or something..
-			// TODO: pop int or string and print formatted
 			break;
 		case 'p':
 			// push parameter
@@ -463,6 +461,63 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 			bi = stk_pop_num();
 			ai = stk_pop_num();
 			stk_push_num(bi ? ai/bi : 0);
+			break;
+
+		case '0': case '1': case '2': case '3': case '4':
+		case 'x': case 'X': case 'o': case ':': case ' ':
+			// unoptimized (sprintf) version of formatted output
+			// operator. word around the campfire is these are
+			// very rarely used so the optimized versions above
+			// are more likely to be run...
+
+			// build a sprintf format string
+			fpos = 0;
+			fmt[fpos++] = '%';
+
+			pch--;
+			if (*pch == ':') pch++;
+			fmt[fpos++] = *pch++;
+
+			while (*pch=='+'||*pch=='-'||*pch=='#'||*pch==' ') {
+				char fch = *pch++;
+				if ((size_t)fpos < sizeof(fmt)) {
+					fmt[fpos++] = fch;
+				}
+			}
+
+			while ((*pch>='0' && *pch<='9') || *pch=='.') {
+				char fch = *pch++;
+				if ((size_t)fpos < sizeof(fmt)) {
+					fmt[fpos++] = fch;
+				}
+			}
+
+			fmt[fpos++] = *pch++;
+			fmt[fpos] = '\0';
+			// printf("format string: %s\n", fmt);
+
+			switch (*(pch-1)) {
+			case 'd': case 'x': case 'X': case 'o':
+				ai = stk_pop_num();
+				snprintf(sstr, TI_PARM_STRING_MAX, fmt, ai);
+				ai = TI_PARM_OUTPUT_MAX;
+				for (i = 0; sstr[i] && pos < ai; i++) {
+					buf[pos++] = sstr[i];
+					nwrite++;
+				}
+				break;
+			case 'c': case 's':
+				str = stk_pop_str();
+				snprintf(sstr, TI_PARM_STRING_MAX, fmt, str);
+				ai = TI_PARM_OUTPUT_MAX;
+				for (i = 0; sstr[i] && pos < ai; i++) {
+					buf[pos++] = sstr[i];
+					nwrite++;
+				}
+				free(str);
+				break;
+			}
+
 			break;
 		default:
 			// TODO: ???

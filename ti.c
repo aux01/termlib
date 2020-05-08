@@ -634,8 +634,8 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 			// endif
 			break;
 		default:
-			// TODO: ???
-			fprintf(stderr, "unhandled char: 0x%0x\n", *(pch-1));
+			// eat invalid instructions
+			break;
 		}
 	}
 

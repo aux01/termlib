@@ -1,51 +1,6 @@
 /* term.inl */
 #include "ti.h"
 
-// SGR sequence construction
-#define SGR_OPEN            "\x1b["
-#define SGR_CLOSE           "m"
-#define SGR(codes)          SGR_OPEN codes SGR_CLOSE
-
-// Turn on typographic feature
-#define SGR_TYPO_RESET      "0"
-#define SGR_TYPO_BOLD       "1"
-#define SGR_TYPO_FAINT      "2"
-#define SGR_TYPO_ITALIC     "3"
-#define SGR_TYPO_UNDERLINE  "4"
-#define SGR_TYPO_BLINK      "5"
-#define SGR_TYPO_REVERSE    "7"
-#define SGR_TYPO_CONCEAL    "8"
-#define SGR_TYPO_CROSSOUT   "9"
-#define SGR_TYPO_ON(n)      n
-
-// Turn off typographic feature.
-// Ex: SGR_TYPO_OFF(SGR_TYPO_ITALIC) = "23"
-#define SGR_TYPO_OFF_BASE   "2"
-#define SGR_TYPO_OFF(n)     SGR_TYPO_OFF_BASE n
-
-// Color suffixes
-#define SGR_COLOR_BLACK     "0"
-#define SGR_COLOR_RED       "1"
-#define SGR_COLOR_GREEN     "2"
-#define SGR_COLOR_YELLOW    "3"
-#define SGR_COLOR_BLUE      "4"
-#define SGR_COLOR_MAGENTA   "5"
-#define SGR_COLOR_CYAN      "6"
-#define SGR_COLOR_WHITE     "7"
-#define SGR_COLOR_DEFAULT   "9"
-
-// Color bases
-#define SGR_NORMAL_FG_BASE  "3"
-#define SGR_NORMAL_BG_BASE  "4"
-#define SGR_BRIGHT_FG_BASE  "9"
-#define SGR_BRIGHT_BG_BASE  "10"
-
-// Color macros
-#define SGR_NORMAL_FG(col)  SGR_NORMAL_FG_BASE col
-#define SGR_NORMAL_BG(col)  SGR_NORMAL_BG_BASE col
-#define SGR_BRIGHT_FG(col)  SGR_BRIGHT_FG_BASE col
-#define SGR_BRIGHT_BG(col)  SGR_BRIGHT_BG_BASE col
-
 enum {
 	T_ENTER_CA,
 	T_EXIT_CA,

@@ -334,13 +334,6 @@ int main(void) {
 	assert(strcmp(buf, "") == 0);
 	assert(n == strlen(buf));
 
-	// CLEAN UP ======================================================
-
-	// push elements onto stack but don't pop
-	n = ti_parm(buf, "%p1%p2%'3'", 2, 10, 20);
-	assert(n == 0);
-	assert(stk_pos == 0); // verify clean up
-
 	// when you're done, remember to free terminal info memory:
 	ti_freeterm(t);
 

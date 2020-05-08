@@ -236,14 +236,6 @@ char *ti_getstr(ti_term *t, int cap) {
  *
  */
 
-typedef struct stk_el {
-	int type;
-	union {
-		char *str;
-		int   num;
-	} val;
-} stk_el;
-
 #define stk_str 1
 #define stk_num 2
 
@@ -252,17 +244,27 @@ typedef struct stk_el {
 #define TI_PARM_OUTPUT_MAX 4096        // max output string size
 #define TI_PARM_PARAMS_MAX 9           // max number of params
 
-static stk_el stk[TI_PARM_STACK_MAX];
-static int stk_pos = 0;
+struct stk_el {
+	int type;
+	union {
+		char *str;
+		int   num;
+	} val;
+};
+
+struct stk {
+	int pos;
+	struct stk_el el[TI_PARM_STACK_MAX];
+};
 
 // Push a string onto the stack.
 // The string must be heap allocated and must also be freed by the caller after pop.
 // Returns 0 if successful, -1 on stack overflow.
-static int stk_push_str(char *str) {
-	if (stk_pos >= TI_PARM_STACK_MAX)
+static int stk_push_str(struct stk *stk, char *str) {
+	if (stk->pos >= TI_PARM_STACK_MAX)
 		return -1;
 
-	stk_el *el = &stk[stk_pos++];
+	struct stk_el *el = &stk->el[stk->pos++];
 	el->type = stk_str;
 	el->val.str = str;
 
@@ -272,10 +274,10 @@ static int stk_push_str(char *str) {
 // Pop a string off the stack.
 // Returns an empty string on stack underflow.
 // The string returned must be freed by the caller.
-static char *stk_pop_str(void) {
-	if (stk_pos <= 0) return calloc(1, 1);
+static char *stk_pop_str(struct stk *stk) {
+	if (stk->pos <= 0) return calloc(1, 1);
 
-	stk_el *el = &stk[--stk_pos];
+	struct stk_el *el = &stk->el[--stk->pos];
 	if (el->type == stk_str) {
 		return el->val.str;
 	} else {
@@ -287,10 +289,10 @@ static char *stk_pop_str(void) {
 
 // Push a number onto the stack.
 // Returns 0 when successful, -1 on stack overflow.
-static int stk_push_num(int num) {
-	if (stk_pos >= TI_PARM_STACK_MAX) return -1;
+static int stk_push_num(struct stk *stk, int num) {
+	if (stk->pos >= TI_PARM_STACK_MAX) return -1;
 
-	stk_el *el = &stk[stk_pos++];
+	struct stk_el *el = &stk->el[stk->pos++];
 	el->type = stk_num;
 	el->val.num  = num;
 
@@ -299,10 +301,10 @@ static int stk_push_num(int num) {
 
 // Pop a number off the stack.
 // Returns 0 on stack underflow.
-static int stk_pop_num() {
-	if (stk_pos <= 0) return 0;
+static int stk_pop_num(struct stk *stk) {
+	if (stk->pos <= 0) return 0;
 
-	stk_el *el = &stk[--stk_pos];
+	struct stk_el *el = &stk->el[--stk->pos];
 	if (el->type == stk_num) {
 		return el->val.num;
 	} else {
@@ -313,16 +315,26 @@ static int stk_pop_num() {
 }
 
 // Pop everything off stack and free strings.
-static void stk_free() {
-	while (stk_pos > 0) {
-		stk_el *el = &stk[--stk_pos];
+// This doesn't free the stk pointer since it's usually stack allocated.
+static void stk_free(struct stk *stk) {
+	struct stk_el *el = NULL;
+	while (stk->pos > 0) {
+		el = &stk->el[--stk->pos];
 		if (el->type == stk_str) {
 			free(el->val.str);
 		}
 	}
 }
 
-static char *svars[26]; // static variables
+// Static variables
+//
+// NOTE: Static variables are intended to live across multiple param string
+// processing invocations. That is the case in this implementation but note
+// that any strings set here are not freed and live until program termination.
+//
+// This also means ti_parm() processing is not concurrency-safe when static
+// variables are used.
+static char *svars[26];
 
 int ti_parm(char *buf, const char *s, int c, ...) {
 	if (!s) return 0;
@@ -345,6 +357,9 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 	char fmt[16];                    // format code buffer
 	int fpos;                        // format code bufer pos
 	int nest, done;                  // if/then/else state vars
+
+	// param string instruction stack
+	struct stk stk = {0};
 
 	// dynamic variables
 	char *dvars[26] = {0};
@@ -378,7 +393,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 		case 'c': case 's':
 			// pop char or string, write to output buffer
 			// optimized version of formatted output operator below
-			str = stk_pop_str();
+			str = stk_pop_str(&stk);
 			for (i = 0; str[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = str[i];
 				nwrite++;
@@ -388,7 +403,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 		case 'd':
 			// pop int, print
 			// optimized version of formatted output operator below
-			ai = stk_pop_num();
+			ai = stk_pop_num(&stk);
 			snprintf(sstr, TI_PARM_STRING_MAX, "%d", ai);
 			for (i = 0; sstr[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = sstr[i];
@@ -399,9 +414,9 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 			// push parameter
 			ai = *pch++ - '1';
 			if (ai >= 0 && ai < TI_PARM_PARAMS_MAX) {
-				stk_push_num(params[ai]);
+				stk_push_num(&stk, params[ai]);
 			} else {
-				stk_push_num(0);
+				stk_push_num(&stk, 0);
 			}
 			break;
 		case 'P':
@@ -412,13 +427,13 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 				if (svars[ai]) {
 					free(svars[ai]);
 				}
-				svars[ai] = stk_pop_str();
+				svars[ai] = stk_pop_str(&stk);
 			} else if (*pch >= 'a' && *pch <= 'z') {
 				ai = *pch-'a';
 				if (dvars[ai]) {
 					free(dvars[ai]);
 				}
-				dvars[ai] = stk_pop_str();
+				dvars[ai] = stk_pop_str(&stk);
 			}
 			pch++;
 			break;
@@ -429,18 +444,18 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 					// strdup since strings are freed on pop
 					bs = malloc(strlen(as)+1);
 					strcpy(bs, as);
-					stk_push_str(bs);
+					stk_push_str(&stk, bs);
 				} else {
-					stk_push_str(calloc(1, 1));
+					stk_push_str(&stk, calloc(1, 1));
 				}
 			} else if (*pch >= 'a' && *pch <= 'z') {
 				if ((as = dvars[*pch-'a'])) {
 					// strdup since strings are freed on pop
 					bs = malloc(strlen(as)+1);
 					strcpy(bs, as);
-					stk_push_str(bs);
+					stk_push_str(&stk, bs);
 				} else {
-					stk_push_str(calloc(1, 1));
+					stk_push_str(&stk, calloc(1, 1));
 				}
 			}
 			pch++;
@@ -449,7 +464,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 			// push literal char
 			str = calloc(1, 2);
 			str[0] = *pch++;
-			stk_push_str(str);
+			stk_push_str(&stk, str);
 			pch++; // must be ' but we don't check
 			break;
 		case '{':
@@ -461,103 +476,103 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 				pch++;
 			}
 			pch++; // must be } but we don't check
-			stk_push_num(ai);
+			stk_push_num(&stk, ai);
 			break;
 		case 'l':
 			// pop str, push length
-			str = stk_pop_str();
-			stk_push_num(strlen(str));
+			str = stk_pop_str(&stk);
+			stk_push_num(&stk, strlen(str));
 			free(str);
 			break;
 		case '+':
 			// pop int, pop int, add, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai+bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai+bi);
 			break;
 		case '-':
 			// pop int, pop int, subtract, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai-bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai-bi);
 			break;
 		case '*':
 			// pop int, pop int, multiply, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai*bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai*bi);
 			break;
 		case '/':
 			// pop int, pop int, divide, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(bi ? ai/bi : 0);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, bi ? ai/bi : 0);
 			break;
 		case 'm':
 			// pop int, pop int, mod, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai%bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai%bi);
 			break;
 		case '&':
 			// pop int, pop int, binary and, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai&bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai&bi);
 			break;
 		case '|':
 			// pop int, pop int, binary or, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai|bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai|bi);
 			break;
 		case '^':
 			// pop int, pop int, binary xor, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai^bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai^bi);
 			break;
 		case '~':
 			// pop int, pop int, bit complement, push int
-			ai = stk_pop_num();
-			stk_push_num(~ai);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ~ai);
 			break;
 		case 'A':
 			// pop int, pop int, binary and, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai&&bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai&&bi);
 			break;
 		case 'O':
 			// pop int, pop int, binary or, push int
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai||bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai||bi);
 			break;
 		case '!':
 			// pop int, pop int, logical not, push bool
-			ai = stk_pop_num();
-			stk_push_num(!ai);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, !ai);
 			break;
 		case '=':
 			// pop str, pop str, compare, push bool
-			bs = stk_pop_str();
-			as = stk_pop_str();
-			stk_push_num(strcmp(bs, as)==0);
+			bs = stk_pop_str(&stk);
+			as = stk_pop_str(&stk);
+			stk_push_num(&stk, strcmp(bs, as)==0);
 			free(bs); bs = NULL;
 			free(as); as = NULL;
 			break;
 		case '>':
 			// pop int, pop int, greater than, push bool
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai>bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai>bi);
 			break;
 		case '<':
 			// pop int, pop int, greater than, push bool
-			bi = stk_pop_num();
-			ai = stk_pop_num();
-			stk_push_num(ai<bi);
+			bi = stk_pop_num(&stk);
+			ai = stk_pop_num(&stk);
+			stk_push_num(&stk, ai<bi);
 			break;
 
 		case '0': case '1': case '2': case '3': case '4':
@@ -594,7 +609,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 
 			switch (*(pch-1)) {
 			case 'd': case 'x': case 'X': case 'o':
-				ai = stk_pop_num();
+				ai = stk_pop_num(&stk);
 				snprintf(sstr, TI_PARM_STRING_MAX, fmt, ai);
 				ai = TI_PARM_OUTPUT_MAX;
 				for (i = 0; sstr[i] && pos < ai; i++) {
@@ -603,7 +618,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 				}
 				break;
 			case 'c': case 's':
-				str = stk_pop_str();
+				str = stk_pop_str(&stk);
 				snprintf(sstr, TI_PARM_STRING_MAX, fmt, str);
 				ai = TI_PARM_OUTPUT_MAX;
 				for (i = 0; sstr[i] && pos < ai; i++) {
@@ -620,7 +635,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 			break;
 		case 't':
 			// then: evaluate conditional result
-			if (stk_pop_num()) {
+			if (stk_pop_num(&stk)) {
 				break;
 			}
 
@@ -682,7 +697,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 	}
 
 	// free anything left on the stack
-	stk_free();
+	stk_free(&stk);
 
 	// free dynamic variables
 	for (i = 0; i < 26; i++) {

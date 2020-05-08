@@ -11,6 +11,9 @@
  *   <https://pubs.opengroup.org/onlinepubs/007908799/xcurses/term.h.html>
  *
  */
+
+#pragma once
+
 #include <stdint.h>
 
 /*

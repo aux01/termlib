@@ -493,6 +493,18 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 			ai = stk_pop_num();
 			stk_push_num(~ai);
 			break;
+		case 'A':
+			// pop int, pop int, binary and, push int
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai&&bi);
+			break;
+		case 'O':
+			// pop int, pop int, binary or, push int
+			bi = stk_pop_num();
+			ai = stk_pop_num();
+			stk_push_num(ai||bi);
+			break;
 		case '!':
 			// pop int, pop int, logical not, push bool
 			ai = stk_pop_num();

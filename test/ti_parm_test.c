@@ -155,6 +155,32 @@ int main(void) {
 	// LOGICAL OPERATORS =============================================
 
 	// %pn = push param n on stack
+	// %O  = pop int, pop int, logical or
+	// %x  = pop int, print hex
+	n = ti_parm(buf, "%p1%p2%O%x", 2, 10, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "1") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parm(buf, "%p1%p2%O%x", 2, 0, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0") == 0);
+	assert(n == strlen(buf));
+
+	// %pn = push param n on stack
+	// %O  = pop int, pop int, logical and
+	// %x  = pop int, print hex
+	n = ti_parm(buf, "%p1%p2%A%x", 2, 10, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "0") == 0);
+	assert(n == strlen(buf));
+
+	n = ti_parm(buf, "%p1%p2%O%x", 2, 10, 10);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "1") == 0);
+	assert(n == strlen(buf));
+
+	// %pn = push param n on stack
 	// %!  = pop int, logical not, push bool
 	// %x  = pop int, print hex
 	n = ti_parm(buf, "%p1%!%x", 1, 5);

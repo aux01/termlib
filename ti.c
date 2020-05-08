@@ -406,10 +406,19 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 			break;
 		case 'P':
 			// pop & store variable
+			// free already set var before setting new
 			if (*pch >= 'A' && *pch <= 'Z') {
-				svars[*pch-'A'] = stk_pop_str();
+				ai = *pch-'A';
+				if (svars[ai]) {
+					free(svars[ai]);
+				}
+				svars[ai] = stk_pop_str();
 			} else if (*pch >= 'a' && *pch <= 'z') {
-				dvars[*pch-'a'] = stk_pop_str();
+				ai = *pch-'a';
+				if (dvars[ai]) {
+					free(dvars[ai]);
+				}
+				dvars[ai] = stk_pop_str();
 			}
 			pch++;
 			break;
@@ -674,7 +683,11 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 
 	// free anything left on the stack
 	stk_free();
-	// TODO: free dynamic variables
+
+	// free dynamic variables
+	for (i = 0; i < 26; i++) {
+		free(dvars[i]);
+	}
 
 	buf[pos] = '\0';
 	return nwrite;

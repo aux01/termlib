@@ -2,11 +2,12 @@
 .SUFFIXES:
 
 CC      = cc
-CFLAGS  = -std=c99 -Wall -Wextra -Wno-missing-field-initializers -D_XOPEN_SOURCE -Og -g
+CFLAGS  = -std=c99 -Wall -Wextra -Wno-missing-field-initializers \
+          -D_XOPEN_SOURCE -Og -g
 LDFLAGS =
 LDLIBS  =
 
-TESTS   = ti_setupterm_test ti_getcaps_test \
+TESTS   = ti_setupterm_test ti_getcaps_test ti_parm_test \
           sgr_unpack_test sgr_encode_test sgr_attrs_test
 
 test: clean all

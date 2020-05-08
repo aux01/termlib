@@ -275,7 +275,7 @@ static int stk_push_str(char *str) {
 static char *stk_pop_str(void) {
 	if (stk_pos <= 0) return calloc(1, 1);
 
-	stk_el *el = &stk[stk_pos--];
+	stk_el *el = &stk[--stk_pos];
 	if (el->type == stk_str) {
 		return el->val.str;
 	} else {
@@ -306,16 +306,18 @@ static int stk_pop_num() {
 	if (el->type == stk_num) {
 		return el->val.num;
 	} else {
-		return atoi(el->val.str);
+		int num = atoi(el->val.str);
+		free(el->val.str);
+		return num;
 	}
 }
 
 static char *svars[26]; // static variables
 
-char *ti_parmn(char *s, int c, ...) {
-	if (!s) return NULL;
+int ti_parmn(char *buf, const char *s, int c, ...) {
+	if (!s) return 0;
 
-	// Load varg params into fixed size int array for easier referencing.
+	// load varg params into fixed size int array for easier referencing.
 	va_list ap;
 	va_start(ap, c);
 	int params[9] = {0};
@@ -324,32 +326,35 @@ char *ti_parmn(char *s, int c, ...) {
 	}
 	va_end(ap);
 
-	// Variables used in instruction processing
+	// variables used in instruction processing
 	int ai = 0, bi = 0;              // unary, arithmetic, binary op vars
 	char *str;                       // string pointer var
 	char sstr[TI_PARM_STRING_MAX];   // stack allocated string
 	int i;                           // loop counter
 
-	// Dynamic variables
+	// dynamic variables
 	char *dvars[26] = {0};
 
-	// output buffer and pos
+	// output buffer pos and number of bytes written
 	int pos = 0;
-	char *buf = (char*)calloc(1, TI_PARM_OUTPUT_MAX);
+	int nwrite = 0;
 
 	// pointer to current input char
-	char *pch = s;
+	const char *pch = s;
 
 	for (;*pch;) {
 		if (*pch != '%') {
 			buf[pos++] = *pch++;
+			nwrite++;
 			continue;
 		}
+
 		pch++; // skip over '%'
 
 		switch (*pch++) {
 		case '%':
-			buf[pos++] = *pch;
+			buf[pos++] = '%';
+			nwrite++;
 			break;
 		case 'i':
 			// increment both params
@@ -361,6 +366,7 @@ char *ti_parmn(char *s, int c, ...) {
 			str = stk_pop_str();
 			for (i = 0; str[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = str[i];
+				nwrite++;
 			}
 			free(str);
 			break;
@@ -370,6 +376,7 @@ char *ti_parmn(char *s, int c, ...) {
 			snprintf(sstr, TI_PARM_STRING_MAX, "%d", ai);
 			for (i = 0; sstr[i] && pos < TI_PARM_OUTPUT_MAX; i++) {
 				buf[pos++] = sstr[i];
+				nwrite++;
 			}
 			break;
 		case '0': case '1': case '2': case '3': case '4':
@@ -428,26 +435,31 @@ char *ti_parmn(char *s, int c, ...) {
 			stk_push_num(ai);
 			break;
 		case 'l':
+			// pop str, push length
 			str = stk_pop_str();
 			stk_push_num(strlen(str));
 			free(str);
 			break;
 		case '+':
+			// pop int, pop int, add, push int
 			bi = stk_pop_num();
 			ai = stk_pop_num();
 			stk_push_num(ai+bi);
 			break;
 		case '-':
+			// pop int, pop int, subtract, push int
 			bi = stk_pop_num();
 			ai = stk_pop_num();
 			stk_push_num(ai-bi);
 			break;
 		case '*':
+			// pop int, pop int, multiply, push int
 			bi = stk_pop_num();
 			ai = stk_pop_num();
 			stk_push_num(ai*bi);
 			break;
 		case '/':
+			// pop int, pop int, divide, push int
 			bi = stk_pop_num();
 			ai = stk_pop_num();
 			stk_push_num(bi ? ai/bi : 0);
@@ -461,7 +473,8 @@ char *ti_parmn(char *s, int c, ...) {
 	// TODO: free strings left on the stack
 	// TODO: free dynamic variables
 
-	return buf;
+	buf[pos] = '\0';
+	return nwrite;
 }
 
 // vim: noexpandtab

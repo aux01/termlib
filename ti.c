@@ -312,6 +312,16 @@ static int stk_pop_num() {
 	}
 }
 
+// Pop everything off stack and free strings.
+static void stk_free() {
+	while (stk_pos > 0) {
+		stk_el *el = &stk[--stk_pos];
+		if (el->type == stk_str) {
+			free(el->val.str);
+		}
+	}
+}
+
 static char *svars[26]; // static variables
 
 int ti_parm(char *buf, const char *s, int c, ...) {
@@ -662,7 +672,8 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 		}
 	}
 
-	// TODO: free strings left on the stack
+	// free anything left on the stack
+	stk_free();
 	// TODO: free dynamic variables
 
 	buf[pos] = '\0';

@@ -64,6 +64,12 @@ int main(void) {
 	assert(strcmp(buf, "1234") == 0);
 	assert(n == strlen(buf));
 
+	// test handling recall of unset static vars
+	n = ti_parm(buf, "%gJ%s", 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "") == 0);
+	assert(n == strlen(buf));
+
 	// %{n} = push literal int
 	// %Pv  = pop and store dynamic var v
 	// %gv  = recall dynamic var v and push
@@ -71,6 +77,12 @@ int main(void) {
 	n = ti_parm(buf, "%{5678}%Pi%gi%s", 0);
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "5678") == 0);
+	assert(n == strlen(buf));
+
+	// test handling of unset dynamic vars
+	n = ti_parm(buf, "%gj%s", 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "") == 0);
 	assert(n == strlen(buf));
 
 	// %'c' = push literal char

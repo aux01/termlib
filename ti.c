@@ -406,13 +406,23 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 		case 'g':
 			// recall and push variable
 			if (*pch >= 'A' && *pch <= 'Z') {
-				stk_push_str(svars[*pch-'A']);
-				// NOTE: string is on stack AND in svars now;
-				//       be careful with free()
+				if ((as = svars[*pch-'A'])) {
+					// strdup since strings are freed on pop
+					bs = malloc(strlen(as)+1);
+					strcpy(bs, as);
+					stk_push_str(bs);
+				} else {
+					stk_push_str(calloc(1, 1));
+				}
 			} else if (*pch >= 'a' && *pch <= 'z') {
-				stk_push_str(dvars[*pch-'a']);
-				// NOTE: string is on stack AND in dvars now;
-				//       be careful with free()
+				if ((as = dvars[*pch-'a'])) {
+					// strdup since strings are freed on pop
+					bs = malloc(strlen(as)+1);
+					strcpy(bs, as);
+					stk_push_str(bs);
+				} else {
+					stk_push_str(calloc(1, 1));
+				}
 			}
 			pch++;
 			break;
@@ -585,6 +595,7 @@ int ti_parm(char *buf, const char *s, int c, ...) {
 				break;
 			}
 			break;
+
 		case '?':
 			// if: start conditional
 			break;

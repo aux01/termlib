@@ -314,7 +314,7 @@ static int stk_pop_num() {
 
 static char *svars[26]; // static variables
 
-int ti_parmn(char *buf, const char *s, int c, ...) {
+int ti_parm(char *buf, const char *s, int c, ...) {
 	if (!s) return 0;
 
 	// load varg params into fixed size int array for easier referencing.

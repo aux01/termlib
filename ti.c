@@ -334,6 +334,7 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 	int i;                           // loop counter
 	char fmt[16];                    // format code buffer
 	int fpos;                        // format code bufer pos
+	int nest, done;                  // if/then/else state vars
 
 	// dynamic variables
 	char *dvars[26] = {0};
@@ -571,7 +572,66 @@ int ti_parmn(char *buf, const char *s, int c, ...) {
 				free(str);
 				break;
 			}
+			break;
+		case '?':
+			// if: start conditional
+			break;
+		case 't':
+			// then: evaluate conditional result
+			if (stk_pop_num()) {
+				break;
+			}
 
+			// this loop consumes everything until we hit our else,
+			// or the end of the conditional
+			nest = 0;
+			done = 0;
+			while (*pch && !done) {
+				if (*pch != '%') {
+					pch++;
+					continue;
+				}
+
+				pch++; // skip over '%'
+				switch (*pch++) {
+				case ';':
+					done = !nest;
+					nest--;
+					break;
+				case '?':
+					nest++;
+					break;
+				case 'e':
+					done = !nest;
+					break;
+				}
+			};
+			break;
+		case 'e':
+			// if we got here, it means we didn't use the else
+			// in the 't' case above, and we should skip until
+			// the end of the conditional
+			nest = 0;
+			done = 0;
+			while (*pch && !done) {
+				if (*pch != '%') {
+					pch++;
+					continue;
+				}
+				pch++;
+				switch (*pch++) {
+				case ';':
+					done = !nest;
+					nest--;
+					break;
+				case '?':
+					nest++;
+					break;
+				}
+			}
+			break;
+		case ';':
+			// endif
 			break;
 		default:
 			// TODO: ???

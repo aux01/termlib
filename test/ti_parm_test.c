@@ -247,6 +247,55 @@ int main(void) {
 	assert(strcmp(buf, "32") == 0);
 	assert(n == strlen(buf));
 
+
+	// IF/THEN/ELSE ==================================================
+
+	// %?  = if
+	// %p1 = push param 1 on stack
+	// %t  = then
+	// %e  = else
+	// %;  = endif
+	n = ti_parmn(buf, "%?%p1%tif%eelse%;", 1, 1);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "if") == 0);
+	assert(n == strlen(buf));
+
+	// if p1 then "if" else "else" endif
+	n = ti_parmn(buf, "%?%p1%tif%eelse%;", 1, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "else") == 0);
+	assert(n == strlen(buf));
+
+	// if p1 then if p2 then "if if" else "else" endif endif
+	n = ti_parmn(buf, "%?%p1%t%?%p2%tif if%eelse%;%;", 2, 1, 1);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "if if") == 0);
+	assert(n == strlen(buf));
+
+	// if p1 then if p2 then "if if" else "else" endif endif
+	n = ti_parmn(buf, "%?%p1%t%?%p2%tif if%eelse%;%;", 2, 0, 1);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "") == 0);
+	assert(n == strlen(buf));
+
+	// if p1 then "if" else if p2 then "else if" endif endif
+	n = ti_parmn(buf, "%?%p1%tif%e%?%p2%telse if%;%;", 2, 1, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "if") == 0);
+	assert(n == strlen(buf));
+
+	// if p1 then "if" else if p2 then "else if" endif endif
+	n = ti_parmn(buf, "%?%p1%tif%e%?%p2%telse if%;%;", 2, 0, 1);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "else if") == 0);
+	assert(n == strlen(buf));
+
+	// if p1 then "if" else if p2 then "else if" endif endif
+	n = ti_parmn(buf, "%?%p1%tif%e%?%p2%telse if%;%;", 2, 0, 0);
+	printf("buf: %s\n", buf);
+	assert(strcmp(buf, "") == 0);
+	assert(n == strlen(buf));
+
 	// when you're done, remember to free terminal info memory:
 	ti_freeterm(t);
 

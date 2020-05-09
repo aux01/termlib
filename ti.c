@@ -22,74 +22,84 @@
 #include <string.h>
 #include <assert.h>
 
-// Read an entire file into a string or return NULL if an error occurs.
-// Caller must free the string returned.
-static char *read_file(const char *file) {
-	FILE *f = fopen(file, "rb");
-	if (!f) {
-		return 0;
+#define TI_FN_MAX   1024   // 1K max filename length
+#define TI_DATA_MAX 16384  // 16K max terminfo file size
+
+// Raw file information
+struct ti_file {
+	char *data;              // contents of file
+	int  len;                // number of bytes loaded in data
+};
+
+// Read an entire file into the ti_file struct.
+// Caller must free the string set in ti_file.data.
+static int ti_read_file(struct ti_file *f, const char *fn) {
+	FILE *fd = fopen(fn, "rb");
+	if (!fd) {
+		return TI_ERR_FILE_NOT_FOUND;
 	}
 
 	struct stat st;
-	if (fstat(fileno(f), &st) != 0) {
-		fclose(f);
-		return 0;
+	if (fstat(fileno(fd), &st) != 0) {
+		fclose(fd);
+		return TI_ERR_FILE_INVALID;
+	}
+	f->len = st.st_size;
+
+	if (f->len > TI_DATA_MAX) {
+		fclose(fd);
+		return TI_ERR_FILE_INVALID;
 	}
 
-	char *data = malloc(st.st_size);
-	if (!data) {
-		fclose(f);
-		return 0;
+	f->data = malloc(f->len);
+
+	if (fread(f->data, 1, f->len, fd) != (size_t)f->len) {
+		free(f->data);
+		fclose(fd);
+		return TI_ERR_FILE_INVALID;
 	}
 
-	if (fread(data, 1, st.st_size, f) != (size_t)st.st_size) {
-		fclose(f);
-		free(data);
-		return 0;
-	}
+	fclose(fd);
 
-	fclose(f);
-	return data;
+	return 0;
 }
 
 // Look for the terminfo file for the given term under the given path.
-static char *terminfo_try_path(const char *path, const char *term) {
-	char fn[4096]; fn[sizeof(fn)-1]=0;
+static int ti_try_path(struct ti_file *f, const char *path, const char *term) {
+	char fn[TI_FN_MAX] = {0};
 	snprintf(fn, sizeof(fn), "%s/%c/%s", path, term[0], term);
-	char *data = read_file(fn);
-	if (data) {
-		return data;
-	}
+
+	// try reading in normal dir structure
+	int rc = ti_read_file(f, fn);
+	if (rc == 0) return 0;
 
 	// fallback to darwin specific dirs structure
 	snprintf(fn, sizeof(fn), "%s/%x/%s", path, term[0], term);
-	return read_file(fn);
+	return ti_read_file(f, fn);
+
 }
 
-// Read binary terminfo file.
-static char *terminfo_load_data(const char *term) {
-	char *data;
+// Find the terminfo file and load its contents into the ti_file struct.
+static int ti_load_data(struct ti_file *f, const char *term) {
+	int rc = 0;
 
 	// if TERMINFO is set, no other directory should be searched
-	const char *terminfo = getenv("TERMINFO");
-	if (terminfo) {
-		return terminfo_try_path(terminfo, term);
+	if (getenv("TERMINFO") && getenv("TERMINFO")[0] != '\0') {
+		return ti_try_path(f, getenv("TERMINFO"), term);
 	}
 
 	// next, consider ~/.terminfo
-	const char *home = getenv("HOME");
-	if (home) {
-		char fn[4096]; fn[sizeof(fn)-1]=0;
-		snprintf(fn, sizeof(fn), "%s/.terminfo", home);
-		if ((data = terminfo_try_path(fn, term))) {
-			return data;
-		}
+	if (getenv("HOME")) {
+		char fn[TI_FN_MAX] = {0};
+		snprintf(fn, sizeof(fn), "%s/.terminfo", getenv("HOME"));
+		rc = ti_try_path(f, fn, term);
+		if (rc == 0) return rc;
 	}
 
 	// next, TERMINFO_DIRS
 	const char *dirs = getenv("TERMINFO_DIRS");
 	if (dirs) {
-		char buf[4096]; buf[sizeof(buf)-1]=0;
+		char buf[TI_FN_MAX] = {0};
 		snprintf(buf, sizeof(buf), "%s", dirs);
 		char *dir = strtok(buf, ":");
 		while (dir) {
@@ -97,10 +107,8 @@ static char *terminfo_load_data(const char *term) {
 			if (strcmp(cdir, "") == 0) {
 				cdir = "/usr/share/terminfo";
 			}
-			char *data = terminfo_try_path(cdir, term);
-			if (data) {
-				return data;
-			}
+			rc = ti_try_path(f, cdir, term);
+			if (rc == 0) return rc;
 			dir = strtok(0, ":");
 		}
 	}
@@ -114,11 +122,11 @@ static char *terminfo_load_data(const char *term) {
 		""
 	};
 	for (int i = 0; paths[i][0]; i++) {
-		data = terminfo_try_path(paths[i], term);
-		if (data) return data;
+		rc = ti_try_path(f, paths[i], term);
+		if (rc == 0) return rc;
 	}
 
-	return NULL;
+	return TI_ERR_FILE_NOT_FOUND;
 }
 
 #define TI_MAGIC 0432
@@ -131,51 +139,63 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 		return NULL;
 	}
 
-	char *data = terminfo_load_data(termname);
-	if (!data) {
-		if (err) *err = TI_ERR_FILE_NOT_FOUND;
+	struct ti_file f = {0};
+	int rc = ti_load_data(&f, termname);
+	if (rc) {
+		if (err) *err = rc;
 		return NULL;
 	}
 
-	ti_term *term = calloc(1, sizeof(ti_term));
+	// if data size is less than fixed header we got problems
+	// exit now before allocating a bunch of other stuff
+	if (f.len < (int)(6 * sizeof(int16_t))) {
+		if (err) *err = TI_ERR_FILE_INVALID;
+		return NULL;
+	}
 
-	term->data = data;
-	term->name = (char *)malloc(strlen(termname) + 1);
+	// alloc and initialize term struct
+	// TODO: make caller alloc
+	ti_term *term = calloc(1, sizeof(ti_term));
 	strcpy(term->name, termname);
+	term->data = f.data;
+	term->len = f.len;
 	term->fd = fd;
 
-	// TODO: check that there's actually this much data loaded from the file
-	int16_t header[6];
-	memcpy(header, data, sizeof(header));
+	// read header data into struct
+	struct {
+		int16_t magic;         // magic number (octal 0432)
+		int16_t names_len;     // size in bytes of the names section
+		int16_t bools_len;     // size in bytes of the bools section
+		int16_t nums_count;    // count of shorts in nums section
+		int16_t stroff_count;  // count of shorts in stroffs section
+		int16_t strtbl_len;    // size in bytes of the string table
+	} h;
+	memcpy(&h, f.data, sizeof(h));
 
-	int16_t magic        = header[0], // magic number (octal 0432)
-		names_len    = header[1], // size in bytes of the names section
-		bools_len    = header[2], // size in bytes of the bools section
-		nums_count   = header[3], // count of shorts in nums section
-		stroff_count = header[4], // count of shorts in stroffs section
-		strtbl_len   = header[5]; // size in bytes of the string table
-
-	if (magic != TI_MAGIC) {
+	if (h.magic != TI_MAGIC) {
 		if (err) *err = TI_ERR_FILE_INVALID;
 		ti_freeterm(term);
 		return NULL;
 	}
 
 	ti_terminfo *info = &term->info;
-	info->names = data + sizeof(header);
+	info->names = term->data + sizeof(h);
 
-	info->bools = (int8_t*)(info->names + names_len);
-	info->num_bools = (uint16_t)bools_len;
+	info->bools = (int8_t*)(info->names + h.names_len);
+	info->num_bools = (uint16_t)h.bools_len;
 
-	info->nums = (int16_t*)(info->bools + info->num_bools + ((names_len + bools_len) % 2));
-	info->num_nums = (uint16_t)nums_count;
+	info->nums = (int16_t*)(info->bools +
+	                        info->num_bools +
+	                        ((h.names_len + h.bools_len) % 2));
+	info->num_nums = (uint16_t)h.nums_count;
 
-	info->str_offs = info->nums + nums_count;
-	info->num_stroffs = stroff_count;
+	info->str_offs = info->nums + h.nums_count;
+	info->num_stroffs = h.stroff_count;
 
-	info->str_table = (char *)(info->str_offs + stroff_count);
+	info->strtbl = (char *)(info->str_offs + h.stroff_count);
+	info->strtbl_len = h.strtbl_len;
 
-	info->ext_str_table = info->str_table + strtbl_len;
+	info->ext_strtbl = info->strtbl + info->strtbl_len;
 
 	// TODO load extended capabilities
 
@@ -186,7 +206,6 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 // Most ti_terminfo members point into the data member and so must not be freed
 // directly. String returned from ti_getstr are invalid after ti_freeterm.
 void ti_freeterm(ti_term *term) {
-	free(term->name); term->name = NULL;
 	free(term->data); term->data = NULL;
 	free(term);
 }
@@ -211,9 +230,9 @@ char *ti_getstr(ti_term *t, int cap) {
 
 	int offset = t->info.str_offs[cap];
 	if (offset < 0) return NULL;
-	// TODO: check offset isn't larger than str_table
+	if (offset >= t->info.strtbl_len) return NULL;
 
-	return t->info.str_table + t->info.str_offs[cap];
+	return t->info.strtbl + t->info.str_offs[cap];
 }
 
 /*

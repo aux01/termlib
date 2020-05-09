@@ -25,13 +25,14 @@ typedef struct ti_terminfo {
     int8_t  *bools;               // array of boolean capability values
     int16_t *nums;                // array of integer capability values
     int16_t *str_offs;            // array of string capability offsets
-    char    *str_table;           // pointer to string table, base of offsets
+    char    *strtbl;              // pointer to string table, base of offsets
+    uint16_t strtbl_len;          // size in bytes of string table
 
     uint16_t num_bools;           // count of bool values
     uint16_t num_nums;            // count of int values
     uint16_t num_stroffs;         // count of string offsets (non -1 strings)
 
-    char  *ext_str_table;         // pointer to extended string table
+    char  *ext_strtbl;            // pointer to extended string table
     char  **ext_names;            // corresponding names
 
     uint16_t ext_bools;           // count extensions to bools
@@ -46,8 +47,9 @@ typedef struct ti_terminfo {
 typedef struct ti_term {
     ti_terminfo info;             // terminfo description
     short       fd;               // file descriptor to write to
-    char *      name;             // term name used in setupterm
+    char        name[128];        // term name used in setupterm
     char *      data;             // raw terminfo data loaded from file
+    int         len;              // size of data in bytes
 } ti_term;
 
 /*

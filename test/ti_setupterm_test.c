@@ -6,14 +6,17 @@
 #include <assert.h>
 
 int main(void) {
-	int err;
+	// make stdout line buffered
+	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 
 	// load terminfo data from our test directory only
 	setenv("TERMINFO", "./terminfo", 1);
 
 	// loading a file that doesn't exist causes an error
+	int err;
 	ti_term *t = ti_setupterm("xterm-nooooope", 1, &err);
 	assert(t == NULL);
+	printf("err = %d\n", err);
 	assert(err == TI_ERR_FILE_NOT_FOUND);
 
 	// loading a file that exists but isn't a terminfo file causes an error

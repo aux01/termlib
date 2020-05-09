@@ -178,6 +178,7 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 		return NULL;
 	}
 
+	// set up ti_terminfo pointer members to reference locations in data
 	ti_terminfo *info = &term->info;
 	info->names = term->data + sizeof(h);
 
@@ -194,6 +195,14 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 
 	info->strtbl = (char *)(info->str_offs + h.stroff_count);
 	info->strtbl_len = h.strtbl_len;
+
+	// make sure all of the above pointers point within the loaded data
+	// if not the terminfo file is corrupt
+	if (info->strtbl + info->strtbl_len - term->data > f.len) {
+		if (err) *err = TI_ERR_FILE_INVALID;
+		ti_freeterm(term);
+		return NULL;
+	}
 
 	info->ext_strtbl = info->strtbl + info->strtbl_len;
 

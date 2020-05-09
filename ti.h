@@ -22,14 +22,14 @@
  */
 typedef struct ti_terminfo {
     char    *names;               // names for terminal separated by "|" chars
-    int8_t  *bools;               // array of boolean values
-    int16_t *nums;                // array of integer values
-    int16_t *str_offs;            // array of string offsets
-    char    *str_table;           // pointer to string table
+    int8_t  *bools;               // array of boolean capability values
+    int16_t *nums;                // array of integer capability values
+    int16_t *str_offs;            // array of string capability offsets
+    char    *str_table;           // pointer to string table, base of offsets
 
-    uint16_t num_bools;
-    uint16_t num_nums;
-    uint16_t num_strings;
+    uint16_t num_bools;           // count of bool values
+    uint16_t num_nums;            // count of int values
+    uint16_t num_stroffs;         // count of string offsets (non -1 strings)
 
     char  *ext_str_table;         // pointer to extended string table
     char  **ext_names;            // corresponding names

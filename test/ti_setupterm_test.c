@@ -36,7 +36,7 @@ int main(void) {
 	// verify the correct number of entries were loaded for xterm-color.
 	assert(t->info.num_bools == 38);
 	assert(t->info.num_nums == 16);
-	assert(t->info.num_strings == 413);
+	assert(t->info.num_stroffs == 413);
 
 	// read some capabilities to verify the db is being processed correctly
 	int has_meta_key = ti_getflag(t, ti_km);

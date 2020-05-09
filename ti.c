@@ -171,7 +171,7 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 	info->num_nums = (uint16_t)nums_count;
 
 	info->str_offs = info->nums + nums_count;
-	info->num_strings = stroff_count;
+	info->num_stroffs = stroff_count;
 
 	info->str_table = (char *)(info->str_offs + stroff_count);
 
@@ -207,7 +207,7 @@ int ti_getnum(ti_term *t, int cap) {
 
 char *ti_getstr(ti_term *t, int cap) {
 	if (!t) return NULL;
-	if (cap < 0 || cap > t->info.num_strings) return NULL;
+	if (cap < 0 || cap > t->info.num_stroffs) return NULL;
 
 	int offset = t->info.str_offs[cap];
 	if (offset < 0) return NULL;

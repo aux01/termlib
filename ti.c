@@ -252,6 +252,11 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 		ti->ext_names[i] = nametbl + nameoffs[i];
 	}
 
+	// set up bool, num, and str name array pointers to their
+	ti->ext_bool_names = ti->ext_names;
+	ti->ext_num_names = ti->ext_bool_names + ti->ext_bools_count;
+	ti->ext_str_names = ti->ext_num_names + ti->ext_nums_count;
+
 	if (err) *err = 0;
 	return ti;
 }
@@ -310,7 +315,7 @@ int ti_getbool(ti_terminfo *ti, const char *cap) {
 
 	// check extended boolean capabilties
 	for (int i = 0; i < ti->ext_bools_count; i++) {
-		if (strcmp(ti->ext_names[i], cap)) continue;
+		if (strcmp(ti->ext_bool_names[i], cap)) continue;
 		return ti->ext_bools[i];
 	}
 
@@ -331,10 +336,8 @@ int ti_getnum(ti_terminfo *ti, const char *cap) {
 	}
 
 	// check extended numeric capabilties.
-	// note: numeric cap names start after bool cap names.
-	int offset = ti->ext_bools_count;
 	for (int i = 0; i < ti->ext_nums_count; i++) {
-		if (strcmp(ti->ext_names[offset + i], cap)) continue;
+		if (strcmp(ti->ext_num_names[i], cap)) continue;
 		return ti->ext_nums[i];
 	}
 
@@ -354,10 +357,8 @@ char *ti_getstr(ti_terminfo *ti, const char *cap) {
 	}
 
 	// check extended string capabilties.
-	// note: string cap names start after bool and numeric cap names.
-	int offset = ti->ext_bools_count + ti->ext_nums_count;
 	for (int i = 0; i < ti->ext_strs_count; i++) {
-		if (strcmp(ti->ext_names[offset + i], cap)) continue;
+		if (strcmp(ti->ext_str_names[i], cap)) continue;
 		return ti->ext_strs[i];
 	}
 

@@ -41,12 +41,17 @@ typedef struct ti_terminfo {
 	int8_t  *ext_bools;          // array of extended boolean cap values
 	int16_t *ext_nums;           // array of extended integer cap values
 	char   **ext_strs;           // array of extended string caps pointers
-	char   **ext_names;          // array of extended cap names pointers
 
-	int16_t ext_bools_count;     // ext_bools array size
-	int16_t ext_nums_count;      // ext_nums array size
-	int16_t ext_strs_count;      // ext_strs array size
-	int16_t ext_names_count;     // ext_names array size
+	char   **ext_bool_names;     // array of extended boolean cap names
+	char   **ext_num_names;      // array of extended numeric cap names
+	char   **ext_str_names;      // array of extended string cap names
+
+	int16_t ext_bools_count;     // ext_bools and ext_bool_names array size
+	int16_t ext_nums_count;      // ext_nums and ext_num_names array size
+	int16_t ext_strs_count;      // ext_strs and ext_str_names array size
+
+	char   **ext_names;          // array of extended cap names pointers
+	int16_t  ext_names_count;    // ext_names array size
 
 	char *   data;               // raw terminfo data loaded from file
 	int      len;                // size of data in bytes

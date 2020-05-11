@@ -220,6 +220,8 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 		int16_t  strtbl_num;     // count strs in strtbl including names
 		int16_t  strtbl_len;     // total size of strtbl
 	} h2;
+	// TODO: add test for odd aligned terminfo file
+	data_len += (data_len % 2); // skip alignment byte
 	memcpy(&h2, f.data+data_len, sizeof(h2));
 
 	ti->ext_bools = (int8_t*)(f.data + data_len + sizeof(h2));

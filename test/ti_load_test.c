@@ -30,7 +30,7 @@ void test_legacy_storage_format() {
 	assert(ti->strs_count == 413);
 
 	// read some capabilities to verify the db is being processed correctly
-	int has_meta_key = ti_getflagi(ti, ti_km);
+	int has_meta_key = ti_getbooli(ti, ti_km);
 	assert(has_meta_key == 1);
 	int colors = ti_getnumi(ti, ti_colors);
 	assert(colors == 8);
@@ -66,7 +66,7 @@ void test_extended_storage_format() {
 	assert(ti->strs_count == 413);
 
 	// read some capabilities to verify the db is being processed correctly
-	int has_meta_key = ti_getflagi(ti, ti_km);
+	int has_meta_key = ti_getbooli(ti, ti_km);
 	assert(has_meta_key == 1);
 	int colors = ti_getnumi(ti, ti_colors);
 	assert(colors == 8);

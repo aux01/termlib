@@ -39,7 +39,7 @@ int main(void) {
 
 	printf("# %s\n", ti->term_names);
 	for (int i = 0; i < ti->bools_count; i++) {
-		printf("%s %s=%d\n", "std bool", ti_boolnames[i], ti_getflagi(ti, i));
+		printf("%s %s=%d\n", "std bool", ti_boolnames[i], ti_getbooli(ti, i));
 	}
 	for (int i = 0; i < ti->ext_bools_count; i++) {
 		printf("%s %s=%d\n", "ext bool", ti->ext_names[i], ti->ext_bools[i]);

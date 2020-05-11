@@ -272,7 +272,7 @@ void ti_free(ti_terminfo *ti) {
  *
  */
 
-int ti_getflagi(ti_terminfo *ti, int cap) {
+int ti_getbooli(ti_terminfo *ti, int cap) {
 	assert(ti);
 	if (cap < 0 || cap > ti->bools_count) {
 		return 0;
@@ -296,7 +296,7 @@ char *ti_getstri(ti_terminfo *ti, int cap) {
 	return ti->strs[cap];
 }
 
-int ti_getflag(ti_terminfo *ti, const char *cap) {
+int ti_getbool(ti_terminfo *ti, const char *cap) {
 	assert(ti);
 	if (cap == NULL) return 0;
 
@@ -305,7 +305,7 @@ int ti_getflag(ti_terminfo *ti, const char *cap) {
 	static const int n = (sizeof(ti_boolnames) / sizeof(char*));
 	for (int i = 0; i < n; i++) {
 		if (strcmp(ti_boolnames[i], cap)) continue;
-		return ti_getflagi(ti, i);
+		return ti_getbooli(ti, i);
 	}
 
 	// check extended boolean capabilties

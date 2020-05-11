@@ -83,7 +83,7 @@ void         ti_free(ti_terminfo *ti);
  * capability name string. The capname string must be a terminfo defined
  * capability name; termcap codes and ncurses long names are not supported.
  *
- * The ti_getflag() function returns non-zero if the boolean flag capability is
+ * The ti_getbool() function returns non-zero if the boolean flag capability is
  * set; zero if the flag is unset or when the capability name is unknown.
  * The ti_getnum() function returns the numeric value set in the terminfo
  * file; -1 when the numeric capability is unset or unknown.
@@ -96,7 +96,7 @@ void         ti_free(ti_terminfo *ti);
  *
  * Ncurses counterpart: tigetflag(), tigetnum(), tigetstr().
  */
-int   ti_getflag(ti_terminfo *ti, const char *capname);
+int   ti_getbool(ti_terminfo *ti, const char *capname);
 int   ti_getnum(ti_terminfo *ti, const char *capname);
 char *ti_getstr(ti_terminfo *ti, const char *capname);
 
@@ -109,7 +109,7 @@ char *ti_getstr(ti_terminfo *ti, const char *capname);
  * not able to read extended capabilities (setrgbb, setrgbf, smxx, etc.).
  *
  */
-int   ti_getflagi(ti_terminfo *ti, int capindex);
+int   ti_getbooli(ti_terminfo *ti, int capindex);
 int   ti_getnumi(ti_terminfo *ti, int capindex);
 char *ti_getstri(ti_terminfo *ti, int capindex);
 

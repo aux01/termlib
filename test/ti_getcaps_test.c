@@ -13,18 +13,18 @@ void test_getcaps_by_name() {
 	ti_terminfo *ti = ti_load("xterm-color", &err);
 	assert(ti != NULL);
 
-	// read boolean capabilities with the ti_getflag() function
+	// read boolean capabilities with the ti_getbool() function
 	// returns 1 if the terminal has the capability or 0 if not
-	int has_meta_key     = ti_getflag(ti, "km"),
-	    back_color_erase = ti_getflag(ti, "bce"),
-	    hard_copy        = ti_getflag(ti, "hc");
+	int has_meta_key     = ti_getbool(ti, "km"),
+	    back_color_erase = ti_getbool(ti, "bce"),
+	    hard_copy        = ti_getbool(ti, "hc");
 	assert(has_meta_key == 1);
 	assert(back_color_erase == 0);
 	assert(hard_copy == 0);
 
 	// unrecognized boolean capabilities return 0 like unset capabilities so
 	// be careful with spelling...
-	int has_imaginery_cap = ti_getflag(ti, "imagineryboolname");
+	int has_imaginery_cap = ti_getbool(ti, "imagineryboolname");
 	assert(has_imaginery_cap == 0);
 
 	// read numeric capabilities with the ti_getnumi() function:
@@ -65,11 +65,11 @@ void test_getcaps_by_name_extended() {
 	ti_terminfo *ti = ti_load("xterm-new", &err);
 	assert(ti != NULL);
 
-	// read boolean extended capabilities with the ti_getflag() function
+	// read boolean extended capabilities with the ti_getbool() function
 	// returns 1 if the terminal has the capability or 0 if not
-	int has_set_color = ti_getflag(ti, "AX"),
-	    has_xt = ti_getflag(ti, "XT"),
-	    has_unknown = ti_getflag(ti, "NOTACAP");
+	int has_set_color = ti_getbool(ti, "AX"),
+	    has_xt = ti_getbool(ti, "XT"),
+	    has_unknown = ti_getbool(ti, "NOTACAP");
 	assert(has_set_color == 1);
 	assert(has_xt == 1);
 	assert(has_unknown == 0);
@@ -95,11 +95,11 @@ void test_getcaps_by_index() {
 	ti_terminfo *ti = ti_load("xterm-color", &err);
 	assert(ti != NULL);
 
-	// read boolean capabilities with the ti_getflagi() function
+	// read boolean capabilities with the ti_getbooli() function
 	// returns 1 if the terminal has the capability or 0 if not
-	int has_meta_key     = ti_getflagi(ti, ti_km),
-	    back_color_erase = ti_getflagi(ti, ti_bce),
-	    hard_copy        = ti_getflagi(ti, ti_hc);
+	int has_meta_key     = ti_getbooli(ti, ti_km),
+	    back_color_erase = ti_getbooli(ti, ti_bce),
+	    hard_copy        = ti_getbooli(ti, ti_hc);
 	assert(has_meta_key == 1);
 	assert(back_color_erase == 0);
 	assert(hard_copy == 0);

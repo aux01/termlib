@@ -133,7 +133,7 @@ static int ti_load_data(struct ti_file *f, const char *term) {
 #define TI_ALT_MAGIC 542  // TODO: version of terminfo with 32-bit int nums?
 
 // TODO: big endian arch. terminfo files are always structured little endian.
-ti_term *ti_setupterm(const char *termname, int fd, int *err) {
+ti_terminfo *ti_load(const char *termname, int *err) {
 	if (!termname) termname = getenv("TERM");
 	if (!termname) {
 		if (err) *err = TI_ERR_TERM_NOT_SET;
@@ -155,11 +155,9 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 	}
 
 	// alloc and initialize term struct
-	ti_term *term = calloc(1, sizeof(ti_term));
-	strcpy(term->name, termname);
-	term->data = f.data;
-	term->len = f.len;
-	term->fd = fd;
+	ti_terminfo *ti = calloc(1, sizeof(ti_terminfo));
+	ti->data = f.data;
+	ti->len = f.len;
 
 	// copy header data into struct
 	struct {
@@ -175,36 +173,35 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 	// verify magic number checks out
 	if (h.magic != TI_MAGIC) {
 		if (err) *err = TI_ERR_FILE_INVALID;
-		ti_freeterm(term);
+		ti_free(ti);
 		return NULL;
 	}
 
 	// set up ti_terminfo pointer members to reference locations in data
-	ti_terminfo *info = &term->info;
-	info->names = term->data + sizeof(h);
-	info->bools = (int8_t*)(info->names + h.names_len);
-	info->bools_count = h.bools_len;
-	info->nums = (int16_t*)(info->bools + info->bools_count +
-	                        ((h.names_len + h.bools_len) % 2));
-	info->nums_count = h.nums_count;
+	ti->term_names = ti->data + sizeof(h);
+	ti->bools = (int8_t*)(ti->term_names + h.names_len);
+	ti->bools_count = h.bools_len;
+	ti->nums = (int16_t*)(ti->bools + ti->bools_count +
+	                      ((h.names_len + h.bools_len) % 2)); // alignment
+	ti->nums_count = h.nums_count;
 
 	// convert string capability offsets into pointers to strtbl
-	info->strs = calloc(h.stroffs_count, sizeof(char*));
-	info->strs_count = h.stroffs_count;
-	int16_t *stroffs = info->nums + h.nums_count;
+	ti->strs = calloc(h.stroffs_count, sizeof(char*));
+	ti->strs_count = h.stroffs_count;
+	int16_t *stroffs = ti->nums + h.nums_count;
 	char *strtbl = (char*)(stroffs + h.stroffs_count);
 	for (int i = 0; i < h.stroffs_count; i++) {
 		if (stroffs[i] < 0) continue;
 		// TODO: check that offset is within strtbl bounds
-		info->strs[i] = strtbl + stroffs[i];
+		ti->strs[i] = strtbl + stroffs[i];
 	}
 
 	// make sure all of the above pointers point within the loaded data;
 	// if not the terminfo file is corrupt
-	int data_len = strtbl + h.strtbl_len - term->data;
+	int data_len = strtbl + h.strtbl_len - ti->data;
 	if (data_len > f.len) {
 		if (err) *err = TI_ERR_FILE_CORRUPT;
-		ti_freeterm(term);
+		ti_free(ti);
 		return NULL;
 	}
 
@@ -212,7 +209,7 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 	// format data
 	if (data_len == f.len) {
 		if (err) *err = 0;
-		return term;
+		return ti;
 	}
 
 	// extended format header comes after legacy format data in file
@@ -227,81 +224,81 @@ ti_term *ti_setupterm(const char *termname, int fd, int *err) {
 
 	printf("strtbl_num: %d, strtbl_len: %d\n", h2.strtbl_num, h2.strtbl_len);
 
-	info->ext_bools = (int8_t*)(f.data + data_len + sizeof(h2));
-	info->ext_bools_count = h2.bools_count;
-	info->ext_nums = (int16_t*)(info->ext_bools + h2.bools_count +
-	                            (h2.bools_count % 2)); // alignment byte
-	info->ext_nums_count = h2.nums_count;
-	info->ext_strs_count = h2.stroffs_count;
-	info->ext_names_count = h2.strtbl_num - h2.stroffs_count;
+	ti->ext_bools = (int8_t*)(f.data + data_len + sizeof(h2));
+	ti->ext_bools_count = h2.bools_count;
+	ti->ext_nums = (int16_t*)(ti->ext_bools + h2.bools_count +
+	                          (h2.bools_count % 2)); // alignment byte
+	ti->ext_nums_count = h2.nums_count;
+	ti->ext_strs_count = h2.stroffs_count;
+	ti->ext_names_count = h2.strtbl_num - h2.stroffs_count;
 
-	stroffs = info->ext_nums + info->ext_nums_count;
+	stroffs = ti->ext_nums + ti->ext_nums_count;
 	strtbl = (char*)(stroffs + h2.strtbl_num);
-	info->ext_strs = calloc(info->ext_strs_count, sizeof(char*));
-	for (int i = 0; i < info->ext_strs_count; i++) {
+	ti->ext_strs = calloc(ti->ext_strs_count, sizeof(char*));
+	for (int i = 0; i < ti->ext_strs_count; i++) {
 		// TODO: check that offset is within strtbl bounds
-		info->ext_strs[i] = strtbl + stroffs[i];
+		ti->ext_strs[i] = strtbl + stroffs[i];
 	}
 
 	int16_t *nameoffs = stroffs + h2.stroffs_count;
 	char *nametbl = strtbl;
 	if (h2.stroffs_count > 0) {
-		char *last = info->ext_strs[h2.stroffs_count - 1];
+		char *last = ti->ext_strs[h2.stroffs_count - 1];
 		nametbl = last + strlen(last) + 1;
 	}
-	info->ext_names = calloc(info->ext_names_count, sizeof(char*));
-	for (int i = 0; i < info->ext_names_count; i++) {
+	ti->ext_names = calloc(ti->ext_names_count, sizeof(char*));
+	for (int i = 0; i < ti->ext_names_count; i++) {
 		// TODO: check that offset is within nametbl bounds
-		info->ext_names[i] = nametbl + nameoffs[i];
+		ti->ext_names[i] = nametbl + nameoffs[i];
 	}
 
 	printf("ext_bools_count=%d, ext_nums_count=%d, ext_strs_count=%d\n, ext_names_count=%d\n",
-	       info->ext_bools_count, info->ext_nums_count, info->ext_strs_count, info->ext_names_count);
+	       ti->ext_bools_count, ti->ext_nums_count, ti->ext_strs_count, ti->ext_names_count);
 
-	for (int i = 0; i < info->ext_bools_count; i++)
-		printf("bools[%d] = %d\n", i, info->ext_bools[i]);
-	for (int i = 0; i < info->ext_nums_count; i++)
-		printf(" nums[%d] = %d\n", i, info->ext_nums[i]);
-	for (int i = 0; i < info->ext_strs_count; i++)
-		printf(" strs[%d] = %s\n", i, info->ext_strs[i]);
-	for (int i = 0; i < info->ext_names_count; i++)
-		printf("names[%d] = %s\n", i, info->ext_names[i]);
+	for (int i = 0; i < ti->ext_bools_count; i++)
+		printf("bools[%d] = %d\n", i, ti->ext_bools[i]);
+	for (int i = 0; i < ti->ext_nums_count; i++)
+		printf(" nums[%d] = %d\n", i, ti->ext_nums[i]);
+	for (int i = 0; i < ti->ext_strs_count; i++)
+		printf(" strs[%d] = %s\n", i, ti->ext_strs[i]);
+	for (int i = 0; i < ti->ext_names_count; i++)
+		printf("names[%d] = %s\n", i, ti->ext_names[i]);
 
 	if (err) *err = 0;
-	return term;
+	return ti;
 }
 
 // Most ti_terminfo members point into the data member and so must not be freed
 // directly. String returned from ti_getstr are invalid after ti_freeterm.
-void ti_freeterm(ti_term *term) {
-	if (!term) return;
-	free(term->info.strs);      term->info.strs = NULL;
-	free(term->info.ext_strs);  term->info.ext_strs = NULL;
-	free(term->info.ext_names); term->info.ext_names = NULL;
-	free(term->data); term->data = NULL;
-	free(term);
+void ti_free(ti_terminfo *ti) {
+	if (!ti) return;
+	free(ti->strs);      ti->strs = NULL;
+	free(ti->ext_strs);  ti->ext_strs = NULL;
+	free(ti->ext_names); ti->ext_names = NULL;
+	free(ti->data);      ti->data = NULL;
+	free(ti);
 }
 
-int ti_getflag(ti_term *t, int cap) {
+int ti_getflag(ti_terminfo *ti, int cap) {
 	// TODO: these should return 0
-	if (!t) return -1;
-	if (cap < 0 || cap > t->info.bools_count) return -1;
+	if (!ti) return -1;
+	if (cap < 0 || cap > ti->bools_count) return -1;
 
-	return t->info.bools[cap];
+	return ti->bools[cap];
 }
 
-int ti_getnum(ti_term *t, int cap) {
-	if (!t) return -1;
-	if (cap < 0 || cap > t->info.nums_count) return -1;
+int ti_getnum(ti_terminfo *ti, int cap) {
+	if (!ti) return -1;
+	if (cap < 0 || cap > ti->nums_count) return -1;
 
-	return t->info.nums[cap];
+	return ti->nums[cap];
 }
 
-char *ti_getstr(ti_term *t, int cap) {
-	if (!t) return NULL;
-	if (cap < 0 || cap >= t->info.strs_count) return NULL;
+char *ti_getstr(ti_terminfo *ti, int cap) {
+	if (!ti) return NULL;
+	if (cap < 0 || cap >= ti->strs_count) return NULL;
 
-	return t->info.strs[cap];
+	return ti->strs[cap];
 }
 
 /*

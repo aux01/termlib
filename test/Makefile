@@ -7,7 +7,7 @@ CFLAGS  = -std=c99 -Wall -Wextra -Wno-missing-field-initializers \
 LDFLAGS =
 LDLIBS  =
 
-TESTS   = ti_setupterm_test ti_getcaps_test ti_parm_test \
+TESTS   = ti_load_test ti_getcaps_test ti_parm_test \
           sgr_unpack_test sgr_encode_test sgr_attrs_test
 
 test: clean all

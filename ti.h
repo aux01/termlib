@@ -1,14 +1,14 @@
 /*
  *
- * ti.h - Minimal, standalone terminfo(5) processor.
+ * ti.h - Minimal, standalone terminfo(5) processor library.
  * Copyright (c) 2020, Auxrelius I <aux01@aux.life>
  *
  * This library can be used as a replacement for much of the ncurses terminfo
- * loading and string processing interface. It implements loading and parsing of
- * binary terminfo files as described by term(5).
+ * loading and string processing interface. It handles loading and parsing of
+ * binary terminfo files as described by term(5), including legacy and extended
+ * format capabilities. Parameterized string processing as described in
+ * terminfo(5) is also supported.
  *
- * See also:
- *   <https://pubs.opengroup.org/onlinepubs/007908799/xcurses/term.h.html>
  *
  */
 
@@ -17,43 +17,40 @@
 #include <stdint.h>
 
 /*
- * In-memory version of a terminfo file.
- * Describes the terminal's capabilities and special escape sequences.
+ * Terminfo struct
  *
- * TODO: combine this with ti_term
+ * Describes the terminal's capabilities and special escape sequences. The
+ * ti_load() function parses a binary terminfo file and populates the
+ * ti_terminfo struct. Use ti_free() to release resources associated with
+ * the terminfo structure.
+ *
+ * Most of the struct members are for internal use only. See the ti_getxxx()
+ * functions for retrieving capabilities.
+ *
  */
 typedef struct ti_terminfo {
-	char    *names;              // names for terminal separated by "|" chars
+	char    *term_names;         // names for terminal separated by "|" chars
 	int8_t  *bools;              // array of boolean capability values
 	int16_t *nums;               // array of integer capability values
 	char   **strs;               // array of string capability pointers
 
-	int16_t bools_count;         // bools array size
-	int16_t nums_count;          // nums array size
-	int16_t strs_count;          // strs array size
+	int16_t  bools_count;        // bools array size
+	int16_t  nums_count;         // nums array size
+	int16_t  strs_count;         // strs array size
 
 	int8_t  *ext_bools;          // array of extended boolean cap values
 	int16_t *ext_nums;           // array of extended integer cap values
 	char   **ext_strs;           // array of extended string caps pointers
 	char   **ext_names;          // array of extended cap names pointers
 
-	uint16_t ext_bools_count;    // ext_bools array size
-	uint16_t ext_nums_count;     // ext_nums array size
-	uint16_t ext_strs_count;     // ext_strs array size
-	uint16_t ext_names_count;    // ext_names array size
-} ti_terminfo;
+	int16_t ext_bools_count;     // ext_bools array size
+	int16_t ext_nums_count;      // ext_nums array size
+	int16_t ext_strs_count;      // ext_strs array size
+	int16_t ext_names_count;     // ext_names array size
 
-/*
- * A terminfo description and file descriptor used to interact with a
- * terminal of that type.
- */
-typedef struct ti_term {
-    ti_terminfo info;             // terminfo description
-    short       fd;               // file descriptor to write to
-    char        name[128];        // term name used in setupterm
-    char *      data;             // raw terminfo data loaded from file
-    int         len;              // size of data in bytes
-} ti_term;
+	char *   data;               // raw terminfo data loaded from file
+	int      len;                // size of data in bytes
+} ti_terminfo;
 
 /*
  * Error codes
@@ -66,24 +63,20 @@ typedef struct ti_term {
 #define TI_ERR_FILE_CORRUPT   0x04  // file is a terminfo file but is corrupt
 
 /*
- * Read the terminfo database and set up the ti_term structures for the given
+ * Read the terminfo database and set up the structures for the given
  * terminal name, or the TERM environment variable when termname is NULL.
  *
- * Simplest invocation uses TERM and standard output:
- *     ti_term *term = ti_setupterm(NULL, 1, NULL);
+ * Returns a pointer to a newly allocated ti_terminfo struct on success, or
+ * NULL when an error occurs. Passing an int pointer in the err argument gives
+ * more info on what kind of error occured. See the TI_ERR_XXX defines for more.
  *
- * Returns a pointer to a newly allocated ti_term struct on success, or NULL
- * when an error occurs. Passing an int pointer in the err argument gives more
- * info on what kind of error occured:
- *
- *     TI_ERR_TERM_NOT_SET    no term name given and TERM not set.
- *     TI_ERR_FILE_NOT_FOUND  terminfo file not found or could not be read.
- *     TI_ERR_FILE_INVALID    file was found but is not a terminfo file.
+ * The ti_free() function must be called with the ti_terminfo pointer returned
+ * from ti_load() in order to free ti memory.
  *
  * Ncurses counterpart: setupterm().
  */
-ti_term *ti_setupterm(const char *termname, int fd, int *err);
-void     ti_freeterm(ti_term *term);
+ti_terminfo *ti_load(const char *termname, int *err);
+void         ti_free(ti_terminfo *ti);
 
 /*
  * Read terminfo defined capabilities for the current terminal.
@@ -95,9 +88,9 @@ void     ti_freeterm(ti_term *term);
  *
  * Ncurses counterpart: tigetflag(), tigetnum(), tigetstr().
  * */
-int   ti_getflag(ti_term *t, int cap);
-int   ti_getnum(ti_term *t, int cap);
-char *ti_getstr(ti_term *t, int cap);
+int   ti_getflag(ti_terminfo *ti, int cap);
+int   ti_getnum(ti_terminfo *ti, int cap);
+char *ti_getstr(ti_terminfo *ti, int cap);
 
 /*
  * Process terminfo parameterized string.

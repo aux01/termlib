@@ -9,18 +9,8 @@
 #include <assert.h>
 
 int main(void) {
-	int err;
-
 	// make stdout line buffered
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
-
-	// load terminfo data from our test directory only
-	setenv("TERMINFO", "./terminfo", 1);
-
-	// load the terminfo data into the global ti_term struct and associate
-	// with standard output:
-	ti_term *t = ti_setupterm("xterm-color", 1, &err);
-	assert(t != NULL);
 
 	size_t n;
 	char buf[TI_PARM_OUTPUT_MAX];
@@ -333,9 +323,6 @@ int main(void) {
 	printf("buf: %s\n", buf);
 	assert(strcmp(buf, "") == 0);
 	assert(n == strlen(buf));
-
-	// when you're done, remember to free terminal info memory:
-	ti_freeterm(t);
 
 	return 0;
 }

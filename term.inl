@@ -22,7 +22,7 @@ enum {
 
 #define EUNSUPPORTED_TERM -1
 
-static ti_term *term;
+static ti_terminfo *ti;
 static const char **keys;
 static const char **funcs;
 
@@ -68,12 +68,12 @@ static const int16_t ti_keys[] = {
 // Loads terminal escape sequences from terminfo.
 static int init_term(void) {
 	int err;
-	term = ti_setupterm(NULL, 1, &err);
-	if (!term) return EUNSUPPORTED_TERM;
+	ti = ti_load(NULL, &err);
+	if (!ti) return EUNSUPPORTED_TERM;
 
 	keys = malloc(sizeof(char*) * (TB_KEYS_NUM+1));
 	for (int i = 0; i < TB_KEYS_NUM; i++) {
-		keys[i] = ti_getstr(term, ti_keys[i]);
+		keys[i] = ti_getstr(ti, ti_keys[i]);
 	}
 	keys[TB_KEYS_NUM] = 0;
 
@@ -81,9 +81,10 @@ static int init_term(void) {
 	// the last two entries are reserved for mouse extensions.
 	// because the table offset is not there, the entries have to fill in manually
 	for (int i = 0; i < T_FUNCS_NUM-2; i++) {
-		funcs[i] = ti_getstr(term, ti_funcs[i]);
+		funcs[i] = ti_getstr(ti, ti_funcs[i]);
 	}
 
+	// TODO: load from extended format terminfo capabilities
 	funcs[T_FUNCS_NUM-2] = ENTER_MOUSE_SEQ;
 	funcs[T_FUNCS_NUM-1] = EXIT_MOUSE_SEQ;
 
@@ -93,7 +94,7 @@ static int init_term(void) {
 static void shutdown_term(void) {
 	free(keys);  keys = NULL;
 	free(funcs); funcs = NULL;
-	ti_freeterm(term); term = NULL;
+	ti_free(ti); ti = NULL;
 }
 
 // vim: noexpandtab

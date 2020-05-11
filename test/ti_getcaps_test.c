@@ -57,6 +57,36 @@ void test_getcaps_by_name() {
 	ti_free(ti);
 }
 
+void test_getcaps_by_name_extended() {
+	int err;
+
+	// load the terminfo data into the global ti_term struct and associate
+	// with standard output:
+	ti_terminfo *ti = ti_load("xterm-new", &err);
+	assert(ti != NULL);
+
+	// read boolean extended capabilities with the ti_getflag() function
+	// returns 1 if the terminal has the capability or 0 if not
+	int has_set_color = ti_getflag(ti, "AX"),
+	    has_xt = ti_getflag(ti, "XT"),
+	    has_unknown = ti_getflag(ti, "NOTACAP");
+	assert(has_set_color == 1);
+	assert(has_xt == 1);
+	assert(has_unknown == 0);
+
+	// read numeric capabilities with the ti_getnumi() function:
+	// TODO: need a terminfo file with extended numeric capabilities
+
+	// read string capabilities with the ti_getstr() function:
+	char *cross_out_on  = ti_getstr(ti, "smxx"),
+	     *cross_out_off = ti_getstr(ti, "rmxx");
+	assert(strcmp("\x1b[9m", cross_out_on) == 0);
+	assert(strcmp("\x1b[29m", cross_out_off) == 0);
+
+	// when you're done, remember to free terminal info memory:
+	ti_free(ti);
+}
+
 void test_getcaps_by_index() {
 	int err;
 
@@ -100,6 +130,7 @@ int main(void) {
 
 	test_getcaps_by_index();
 	test_getcaps_by_name();
+	test_getcaps_by_name_extended();
 
 	return 0;
 }

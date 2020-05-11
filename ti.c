@@ -265,82 +265,101 @@ void ti_free(ti_terminfo *ti) {
 	free(ti);
 }
 
-int ti_getflagi(ti_terminfo *ti, int cap) {
-	if (!ti) return 0;
-	if (cap < 0 || cap > ti->bools_count) return 0;
+/*
+ * Terminal capability access functions
+ *
+ */
 
+int ti_getflagi(ti_terminfo *ti, int cap) {
+	assert(ti);
+	if (cap < 0 || cap > ti->bools_count) {
+		return 0;
+	}
 	return ti->bools[cap];
 }
 
 int ti_getnumi(ti_terminfo *ti, int cap) {
-	if (!ti) return -1;
-	if (cap < 0 || cap > ti->nums_count) return -1;
-
+	assert(ti);
+	if (cap < 0 || cap > ti->nums_count) {
+		return -1;
+	}
 	return ti->nums[cap];
 }
 
 char *ti_getstri(ti_terminfo *ti, int cap) {
-	if (!ti) return NULL;
-	if (cap < 0 || cap >= ti->strs_count) return NULL;
-
+	assert(ti);
+	if (cap < 0 || cap >= ti->strs_count) {
+		return NULL;
+	}
 	return ti->strs[cap];
 }
 
 int ti_getflag(ti_terminfo *ti, const char *cap) {
+	assert(ti);
 	if (cap == NULL) return 0;
 
 	// O(n) linear search through bool capability names.
 	// TIP: load these at startup instead of on-demand.
-	int n = (sizeof(ti_boolnames) / sizeof(char*));
-	int index = -1;
+	static const int n = (sizeof(ti_boolnames) / sizeof(char*));
 	for (int i = 0; i < n; i++) {
-		if (strcmp(ti_boolnames[i], cap) == 0) {
-			index = i;
-			break;
-		}
+		if (strcmp(ti_boolnames[i], cap)) continue;
+		return ti_getflagi(ti, i);
 	}
 
-	// TODO: check extended capabilties
+	// check extended boolean capabilties
+	for (int i = 0; i < ti->ext_bools_count; i++) {
+		if (strcmp(ti->ext_names[i], cap)) continue;
+		return ti->ext_bools[i];
+	}
 
-	return ti_getflagi(ti, index);
+	return 0;
+
 }
 
 int ti_getnum(ti_terminfo *ti, const char *cap) {
+	assert(ti);
 	if (cap == NULL) return -1;
 
 	// O(n) linear search through numeric capability names.
 	// TIP: load these at startup instead of on-demand.
-	int n = (sizeof(ti_numnames) / sizeof(char*));
-	int index = -1;
+	static const int n = (sizeof(ti_numnames) / sizeof(char*));
 	for (int i = 0; i < n; i++) {
-		if (strcmp(ti_numnames[i], cap) == 0) {
-			index = i;
-			break;
-		}
+		if (strcmp(ti_numnames[i], cap)) continue;
+		return ti_getnumi(ti, i);
 	}
 
-	// TODO: check extended capabilties
+	// check extended numeric capabilties.
+	// note: numeric cap names start after bool cap names.
+	int offset = ti->ext_bools_count;
+	for (int i = 0; i < ti->ext_nums_count; i++) {
+		if (strcmp(ti->ext_names[offset + i], cap)) continue;
+		return ti->ext_nums[i];
+	}
 
-	return ti_getnumi(ti, index);
+	return -1;
 }
 
 char *ti_getstr(ti_terminfo *ti, const char *cap) {
+	assert(ti);
 	if (cap == NULL) return NULL;
 
 	// O(n) linear search through string capability names.
 	// TIP: load these at startup instead of on-demand.
-	int n = (sizeof(ti_strnames) / sizeof(char*));
-	int index = -1;
+	static const int n = (sizeof(ti_strnames) / sizeof(char*));
 	for (int i = 0; i < n; i++) {
-		if (strcmp(ti_strnames[i], cap) == 0) {
-			index = i;
-			break;
-		}
+		if (strcmp(ti_strnames[i], cap)) continue;
+		return ti_getstri(ti, i);
 	}
 
-	// TODO: check extended capabilties
+	// check extended string capabilties.
+	// note: string cap names start after bool and numeric cap names.
+	int offset = ti->ext_bools_count + ti->ext_nums_count;
+	for (int i = 0; i < ti->ext_strs_count; i++) {
+		if (strcmp(ti->ext_names[offset + i], cap)) continue;
+		return ti->ext_strs[i];
+	}
 
-	return ti_getstri(ti, index);
+	return NULL;
 }
 
 /*

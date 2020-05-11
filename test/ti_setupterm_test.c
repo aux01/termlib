@@ -24,7 +24,7 @@ void test_legacy_storage_format() {
 	// verify the correct number of entries were loaded for xterm-color.
 	assert(t->info.bools_count == 38);
 	assert(t->info.nums_count == 16);
-	assert(t->info.stroffs_count == 413);
+	assert(t->info.strs_count == 413);
 
 	// read some capabilities to verify the db is being processed correctly
 	int has_meta_key = ti_getflag(t, ti_km);
@@ -56,10 +56,11 @@ void test_extended_storage_format() {
 
 	// terminfo files have bool, numeric, and string capability entries.
 	// verify the correct number of entries were loaded for xterm-color.
-	printf("num_bools=%d, num_nums=%d, num_stroffs=%d\n", t->info.bools_count, t->info.nums_count, t->info.stroffs_count);
+	printf("bools_count=%d, nums_count=%d, strs_count=%d\n",
+	       t->info.bools_count, t->info.nums_count, t->info.strs_count);
 	assert(t->info.bools_count == 38);
 	assert(t->info.nums_count == 15);
-	assert(t->info.stroffs_count == 413);
+	assert(t->info.strs_count == 413);
 
 	// read some capabilities to verify the db is being processed correctly
 	int has_meta_key = ti_getflag(t, ti_km);

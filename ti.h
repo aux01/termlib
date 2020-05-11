@@ -19,28 +19,28 @@
 /*
  * In-memory version of a terminfo file.
  * Describes the terminal's capabilities and special escape sequences.
+ *
+ * TODO: combine this with ti_term
  */
 typedef struct ti_terminfo {
 	char    *names;              // names for terminal separated by "|" chars
 	int8_t  *bools;              // array of boolean capability values
 	int16_t *nums;               // array of integer capability values
-	int16_t *stroffs;            // array of string capability offsets
-	char    *strtbl;             // pointer to string table, base of offsets
-	uint16_t strtbl_len;         // size in bytes of string table
+	char   **strs;               // array of string capability pointers
 
-	uint16_t bools_count;        // count of bool capabilities
-	uint16_t nums_count;         // count of int numeric capabilities
-	uint16_t stroffs_count;      // count of string offsets (non -1 strings)
+	int16_t bools_count;         // bools array size
+	int16_t nums_count;          // nums array size
+	int16_t strs_count;          // strs array size
 
-	int8_t  *ext_bool;           // array of extended boolean cap values
-	int16_t *ext_num;            // array of extended integer cap values
-	char   **ext_str;            // array of extended string cap offsets
-	char   **ext_name;           // array of extended cap name offsets
+	int8_t  *ext_bools;          // array of extended boolean cap values
+	int16_t *ext_nums;           // array of extended integer cap values
+	char   **ext_strs;           // array of extended string caps pointers
+	char   **ext_names;          // array of extended cap names pointers
 
-	uint16_t ext_bool_count;    // ext_bool array size
-	uint16_t ext_num_count;     // ext_num array size
-	uint16_t ext_str_count;     // ext_str array size
-	uint16_t ext_name_count;    // ext_name array size
+	uint16_t ext_bools_count;    // ext_bools array size
+	uint16_t ext_nums_count;     // ext_nums array size
+	uint16_t ext_strs_count;     // ext_strs array size
+	uint16_t ext_names_count;    // ext_names array size
 } ti_terminfo;
 
 /*
@@ -57,6 +57,8 @@ typedef struct ti_term {
 
 /*
  * Error codes
+ *
+ * TODO: make these negative and return positive errno values when applicable
  */
 #define TI_ERR_TERM_NOT_SET   0x01  // TERM environ var not set
 #define TI_ERR_FILE_NOT_FOUND 0x02  // no matching terminfo file found

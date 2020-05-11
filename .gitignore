@@ -6,6 +6,7 @@ termbox.sa
 /demo/keyboard
 /demo/output
 /demo/paint
+/demo/capdump
 
 /test/*_test
 

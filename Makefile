@@ -11,8 +11,8 @@ SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
 
-DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o
-DEMO_CMDS = demo/keyboard demo/output demo/paint
+DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o
+DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
 
 AMAL_OBJS = amalgamation/termbox.o
 
@@ -35,6 +35,8 @@ demo/keyboard: demo/keyboard.o $(OBJS)
 demo/output: demo/output.o $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
 demo/paint: demo/paint.o $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
+demo/capdump: demo/capdump.o $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
 
 # Targets for building the single file source library.

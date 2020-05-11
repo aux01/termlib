@@ -21,23 +21,26 @@
  * Describes the terminal's capabilities and special escape sequences.
  */
 typedef struct ti_terminfo {
-    char    *names;               // names for terminal separated by "|" chars
-    int8_t  *bools;               // array of boolean capability values
-    int16_t *nums;                // array of integer capability values
-    int16_t *str_offs;            // array of string capability offsets
-    char    *strtbl;              // pointer to string table, base of offsets
-    uint16_t strtbl_len;          // size in bytes of string table
+	char    *names;              // names for terminal separated by "|" chars
+	int8_t  *bools;              // array of boolean capability values
+	int16_t *nums;               // array of integer capability values
+	int16_t *stroffs;            // array of string capability offsets
+	char    *strtbl;             // pointer to string table, base of offsets
+	uint16_t strtbl_len;         // size in bytes of string table
 
-    uint16_t num_bools;           // count of bool values
-    uint16_t num_nums;            // count of int values
-    uint16_t num_stroffs;         // count of string offsets (non -1 strings)
+	uint16_t bools_count;        // count of bool capabilities
+	uint16_t nums_count;         // count of int numeric capabilities
+	uint16_t stroffs_count;      // count of string offsets (non -1 strings)
 
-    char  *ext_strtbl;            // pointer to extended string table
-    char  **ext_names;            // corresponding names
+	int8_t  *ext_bool;           // array of extended boolean cap values
+	int16_t *ext_num;            // array of extended integer cap values
+	char   **ext_str;            // array of extended string cap offsets
+	char   **ext_name;           // array of extended cap name offsets
 
-    uint16_t ext_bools;           // count extensions to bools
-    uint16_t ext_nums;            // count extensions to numbers
-    uint16_t ext_strings;         // count extensions to strings
+	uint16_t ext_bool_count;    // ext_bool array size
+	uint16_t ext_num_count;     // ext_num array size
+	uint16_t ext_str_count;     // ext_str array size
+	uint16_t ext_name_count;    // ext_name array size
 } ti_terminfo;
 
 /*
@@ -55,10 +58,10 @@ typedef struct ti_term {
 /*
  * Error codes
  */
-#define TI_OK                 0x00
-#define TI_ERR_TERM_NOT_SET   0x01
-#define TI_ERR_FILE_NOT_FOUND 0x02
-#define TI_ERR_FILE_INVALID   0x03
+#define TI_ERR_TERM_NOT_SET   0x01  // TERM environ var not set
+#define TI_ERR_FILE_NOT_FOUND 0x02  // no matching terminfo file found
+#define TI_ERR_FILE_INVALID   0x03  // file is not a terminfo binary file
+#define TI_ERR_FILE_CORRUPT   0x04  // file is a terminfo file but is corrupt
 
 /*
  * Read the terminfo database and set up the ti_term structures for the given

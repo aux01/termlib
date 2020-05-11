@@ -128,6 +128,14 @@ int ti_parm(char *buf, const char *ps, int c, ...);
 
 
 /*
+ * Write escaped version of str to buf. All non-printable and control characters
+ * are escaped. buf should be allocated to be 4x the size of str.
+ *
+ * Returns the number of bytes written to buf.
+ */
+int ti_stresc(char *buf, const char *str, int n);
+
+/*
  * Capability names generated with tools/gencap-names.sh at 2020-05-10T22:56:27 CDT
  *
  */

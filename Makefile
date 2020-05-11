@@ -69,7 +69,7 @@ clean:
 # Implicit rule to build object files from .c source files
 .SUFFIXES: .o .c
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CFLAGS_EXTRA) -c $< -o $@
 
 tags: # ignore amalgamation sources
 	ctags -R --exclude='*amalgamation*' --totals

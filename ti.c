@@ -365,6 +365,52 @@ char *ti_getstr(ti_terminfo *ti, const char *cap) {
 	return NULL;
 }
 
+
+/*
+ * Utility functions
+ *
+ */
+int ti_stresc(char *buf, const char *str, int n) {
+	assert(buf);
+	assert(str);
+
+	char *pbuf = buf;
+	for (const char *pch = str; *pch; pch++) {
+		if (n - (pbuf - buf) < 5) {
+			// eager bounds check
+			break;
+		}
+
+		if (*pch >= ' ' && *pch <= '~') {
+			*pbuf++ = *pch;
+			continue;
+		}
+
+		*pbuf++ = '\\';
+		switch (*pch) {
+		case '\x1b': // ESC
+			*pbuf++ = 'e';
+			break;
+		case '\t':
+			*pbuf++ = 't';
+			break;
+		case '\n':
+			*pbuf++ = 'n';
+			break;
+		case '\r':
+			*pbuf++ = 'r';
+			break;
+		default:
+			*pbuf++ = 'x';
+			pbuf+= sprintf(pbuf, "%02x", *pch);
+		}
+	}
+	*pbuf++ = 0;
+
+	return pbuf - buf - 1;
+}
+
+
 /*
  * Parameterized string processing
  *

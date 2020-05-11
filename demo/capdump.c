@@ -50,11 +50,21 @@ int main(void) {
 	for (int i = 0; i < ti->ext_nums_count; i++) {
 		printf("%s %s=%d\n", "ext num", ti->ext_num_names[i], ti->ext_nums[i]);
 	}
+
+	char esc[1024]; // escape string buffer
 	for (int i = 0; i < ti->strs_count; i++) {
-		printf("%s %s=%s\n", "std str", ti_strnames[i], ti_getstri(ti, i));
+		char *s = ti_getstri(ti, i);
+		if (s) {
+			ti_stresc(esc, s, sizeof(esc));
+			printf("%s %s=%s\n", "std str", ti_strnames[i], esc);
+		} else {
+			printf("%s %s=%s\n", "std str", ti_strnames[i], s);
+		}
 	}
 	for (int i = 0; i < ti->ext_strs_count; i++) {
-		printf("%s %s=%s\n", "ext str", ti->ext_str_names[i], ti->ext_strs[i]);
+		char *s = ti->ext_strs[i];
+		ti_stresc(esc, s, sizeof(esc));
+		printf("%s %s=%s\n", "ext str", ti->ext_str_names[i], esc);
 	}
 
 	return 0;

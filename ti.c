@@ -73,7 +73,7 @@ static int ti_try_path(struct ti_file *f, const char *path, const char *term) {
 	int rc = ti_read_file(f, fn);
 	if (rc == 0) return 0;
 
-	// fallback to darwin specific dirs structure
+	// fallback to case-insensitive filesystem path structure
 	snprintf(fn, sizeof(fn), "%s/%x/%s", path, term[0], term);
 	return ti_read_file(f, fn);
 
@@ -114,14 +114,14 @@ static int ti_load_data(struct ti_file *f, const char *term) {
 	}
 
 	// search in system paths
-	// TODO: may be different on different systems; use `infocmp -D' to ls
 	char *paths[] = {
 		"/etc/terminfo",
 		"/lib/terminfo",
 		"/usr/share/terminfo",
-		""
+		"/usr/local/share/terminfo",
+		NULL
 	};
-	for (int i = 0; paths[i][0]; i++) {
+	for (int i = 0; paths[i]; i++) {
 		rc = ti_try_path(f, paths[i], term);
 		if (rc == 0) return rc;
 	}

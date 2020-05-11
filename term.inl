@@ -73,7 +73,7 @@ static int init_term(void) {
 
 	keys = malloc(sizeof(char*) * (TB_KEYS_NUM+1));
 	for (int i = 0; i < TB_KEYS_NUM; i++) {
-		keys[i] = ti_getstr(ti, ti_keys[i]);
+		keys[i] = ti_getstri(ti, ti_keys[i]);
 	}
 	keys[TB_KEYS_NUM] = 0;
 
@@ -81,7 +81,7 @@ static int init_term(void) {
 	// the last two entries are reserved for mouse extensions.
 	// because the table offset is not there, the entries have to fill in manually
 	for (int i = 0; i < T_FUNCS_NUM-2; i++) {
-		funcs[i] = ti_getstr(ti, ti_funcs[i]);
+		funcs[i] = ti_getstri(ti, ti_funcs[i]);
 	}
 
 	// TODO: load from extended format terminfo capabilities

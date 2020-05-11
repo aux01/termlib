@@ -222,8 +222,6 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	} h2;
 	memcpy(&h2, f.data+data_len, sizeof(h2));
 
-	printf("strtbl_num: %d, strtbl_len: %d\n", h2.strtbl_num, h2.strtbl_len);
-
 	ti->ext_bools = (int8_t*)(f.data + data_len + sizeof(h2));
 	ti->ext_bools_count = h2.bools_count;
 	ti->ext_nums = (int16_t*)(ti->ext_bools + h2.bools_count +
@@ -252,18 +250,6 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 		ti->ext_names[i] = nametbl + nameoffs[i];
 	}
 
-	printf("ext_bools_count=%d, ext_nums_count=%d, ext_strs_count=%d\n, ext_names_count=%d\n",
-	       ti->ext_bools_count, ti->ext_nums_count, ti->ext_strs_count, ti->ext_names_count);
-
-	for (int i = 0; i < ti->ext_bools_count; i++)
-		printf("bools[%d] = %d\n", i, ti->ext_bools[i]);
-	for (int i = 0; i < ti->ext_nums_count; i++)
-		printf(" nums[%d] = %d\n", i, ti->ext_nums[i]);
-	for (int i = 0; i < ti->ext_strs_count; i++)
-		printf(" strs[%d] = %s\n", i, ti->ext_strs[i]);
-	for (int i = 0; i < ti->ext_names_count; i++)
-		printf("names[%d] = %s\n", i, ti->ext_names[i]);
-
 	if (err) *err = 0;
 	return ti;
 }
@@ -279,26 +265,82 @@ void ti_free(ti_terminfo *ti) {
 	free(ti);
 }
 
-int ti_getflag(ti_terminfo *ti, int cap) {
-	// TODO: these should return 0
-	if (!ti) return -1;
-	if (cap < 0 || cap > ti->bools_count) return -1;
+int ti_getflagi(ti_terminfo *ti, int cap) {
+	if (!ti) return 0;
+	if (cap < 0 || cap > ti->bools_count) return 0;
 
 	return ti->bools[cap];
 }
 
-int ti_getnum(ti_terminfo *ti, int cap) {
+int ti_getnumi(ti_terminfo *ti, int cap) {
 	if (!ti) return -1;
 	if (cap < 0 || cap > ti->nums_count) return -1;
 
 	return ti->nums[cap];
 }
 
-char *ti_getstr(ti_terminfo *ti, int cap) {
+char *ti_getstri(ti_terminfo *ti, int cap) {
 	if (!ti) return NULL;
 	if (cap < 0 || cap >= ti->strs_count) return NULL;
 
 	return ti->strs[cap];
+}
+
+int ti_getflag(ti_terminfo *ti, const char *cap) {
+	if (cap == NULL) return 0;
+
+	// O(n) linear search through bool capability names.
+	// TIP: load these at startup instead of on-demand.
+	int n = (sizeof(ti_boolnames) / sizeof(char*));
+	int index = -1;
+	for (int i = 0; i < n; i++) {
+		if (strcmp(ti_boolnames[i], cap) == 0) {
+			index = i;
+			break;
+		}
+	}
+
+	// TODO: check extended capabilties
+
+	return ti_getflagi(ti, index);
+}
+
+int ti_getnum(ti_terminfo *ti, const char *cap) {
+	if (cap == NULL) return -1;
+
+	// O(n) linear search through numeric capability names.
+	// TIP: load these at startup instead of on-demand.
+	int n = (sizeof(ti_numnames) / sizeof(char*));
+	int index = -1;
+	for (int i = 0; i < n; i++) {
+		if (strcmp(ti_numnames[i], cap) == 0) {
+			index = i;
+			break;
+		}
+	}
+
+	// TODO: check extended capabilties
+
+	return ti_getnumi(ti, index);
+}
+
+char *ti_getstr(ti_terminfo *ti, const char *cap) {
+	if (cap == NULL) return NULL;
+
+	// O(n) linear search through string capability names.
+	// TIP: load these at startup instead of on-demand.
+	int n = (sizeof(ti_strnames) / sizeof(char*));
+	int index = -1;
+	for (int i = 0; i < n; i++) {
+		if (strcmp(ti_strnames[i], cap) == 0) {
+			index = i;
+			break;
+		}
+	}
+
+	// TODO: check extended capabilties
+
+	return ti_getstri(ti, index);
 }
 
 /*

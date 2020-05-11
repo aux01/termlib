@@ -193,7 +193,11 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	char *strtbl = (char*)(stroffs + h.stroffs_count);
 	for (int i = 0; i < h.stroffs_count; i++) {
 		if (stroffs[i] < 0) continue;
-		// TODO: check that offset is within strtbl bounds
+		if (stroffs[i] >= h.strtbl_len) {
+			if (err) *err = TI_ERR_FILE_CORRUPT;
+			ti_free(ti);
+			return NULL;
+		}
 		ti->strs[i] = strtbl + stroffs[i];
 	}
 
@@ -204,11 +208,8 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 		if (err) *err = TI_ERR_FILE_CORRUPT;
 		ti_free(ti);
 		return NULL;
-	}
-
-	// return now if no extended format capabilities available after legacy
-	// format data
-	if (data_len == f.len) {
+	} else if (data_len == f.len) {
+		// no extended format capabilities after legacy capabilities
 		if (err) *err = 0;
 		return ti;
 	}
@@ -223,9 +224,10 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	} h2;
 	// TODO: add test for odd aligned terminfo file
 	data_len += (data_len % 2); // skip alignment byte
-	memcpy(&h2, f.data+data_len, sizeof(h2));
+	memcpy(&h2, ti->data + data_len, sizeof(h2));
 
-	ti->ext_bools = (int8_t*)(f.data + data_len + sizeof(h2));
+	// set up pointer members and counts to reference locations is data
+	ti->ext_bools = (int8_t*)(ti->data + data_len + sizeof(h2));
 	ti->ext_bools_count = h2.bools_count;
 	ti->ext_nums = (int16_t*)(ti->ext_bools + h2.bools_count +
 	                          (h2.bools_count % 2)); // alignment byte
@@ -233,27 +235,45 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	ti->ext_strs_count = h2.stroffs_count;
 	ti->ext_names_count = h2.strtbl_num - h2.stroffs_count;
 
+	// convert string capability offsets into pointers to strtbl
 	stroffs = ti->ext_nums + ti->ext_nums_count;
 	strtbl = (char*)(stroffs + h2.strtbl_num);
 	ti->ext_strs = calloc(ti->ext_strs_count, sizeof(char*));
 	for (int i = 0; i < ti->ext_strs_count; i++) {
-		// TODO: check that offset is within strtbl bounds
+		if (stroffs[i] < 0) continue;
+		if (stroffs[i] >= h2.strtbl_len) {
+			if (err) *err = TI_ERR_FILE_CORRUPT;
+			ti_free(ti);
+			return NULL;
+		}
 		ti->ext_strs[i] = strtbl + stroffs[i];
 	}
 
+	// convert name offsets into pointers to strtbl
 	int16_t *nameoffs = stroffs + h2.stroffs_count;
 	char *nametbl = strtbl;
+
+	// name offsets start after string capability values so need to adjust
+	// nametbl to be just past the last capability string
 	if (h2.stroffs_count > 0) {
 		char *last = ti->ext_strs[h2.stroffs_count - 1];
 		nametbl = last + strlen(last) + 1;
 	}
+	int nametbl_len = h2.strtbl_len - (nametbl - strtbl);
+
+	// calculate pointers from offsets
 	ti->ext_names = calloc(ti->ext_names_count, sizeof(char*));
 	for (int i = 0; i < ti->ext_names_count; i++) {
-		// TODO: check that offset is within nametbl bounds
+		if (nameoffs[i] < 0 || nameoffs[i] >= nametbl_len) {
+			if (err) *err = TI_ERR_FILE_CORRUPT;
+			ti_free(ti);
+			return NULL;
+		}
 		ti->ext_names[i] = nametbl + nameoffs[i];
 	}
 
-	// set up bool, num, and str name array pointers to their
+	// set up bool, num, and str name array pointers to their positions in
+	// the overall name pointers array
 	ti->ext_bool_names = ti->ext_names;
 	ti->ext_num_names = ti->ext_bool_names + ti->ext_bools_count;
 	ti->ext_str_names = ti->ext_num_names + ti->ext_nums_count;

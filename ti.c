@@ -129,10 +129,11 @@ static int ti_load_data(struct ti_file *f, const char *term) {
 	return TI_ERR_FILE_NOT_FOUND;
 }
 
-#define TI_MAGIC 0432
-#define TI_ALT_MAGIC 542  // TODO: version of terminfo with 32-bit int nums?
+#define TI_MAGIC       0432
+#define TI_MAGIC_32BIT 01036
 
 // TODO: big endian arch. terminfo files are always structured little endian.
+// TODO: support loading extended number format terminfo files (32bit ints).
 ti_terminfo *ti_load(const char *termname, int *err) {
 	if (!termname) termname = getenv("TERM");
 	if (!termname) {

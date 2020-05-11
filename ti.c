@@ -16,6 +16,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/unistd.h>
@@ -36,27 +37,32 @@ struct ti_file {
 static int ti_read_file(struct ti_file *f, const char *fn) {
 	FILE *fd = fopen(fn, "rb");
 	if (!fd) {
-		return TI_ERR_FILE_NOT_FOUND;
+		return errno;
 	}
 
 	struct stat st;
 	if (fstat(fileno(fd), &st) != 0) {
+		int err = errno;
 		fclose(fd);
-		return TI_ERR_FILE_INVALID;
+		return err;
 	}
 	f->len = st.st_size;
 
 	if (f->len > TI_DATA_MAX) {
 		fclose(fd);
-		return TI_ERR_FILE_INVALID;
+		return EFBIG;
 	}
 
 	f->data = malloc(f->len);
+	if (!f->data) {
+		fclose(fd);
+		return ENOMEM;
+	}
 
 	if (fread(f->data, 1, f->len, fd) != (size_t)f->len) {
 		free(f->data);
 		fclose(fd);
-		return TI_ERR_FILE_INVALID;
+		return EIO;
 	}
 
 	fclose(fd);
@@ -76,7 +82,6 @@ static int ti_try_path(struct ti_file *f, const char *path, const char *term) {
 	// fallback to case-insensitive filesystem path structure
 	snprintf(fn, sizeof(fn), "%s/%x/%s", path, term[0], term);
 	return ti_read_file(f, fn);
-
 }
 
 // Find the terminfo file and load its contents into the ti_file struct.
@@ -126,7 +131,7 @@ static int ti_load_data(struct ti_file *f, const char *term) {
 		if (rc == 0) return rc;
 	}
 
-	return TI_ERR_FILE_NOT_FOUND;
+	return ENOENT; // file not found
 }
 
 #define TI_MAGIC       0432
@@ -151,7 +156,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	// if data size is less than fixed header we got problems
 	// exit now before allocating a bunch of other stuff
 	if (f.len < (int)(6 * sizeof(int16_t))) {
-		if (err) *err = TI_ERR_FILE_INVALID;
+		if (err) *err = TI_ERR_NO_HEADER;
 		return NULL;
 	}
 
@@ -173,7 +178,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 
 	// verify magic number checks out
 	if (h.magic != TI_MAGIC) {
-		if (err) *err = TI_ERR_FILE_INVALID;
+		if (err) *err = TI_ERR_BAD_MAGIC;
 		ti_free(ti);
 		return NULL;
 	}
@@ -194,7 +199,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	for (int i = 0; i < h.stroffs_count; i++) {
 		if (stroffs[i] < 0) continue;
 		if (stroffs[i] >= h.strtbl_len) {
-			if (err) *err = TI_ERR_FILE_CORRUPT;
+			if (err) *err = TI_ERR_BAD_STROFF;
 			ti_free(ti);
 			return NULL;
 		}
@@ -205,7 +210,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	// if not the terminfo file is corrupt
 	int data_len = strtbl + h.strtbl_len - ti->data;
 	if (data_len > f.len) {
-		if (err) *err = TI_ERR_FILE_CORRUPT;
+		if (err) *err = TI_ERR_BAD_STRTBL;
 		ti_free(ti);
 		return NULL;
 	} else if (data_len == f.len) {
@@ -241,7 +246,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	for (int i = 0; i < ti->ext_strs_count; i++) {
 		if (stroffs[i] < 0) continue;
 		if (stroffs[i] >= h2.strtbl_len) {
-			if (err) *err = TI_ERR_FILE_CORRUPT;
+			if (err) *err = TI_ERR_BAD_STROFF;
 			ti_free(ti);
 			return NULL;
 		}
@@ -264,7 +269,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	ti->ext_names = calloc(ti->ext_names_count, sizeof(char*));
 	for (int i = 0; i < ti->ext_names_count; i++) {
 		if (nameoffs[i] < 0 || nameoffs[i] >= nametbl_len) {
-			if (err) *err = TI_ERR_FILE_CORRUPT;
+			if (err) *err = TI_ERR_BAD_STROFF;
 			ti_free(ti);
 			return NULL;
 		}
@@ -291,6 +296,32 @@ void ti_free(ti_terminfo *ti) {
 	free(ti->data);      ti->data = NULL;
 	free(ti);
 }
+
+
+/*
+ * Error reporting
+ *
+ */
+
+static const char * const ti_errors[] = {
+	"term name not given and TERM not set",
+	"missing terminfo header",
+	"file is not a terminfo file",
+	"illegal string offset in terminfo file",
+	"terminfo string table length exceeds file size",
+};
+
+const char *ti_strerror(int errnum) {
+	if (errnum > 0) {
+		return strerror(errnum);
+	} else if (errnum < 0) {
+		int index = abs(errnum) - 1;
+		if (index < (int)(sizeof(ti_errors) / sizeof(char*)))
+			return ti_errors[index];
+	}
+	return NULL;
+}
+
 
 /*
  * Terminal capability access functions

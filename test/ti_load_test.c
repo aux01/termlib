@@ -147,7 +147,7 @@ void test_missing_file() {
 	ti_terminfo *ti = ti_load("xterm-missing", &err);
 	printf("err=%d\n", err);
 	assert(ti == NULL);
-	assert(err == TI_ERR_FILE_NOT_FOUND);
+	assert(err == ENOENT);
 	ti_free(ti);
 }
 
@@ -157,7 +157,7 @@ void test_non_terminfo_file() {
 	ti_terminfo *ti = ti_load("xterm-badfile", &err);
 	printf("err=%d\n", err);
 	assert(ti == NULL);
-	assert(err == TI_ERR_FILE_INVALID);
+	assert(err == TI_ERR_BAD_MAGIC);
 	ti_free(ti);
 }
 

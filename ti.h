@@ -58,16 +58,6 @@ typedef struct ti_terminfo {
 } ti_terminfo;
 
 /*
- * Error codes
- *
- * TODO: make these negative and return positive errno values when applicable
- */
-#define TI_ERR_TERM_NOT_SET   0x01  // TERM environ var not set
-#define TI_ERR_FILE_NOT_FOUND 0x02  // no matching terminfo file found
-#define TI_ERR_FILE_INVALID   0x03  // file is not a terminfo binary file
-#define TI_ERR_FILE_CORRUPT   0x04  // file is a terminfo file but is corrupt
-
-/*
  * Read the terminfo database and set up the structures for the given
  * terminal name, or the TERM environment variable when termname is NULL.
  *
@@ -82,6 +72,27 @@ typedef struct ti_terminfo {
  */
 ti_terminfo *ti_load(const char *termname, int *err);
 void         ti_free(ti_terminfo *ti);
+
+/*
+ * Error codes
+ *
+ * ti_load() takes a pointer to int err argument that's set to one of the
+ * following error codes when a terminfo file cannot be loaded.
+ *
+ * Positive error code values correspond to system errno values.
+ *
+ */
+#define TI_ERR_TERM_NOT_SET -1  // TERM environ var not set
+#define TI_ERR_NO_HEADER    -2  // file does not have a terminfo header
+#define TI_ERR_BAD_MAGIC    -3  // file magic number is not terminfo
+#define TI_ERR_BAD_STROFF   -4  // string offset is beyond string table
+#define TI_ERR_BAD_STRTBL   -5  // string table len is beyond EOF
+
+/*
+ * Convert an error code set by ti_load() to an error string.
+ * The returned string should not be freed.
+ */
+const char *ti_strerror(int errnum);
 
 /*
  * Read boolean, numeric, or string terminal capabilities for the given

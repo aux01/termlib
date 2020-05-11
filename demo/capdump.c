@@ -17,23 +17,7 @@ int main(void) {
 	int err;
 	ti_terminfo *ti = ti_load(term, &err);
 	if (!ti) {
-		switch (err) {
-		case TI_ERR_FILE_NOT_FOUND:
-			fprintf(stderr,
-			        "error: file not found: term: %s\n",
-				term);
-			break;
-		case TI_ERR_FILE_INVALID:
-			fprintf(stderr,
-			        "error: invalid terminfo file: term: %s\n",
-				term);
-			break;
-		case TI_ERR_FILE_CORRUPT:
-			fprintf(stderr,
-			        "error: terminfo file is corrupt: term: %s\n",
-				term);
-			break;
-		}
+		fprintf(stderr, "error: %s\n", ti_strerror(err));
 		return 1;
 	}
 

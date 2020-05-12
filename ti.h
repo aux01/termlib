@@ -30,8 +30,9 @@
  */
 typedef struct ti_terminfo {
 	char    *term_names;         // names for terminal separated by "|" chars
+
 	int8_t  *bools;              // array of boolean capability values
-	int16_t *nums;               // array of integer capability values
+	int32_t *nums;               // array of integer capability values
 	char   **strs;               // array of string capability pointers
 
 	int16_t  bools_count;        // bools array size
@@ -39,7 +40,7 @@ typedef struct ti_terminfo {
 	int16_t  strs_count;         // strs array size
 
 	int8_t  *ext_bools;          // array of extended boolean cap values
-	int16_t *ext_nums;           // array of extended integer cap values
+	int32_t *ext_nums;           // array of extended integer cap values
 	char   **ext_strs;           // array of extended string caps pointers
 
 	char   **ext_bool_names;     // array of extended boolean cap names

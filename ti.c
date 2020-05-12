@@ -134,11 +134,14 @@ static int ti_load_data(struct ti_file *f, const char *term) {
 	return ENOENT; // file not found
 }
 
+// Terminfo magic number byte values.
+// TI_MAGIC_32BIT indicates that numeric capabilities are stored as 32-bit signed
+// integers instead of 16-bit signed integers.
+// See term(5) Extended Number Format section for more information.
 #define TI_MAGIC       0432
 #define TI_MAGIC_32BIT 01036
 
 // TODO: big endian arch. terminfo files are always structured little endian.
-// TODO: support loading extended number format terminfo files (32bit ints).
 ti_terminfo *ti_load(const char *termname, int *err) {
 	if (!termname) termname = getenv("TERM");
 	if (!termname) {
@@ -165,37 +168,58 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	ti->data = f.data;
 	ti->len = f.len;
 
+	// pointer to current position in data
+	char *p = ti->data;
+
 	// copy header data into struct
 	struct {
 		int16_t magic;         // magic number (octal 0432)
 		int16_t names_len;     // size in bytes of the names section
 		int16_t bools_len;     // size in bytes of the bools section
-		int16_t nums_count;    // count of shorts in nums section
+		int16_t nums_count;    // count of ints in nums section
 		int16_t stroffs_count; // count of shorts in stroffs section
 		int16_t strtbl_len;    // size in bytes of the string table
 	} h;
-	memcpy(&h, f.data, sizeof(h));
+	memcpy(&h, p, sizeof(h));
+	p += sizeof(h);
 
 	// verify magic number checks out
-	if (h.magic != TI_MAGIC) {
+	if (h.magic != TI_MAGIC && h.magic != TI_MAGIC_32BIT) {
 		if (err) *err = TI_ERR_BAD_MAGIC;
 		ti_free(ti);
 		return NULL;
 	}
 
-	// set up ti_terminfo pointer members to reference locations in data
-	ti->term_names = ti->data + sizeof(h);
-	ti->bools = (int8_t*)(ti->term_names + h.names_len);
+	// point term_names at data section
+	ti->term_names = p;
+	p += h.names_len;
+
+	// point bools array at bools data section
+	ti->bools = (int8_t*)p;
 	ti->bools_count = h.bools_len;
-	ti->nums = (int16_t*)(ti->bools + ti->bools_count +
-	                      ((h.names_len + h.bools_len) % 2)); // alignment
+	p += h.bools_len + ((h.names_len + h.bools_len) % 2);
+
+	// size in bytes of numeric capabilities stored in data
+	const int numsz = (h.magic == TI_MAGIC_32BIT)
+		? sizeof(int32_t) : sizeof(int16_t);
+
+	// copy numeric capabilities into newly allocated array, converting from
+	// 16-bit to 32-bit values if needed
+	ti->nums = malloc(h.nums_count * sizeof(int32_t));
+	if (numsz == sizeof(int32_t)) {
+		memcpy(ti->nums, p, h.nums_count * sizeof(int32_t));
+	} else {
+		for (int i = 0; i < h.nums_count; i++)
+			ti->nums[i] = ((int16_t*)p)[i];
+	}
 	ti->nums_count = h.nums_count;
+	p += (h.nums_count * numsz);
 
 	// convert string capability offsets into pointers to strtbl
 	ti->strs = calloc(h.stroffs_count, sizeof(char*));
 	ti->strs_count = h.stroffs_count;
-	int16_t *stroffs = ti->nums + h.nums_count;
-	char *strtbl = (char*)(stroffs + h.stroffs_count);
+	int16_t *stroffs = (int16_t*)p;
+	p += (h.stroffs_count * sizeof(int16_t));
 	for (int i = 0; i < h.stroffs_count; i++) {
 		if (stroffs[i] < 0) continue;
 		if (stroffs[i] >= h.strtbl_len) {
@@ -203,21 +227,23 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 			ti_free(ti);
 			return NULL;
 		}
-		ti->strs[i] = strtbl + stroffs[i];
+		ti->strs[i] = p + stroffs[i];
 	}
+	p += h.strtbl_len;
 
 	// make sure all of the above pointers point within the loaded data;
 	// if not the terminfo file is corrupt
-	int data_len = strtbl + h.strtbl_len - ti->data;
+	int data_len = p - ti->data;
 	if (data_len > f.len) {
 		if (err) *err = TI_ERR_BAD_STRTBL;
 		ti_free(ti);
 		return NULL;
 	} else if (data_len == f.len) {
-		// no extended format capabilities after legacy capabilities
+		// no extended caps after legacy caps, return now
 		if (err) *err = 0;
 		return ti;
 	}
+	p += (data_len % 2); // alignment byte
 
 	// extended format header comes after legacy format data in file
 	struct {
@@ -227,43 +253,54 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 		int16_t  strtbl_num;     // count strs in strtbl including names
 		int16_t  strtbl_len;     // total size of strtbl
 	} h2;
-	data_len += (data_len % 2); // skip alignment byte
-	memcpy(&h2, ti->data + data_len, sizeof(h2));
+	memcpy(&h2, p, sizeof(h2));
+	p += sizeof(h2);
 
-	// set up pointer members and counts to reference locations is data
-	ti->ext_bools = (int8_t*)(ti->data + data_len + sizeof(h2));
 	ti->ext_bools_count = h2.bools_count;
-	ti->ext_nums = (int16_t*)(ti->ext_bools + h2.bools_count +
-	                          (h2.bools_count % 2)); // alignment byte
 	ti->ext_nums_count = h2.nums_count;
 	ti->ext_strs_count = h2.stroffs_count;
 	ti->ext_names_count = h2.strtbl_num - h2.stroffs_count;
 
+	// set up pointer members and counts to reference locations is data
+	ti->ext_bools = (int8_t*)p;
+	p += h2.bools_count + (h2.bools_count % 2); // alignment
+
+	// copy extended numeric caps into newly allocated array, converting from
+	// 16-bit to 32-bit values if needed
+	ti->ext_nums = malloc(h2.nums_count * sizeof(int32_t));
+	if (numsz == sizeof(int32_t)) {
+		memcpy(ti->ext_nums, p, h2.nums_count * sizeof(int32_t));
+	} else {
+		for (int i = 0; i < h2.nums_count; i++)
+			ti->ext_nums[i] = ((int16_t*)p)[i];
+	}
+	p += (h2.nums_count * numsz);
+
 	// convert string capability offsets into pointers to strtbl
-	stroffs = ti->ext_nums + ti->ext_nums_count;
-	strtbl = (char*)(stroffs + h2.strtbl_num);
-	ti->ext_strs = calloc(ti->ext_strs_count, sizeof(char*));
-	for (int i = 0; i < ti->ext_strs_count; i++) {
+	stroffs = (int16_t*)p;
+	p += (h2.strtbl_num * sizeof(int16_t));
+	char *strtbl = p;
+	ti->ext_strs = calloc(h2.stroffs_count, sizeof(char*));
+	for (int i = 0; i < h2.stroffs_count; i++) {
 		if (stroffs[i] < 0) continue;
 		if (stroffs[i] >= h2.strtbl_len) {
 			if (err) *err = TI_ERR_BAD_STROFF;
 			ti_free(ti);
 			return NULL;
 		}
-		ti->ext_strs[i] = strtbl + stroffs[i];
+		ti->ext_strs[i] = p + stroffs[i];
+	}
+
+	// move position past last extended string capability value so its on
+	// the first extended name string
+	if (h2.stroffs_count > 0) {
+		p += stroffs[h2.stroffs_count - 1];
+		p += strlen(p) + 1;
 	}
 
 	// convert name offsets into pointers to strtbl
 	int16_t *nameoffs = stroffs + h2.stroffs_count;
-	char *nametbl = strtbl;
-
-	// name offsets start after string capability values so need to adjust
-	// nametbl to be just past the last capability string
-	if (h2.stroffs_count > 0) {
-		char *last = ti->ext_strs[h2.stroffs_count - 1];
-		nametbl = last + strlen(last) + 1;
-	}
-	int nametbl_len = h2.strtbl_len - (nametbl - strtbl);
+	int nametbl_len = h2.strtbl_len - (p - strtbl);
 
 	// calculate pointers from offsets
 	ti->ext_names = calloc(ti->ext_names_count, sizeof(char*));
@@ -273,7 +310,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 			ti_free(ti);
 			return NULL;
 		}
-		ti->ext_names[i] = nametbl + nameoffs[i];
+		ti->ext_names[i] = p + nameoffs[i];
 	}
 
 	// set up bool, num, and str name array pointers to their positions in
@@ -290,7 +327,9 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 // directly. String returned from ti_getstr are invalid after ti_freeterm.
 void ti_free(ti_terminfo *ti) {
 	if (!ti) return;
+	free(ti->nums);      ti->nums = NULL;
 	free(ti->strs);      ti->strs = NULL;
+	free(ti->ext_nums);  ti->ext_nums = NULL;
 	free(ti->ext_strs);  ti->ext_strs = NULL;
 	free(ti->ext_names); ti->ext_names = NULL;
 	free(ti->data);      ti->data = NULL;

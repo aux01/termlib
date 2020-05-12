@@ -535,6 +535,7 @@ char *ti_getstr(ti_terminfo *ti, const char *cap) {
  * Utility functions
  *
  */
+
 int ti_stresc(char *buf, const char *str, int n) {
 	assert(buf);
 	assert(str);
@@ -566,8 +567,7 @@ int ti_stresc(char *buf, const char *str, int n) {
 			*pbuf++ = 'r';
 			break;
 		default:
-			*pbuf++ = 'x';
-			pbuf+= sprintf(pbuf, "%02x", *pch);
+			pbuf+= sprintf(pbuf, "%03hho", *pch);
 		}
 	}
 	*pbuf++ = 0;

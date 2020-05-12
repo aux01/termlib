@@ -198,10 +198,12 @@ static int ti_load_data(struct ti_file *f, const char *term) {
 	}
 
 	// search in system paths
+	// TODO: add compile time def to support other non-standard locations
 	char *paths[] = {
 		"/etc/terminfo",
 		"/lib/terminfo",
 		"/usr/share/terminfo",
+		"/usr/share/lib/terminfo",
 		"/usr/local/share/terminfo",
 		NULL
 	};

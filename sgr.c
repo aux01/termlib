@@ -8,8 +8,6 @@
  *
  */
 
-#define _POSIX_C_SOURCE 200112L
-
 #include "sgr.h"
 
 #include <stdio.h>

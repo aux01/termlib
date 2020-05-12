@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 CC        = cc
-CFLAGS    = -std=c99 -Wall -Wextra -D_XOPEN_SOURCE -Os -fpic
+CFLAGS    = -std=c99 -Wall -Wextra -O2 -fPIC
 LDFLAGS   =
 LDLIBS    =
 

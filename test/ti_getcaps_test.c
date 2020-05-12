@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200112L    // setenv
+
 #include "../ti.c"
 
 #include <stdio.h>

@@ -259,7 +259,7 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 	ti->ext_bools_count = h2.bools_count;
 	ti->ext_nums_count = h2.nums_count;
 	ti->ext_strs_count = h2.stroffs_count;
-	ti->ext_names_count = h2.strtbl_num - h2.stroffs_count;
+	ti->ext_names_count = h2.bools_count + h2.nums_count + h2.stroffs_count;
 
 	// set up pointer members and counts to reference locations is data
 	ti->ext_bools = (int8_t*)p;
@@ -278,25 +278,20 @@ ti_terminfo *ti_load(const char *termname, int *err) {
 
 	// convert string capability offsets into pointers to strtbl
 	stroffs = (int16_t*)p;
-	p += (h2.strtbl_num * sizeof(int16_t));
+	p += ((h2.stroffs_count + ti->ext_names_count) * sizeof(int16_t));
 	char *strtbl = p;
 	ti->ext_strs = calloc(h2.stroffs_count, sizeof(char*));
 	for (int i = 0; i < h2.stroffs_count; i++) {
-		if (stroffs[i] < 0) continue;
+		if (stroffs[i] < 0) continue;  // extended strings can be null
 		if (stroffs[i] >= h2.strtbl_len) {
 			if (err) *err = TI_ERR_BAD_STROFF;
 			ti_free(ti);
 			return NULL;
 		}
-		ti->ext_strs[i] = p + stroffs[i];
+		ti->ext_strs[i] = strtbl + stroffs[i];
+		p = ti->ext_strs[i] + strlen(ti->ext_strs[i]) + 1;
 	}
 
-	// move position past last extended string capability value so its on
-	// the first extended name string
-	if (h2.stroffs_count > 0) {
-		p += stroffs[h2.stroffs_count - 1];
-		p += strlen(p) + 1;
-	}
 
 	// convert name offsets into pointers to strtbl
 	int16_t *nameoffs = stroffs + h2.stroffs_count;

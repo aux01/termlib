@@ -40,15 +40,17 @@ int main(void) {
 		char *s = ti_getstri(ti, i);
 		if (s) {
 			ti_stresc(esc, s, sizeof(esc));
-			printf("%s %s=%s\n", "std str", ti_strnames[i], esc);
-		} else {
-			printf("%s %s=%s\n", "std str", ti_strnames[i], s);
+			s = esc;
 		}
+		printf("%s %s=%s\n", "std str", ti_strnames[i], s);
 	}
 	for (int i = 0; i < ti->ext_strs_count; i++) {
 		char *s = ti->ext_strs[i];
-		ti_stresc(esc, s, sizeof(esc));
-		printf("%s %s=%s\n", "ext str", ti->ext_str_names[i], esc);
+		if (s) {
+			ti_stresc(esc, s, sizeof(esc));
+			s = esc;
+		}
+		printf("%s %s=%s\n", "ext str", ti->ext_str_names[i], s);
 	}
 
 	return 0;

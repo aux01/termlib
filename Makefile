@@ -15,6 +15,10 @@ LIBS      = $(SO_NAME) $(SA_NAME)
 
 DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o
 DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
+
+TESTS    = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
+           test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test
+
 AMAL_OBJS = amalgamation/termbox.o
 
 # make profile=release (default)
@@ -24,7 +28,7 @@ profile = release
 include build/$(profile).mk
 
 # Build everything except the amalgamation sources
-all: $(OBJS) $(LIBS) $(DEMO_OBJS) $(DEMO_CMDS)
+all: $(OBJS) $(LIBS) demo tests
 .PHONY: all
 
 # Rebuild termbox.o when deps change
@@ -37,14 +41,37 @@ $(SA_NAME): $(OBJS)
 	ar rcs $@ $(OBJS)
 
 # Demo programs
+DEMOS_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) $(OBJS) $(LDLIBS)
+demo: $(DEMO_CMDS)
 demo/keyboard: demo/keyboard.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
+	$(DEMOS_CC) $@.o -o $@
 demo/output: demo/output.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
+	$(DEMOS_CC) $@.o -o $@
 demo/paint: demo/paint.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
+	$(DEMOS_CC) $@.o -o $@
 demo/capdump: demo/capdump.o $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) $@.o -o $@
+	$(DEMOS_CC) $@.o -o $@
+
+# Test programs
+TEST_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) -Wno-missing-field-initializers $(LDFLAGS)
+tests: $(TESTS)
+test/ti_load_test: test/ti_load_test.c
+	$(TEST_CC) $< -o $@
+test/ti_getcaps_test: test/ti_getcaps_test.c
+	$(TEST_CC) $< -o $@
+test/ti_parm_test: test/ti_parm_test.c
+	$(TEST_CC) $< -o $@
+test/sgr_unpack_test: test/sgr_unpack_test.c
+	$(TEST_CC) $< -o $@
+test/sgr_encode_test: test/sgr_encode_test.c
+	$(TEST_CC) $< -o $@
+test/sgr_attrs_test: test/sgr_attrs_test.c
+	$(TEST_CC) $< -o $@
+test-clean:
+	rm -f $(TESTS)
+test: test-clean tests
+	test/runtest $(TESTS)
+.PHONY: test test-clean
 
 # Targets for building the single file source library.
 # The termbox.c and .h files can be copied directly into
@@ -60,10 +87,6 @@ amalgamation/termbox.o: amalgamation/termbox.c amalgamation/termbox.h
 	$(CC) $(CFLAGS) -c amalgamation/termbox.c -o $@
 .PHONY: amalgamation
 
-test:
-	$(MAKE) -C test clean all
-.PHONY: test
-
 # Clean everything
 clean:
 	rm -f $(DEMO_OBJS)
@@ -71,6 +94,7 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(LIBS)
 	rm -f $(AMAL_OBJS)
+	rm -f $(TESTS)
 .PHONY: clean
 
 # Implicit rule to build object files from .c source files

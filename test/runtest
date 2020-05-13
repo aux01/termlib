@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 oks=0 fails=0
 while [ $# -gt 0 ]; do
     printf "test: %-20s%s" "$1" "..."
-    if out=$(./"$1" 2>&1); then
+    if out=$(./"$(basename "$1")" 2>&1); then
         oks=$(( oks+1 ))
         echo " OK"
     else

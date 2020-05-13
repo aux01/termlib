@@ -2,19 +2,26 @@
 .SUFFIXES:
 
 CC        = cc
-CFLAGS    = -std=c99 -Wall -Wextra -O2 -fPIC
+CFLAGS    = -std=c99 $(WARN) $(OPTIMIZE) -fPIC
+WARN      = -Wall -Wextra
+OPTIMIZE  = -O2
 LDFLAGS   =
 LDLIBS    =
 
-OBJS      = termbox.o utf8.o ti.o sgr.o
+OBJS      = termbox.o ti.o sgr.o utf8.o
 SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
 
 DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o
 DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
-
 AMAL_OBJS = amalgamation/termbox.o
+
+# make profile=release (default)
+# make profile=debug
+# make profile=clang
+profile = release
+include build/$(profile).mk
 
 # Build everything except the amalgamation sources
 all: $(OBJS) $(LIBS) $(DEMO_OBJS) $(DEMO_CMDS)

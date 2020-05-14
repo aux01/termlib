@@ -697,6 +697,52 @@ static void stk_free(struct stk *stk) {
 // variables are used.
 static char *svars[26];
 
+
+/*
+ * The following copied from ncurses lib_tparm.c:
+ *
+ *           The parameter mechanism uses  a  stack  and  special  %
+ *      codes  to manipulate it.  Typically a sequence will push one
+ *      of the parameters onto the stack and then print it  in  some
+ *      format.  Often more complex operations are necessary.
+ *
+ *           The % encodings have the following meanings:
+ *
+ *           %%        outputs `%'
+ *           %c        print pop() like %c in printf()
+ *           %s        print pop() like %s in printf()
+ *           %[[:]flags][width[.precision]][doxXs]
+ *                     as in printf, flags are [-+#] and space
+ *                     The ':' is used to avoid making %+ or %-
+ *                     patterns (see below).
+ *
+ *           %p[1-9]   push ith parm
+ *           %P[a-z]   set dynamic variable [a-z] to pop()
+ *           %g[a-z]   get dynamic variable [a-z] and push it
+ *           %P[A-Z]   set static variable [A-Z] to pop()
+ *           %g[A-Z]   get static variable [A-Z] and push it
+ *           %l        push strlen(pop)
+ *           %'c'      push char constant c
+ *           %{nn}     push integer constant nn
+ *
+ *           %+ %- %* %/ %m
+ *                     arithmetic (%m is mod): push(pop() op pop())
+ *           %& %| %^  bit operations: push(pop() op pop())
+ *           %= %> %<  logical operations: push(pop() op pop())
+ *           %A %O     logical and & or operations for conditionals
+ *           %! %~     unary operations push(op pop())
+ *           %i        add 1 to first two parms (for ANSI terminals)
+ *
+ *           %? expr %t thenpart %e elsepart %;
+ *                     if-then-else, %e elsepart is optional.
+ *                     else-if's are possible ala Algol 68:
+ *                     %? c1 %t b1 %e c2 %t b2 %e c3 %t b3 %e c4 %t b4 %e b5 %;
+ *
+ *      For those of the above operators which are binary and not commutative,
+ *      the stack works in the usual way, with
+ *                     %gx %gy %m
+ *      resulting in x mod y, not the reverse.
+ */
 int ti_parm(char *buf, const char *s, int c, ...) {
 	if (!s) return 0;
 

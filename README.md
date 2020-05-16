@@ -61,6 +61,12 @@ See the [termbox.h][] file for more details.
 
 [termbox.h]: https://github.com/aux01/tbaux/blob/master/termbox.h
 
-### Links
+### Acknowledgements
 
-Please see [nsf/termbox][og] for the original CHANGELOG and more.
+This project was originally forked from [Termbox][og] by nsf and contributors.
+
+The [ti.c][] parameter processing logic is based on the Golang [TCell
+implementation][tcell] of the same by Garrett D'Amore and contributors.
+
+[ti.c]:  https://github.com/aux01/tbaux/blob/master/ti.c
+[tcell]: https://github.com/gdamore/tcell/blob/master/terminfo/terminfo.go

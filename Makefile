@@ -68,11 +68,9 @@ test/sgr_encode_test: test/sgr_encode_test.c
 	$(TEST_CC) $< -o $@
 test/sgr_attrs_test: test/sgr_attrs_test.c
 	$(TEST_CC) $< -o $@
-test-clean:
-	rm -f $(TESTS)
-test: test-clean tests
+test: tests
 	test/runtest $(TESTS)
-.PHONY: test test-clean
+.PHONY: test
 
 # Targets for building the single file source library.
 # The termbox.c and .h files can be copied directly into

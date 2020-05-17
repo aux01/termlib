@@ -8,7 +8,7 @@ OPTIMIZE  = -O2
 LDFLAGS   =
 LDLIBS    =
 
-OBJS      = termbox.o ti.o sgr.o utf8.o
+OBJS      = termbox.o ti.o sgr.o utf8.o tkbd.o
 SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
@@ -17,7 +17,8 @@ DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o
 DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
 
 TESTS    = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
-           test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test
+           test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
+           test/tkbd_test
 
 AMAL_OBJS = amalgamation/termbox.o
 

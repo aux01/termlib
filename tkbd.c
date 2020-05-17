@@ -15,6 +15,8 @@
 #include <assert.h>
 
 #define ARRAYLEN(a) (sizeof(a) / sizeof(a[0]))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 void tkbd_init(struct tkbd_stream *s, int fd)
 {
@@ -275,6 +277,15 @@ static int parse_keyboard_seq_params(int* ar, int n, char *pdata) {
 	return i;
 }
 
+// Parse a special keyboard sequence and fill the zeroed event structure.
+// No more than len bytes will be read from buf.
+//
+// IMPORTANT: This function assumes the event struct is zeroed. Not doing so
+// will lead to unpredictable behavior like ev->seq not being null terminated.
+//
+// Returns the number of bytes read from buf to fill the event structure.
+// Returns zero when no escape sequence is present at front of buf or when the
+// sequence is not recognized.
 static int parse_keyboard_seq(struct tkbd_event *ev, const char *buf, int len)
 {
 	char const *p  = buf;
@@ -337,6 +348,10 @@ static int parse_keyboard_seq(struct tkbd_event *ev, const char *buf, int len)
 		// we dont know how to handle this sequence type
 		return 0;
 	}
+
+	// copy seq source data into event seq buffer
+	size_t sz = MIN(p-buf, TKBD_SEQ_MAX-1);
+	memcpy(ev->seq, buf, sz);
 
 	return p - buf;
 

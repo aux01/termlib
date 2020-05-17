@@ -141,6 +141,11 @@
 #define TKBD_MOUSE_WHEEL_UP       (0xFFFF-5)
 #define TKBD_MOUSE_WHEEL_DOWN     (0xFFFF-6)
 
+/*
+ * Limits
+ */
+#define TKBD_SEQ_MAX 32         // max length in bytes of an escape sequence
+
 struct tkbd_stream {
 	int  fd;                // file descriptor to read from
 	int  timeout;           // non-blocking
@@ -149,11 +154,12 @@ struct tkbd_stream {
 };
 
 struct tkbd_event {
-	int type;               // event type
+	uint8_t  type;          // event type
 	uint8_t  mod;           // modifiers
-	uint16_t key;           // one of the TB_KEY_* constants
+	uint16_t key;           // one of the TKBD_KEY_* constants
 	uint32_t ch;            // unicode character
 	int32_t  x, y;          // mouse coordinates
+	char seq[TKBD_SEQ_MAX]; // char sequence source of event
 };
 
 /*

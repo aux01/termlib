@@ -26,6 +26,7 @@ static void test_parse_keyboard_seq(void) {
 	n = parse_keyboard_seq(&ev, buf, strlen(buf));
 	assert(n == strlen("\033[A"));
 	assert(ev.key == TKBD_KEY_UP);
+	assert(strcmp(ev.seq, "\033[A") == 0);
 
 	// parses mod parameters in xterm style sequence
 	strcpy(buf, "\033[7A");
@@ -35,6 +36,7 @@ static void test_parse_keyboard_seq(void) {
 	assert((size_t)n == strlen(buf));
 	assert(ev.key == TKBD_KEY_UP);
 	assert(ev.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
+	assert(strcmp(ev.seq, buf) == 0);
 
 	// parses mod parameters in vt style sequence
 	strcpy(buf, "\033[24;2~");
@@ -44,6 +46,7 @@ static void test_parse_keyboard_seq(void) {
 	assert((size_t)n == strlen(buf));
 	assert(ev.key == TKBD_KEY_F12);
 	assert(ev.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(ev.seq, buf) == 0);
 
 	// handles out of range vt sequences
 	strcpy(buf, "\033[100;2~");
@@ -53,6 +56,7 @@ static void test_parse_keyboard_seq(void) {
 	assert((size_t)n == strlen(buf));
 	assert(ev.key == TKBD_KEY_UNKNOWN);
 	assert(ev.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(ev.seq, buf) == 0);
 
 	// handles out of range xterm sequences
 	strcpy(buf, "\033[2Z");
@@ -62,6 +66,18 @@ static void test_parse_keyboard_seq(void) {
 	assert((size_t)n == strlen(buf));
 	assert(ev.key == TKBD_KEY_UNKNOWN);
 	assert(ev.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(ev.seq, buf) == 0);
+
+	// try to overflow the ev->seq buffer
+	assert(TKBD_SEQ_MAX == 32 && "update overflow test below");
+	strcpy(buf, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Z");
+	memset(&ev, 0, sizeof(ev));
+	n = parse_keyboard_seq(&ev, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	assert((size_t)n == strlen(buf));
+	assert(ev.key == TKBD_KEY_UNKNOWN);
+	assert(ev.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(ev.seq, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;") == 0);
 }
 
 static void test_parse_keyboard_seq_params(void) {

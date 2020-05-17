@@ -14,6 +14,8 @@
 #include <string.h>            // memset
 #include <assert.h>
 
+#define ARRAYLEN(a) (sizeof(a) / sizeof(a[0]))
+
 void tkbd_init(struct tkbd_stream *s, int fd)
 {
 	s->fd = fd;
@@ -170,16 +172,16 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 /*
  * VT Sequences:
  *
- * \E[0~             \E[10~  F0       \E[20~  F9        \E[30~
- * \E[1~  HOME       \E[11~  F1       \E[21~  F10       \E[31~   F17
- * \E[2~  INS        \E[12~  F2       \E[22~            \E[32~   F18
- * \E[3~  DEL        \E[13~  F3       \E[23~  F11       \E[33~   F19
- * \E[4~  END        \E[14~  F4       \E[24~  F12       \E[34~   F20
- * \E[5~  PGUP       \E[15~  F5       \E[25~  F13       \E[35~
- * \E[6~  PGDN       \E[16~           \E[26~  F14
- * \E[7~  HOME       \E[17~  F6       \E[27~
- * \E[8~  END        \E[18~  F7       \E[28~  F15
- * \E[9~             \E[19~  F8       \E[29~  F16
+ * \E[0~  -          \E[10~  F0        \E[20~  F9        \E[30~   -
+ * \E[1~  HOME       \E[11~  F1        \E[21~  F10       \E[31~   F17
+ * \E[2~  INS        \E[12~  F2        \E[22~  -         \E[32~   F18
+ * \E[3~  DEL        \E[13~  F3        \E[23~  F11       \E[33~   F19
+ * \E[4~  END        \E[14~  F4        \E[24~  F12       \E[34~   F20
+ * \E[5~  PGUP       \E[15~  F5        \E[25~  F13       \E[35~
+ * \E[6~  PGDN       \E[16~  -         \E[26~  F14
+ * \E[7~  HOME       \E[17~  F6        \E[27~  -
+ * \E[8~  END        \E[18~  F7        \E[28~  F15
+ * \E[9~  -          \E[19~  F8        \E[29~  F16
  *
  */
 static uint16_t const vt_key_table[] = {
@@ -223,16 +225,16 @@ static uint16_t const vt_key_table[] = {
 /*
  * xterm sequences:
  *
- * \E[A   UP          \E[K                \E[U
- * \E[B   DOWN        \E[L                \E[V
- * \E[C   RIGHT       \E[M                \E[W
- * \E[D   LEFT        \E[N                \E[X
- * \E[E               \E[O                \E[Y
- * \E[F   END         \E[1P   F1          \E[Z
- * \E[G   KP 5        \E[1Q   F2
- * \E[H   HOME        \E[1R   F3
- * \E[I               \E[1S   F4
- * \E[J               \E[T
+ * \E[A   UP         \E[K    -         \E[U   -
+ * \E[B   DOWN       \E[L    -         \E[V   -
+ * \E[C   RIGHT      \E[M    -         \E[W   -
+ * \E[D   LEFT       \E[N    -         \E[X   -
+ * \E[E   -          \E[O    -         \E[Y   -
+ * \E[F   END        \E[1P   F1        \E[Z   -
+ * \E[G   KP 5       \E[1Q   F2
+ * \E[H   HOME       \E[1R   F3
+ * \E[I   -          \E[1S   F4
+ * \E[J   -          \E[T    -
  *
  */
 static uint16_t const xt_key_table[] = {
@@ -304,20 +306,32 @@ static int parse_keyboard_seq(struct tkbd_event *ev, const char *buf, int len)
 
 	// determine if vt or xterm style key sequence and map key and mods
 	int parms[2] = {0};
-	int const pmax = sizeof(parms) / sizeof(parms[0]);
 	if (*p == '~') {
-		// vt style sequence
-		parse_keyboard_seq_params(parms, pmax, parmdata);
-		ev->key = vt_key_table[parms[0]]; // TODO bounds
+		// vt style sequence: \E[5;3~ = ALT+PGUP
+		parse_keyboard_seq_params(parms, ARRAYLEN(parms), parmdata);
+
+		if (parms[0] < (int)ARRAYLEN(vt_key_table))
+			ev->key = vt_key_table[parms[0]];
+		else
+			ev->key = TKBD_KEY_UNKNOWN;
+
 		if (parms[1])
 			ev->mod = parms[1] - 1;
+
 		p++;
 	} else if (*p >= 'A' && *p <= 'Z') {
-		// xterm style sequence
-		parse_keyboard_seq_params(parms, pmax, parmdata);
-		ev->key = xt_key_table[*p - 'A']; // TODO bounds
+		// xterm style sequence: \E[3A = ALT+UP
+		parse_keyboard_seq_params(parms, ARRAYLEN(parms), parmdata);
+
+		int index = *p - 'A';
+		if (index < (int)ARRAYLEN(xt_key_table))
+			ev->key = xt_key_table[index];
+		else
+			ev->key = TKBD_KEY_UNKNOWN;
+
 		if (parms[0])
 			ev->mod = parms[0] - 1;
+
 		p++;
 	} else {
 		// we dont know how to handle this sequence type

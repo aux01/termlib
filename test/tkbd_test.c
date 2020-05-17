@@ -44,6 +44,24 @@ static void test_parse_keyboard_seq(void) {
 	assert((size_t)n == strlen(buf));
 	assert(ev.key == TKBD_KEY_F12);
 	assert(ev.mod == TKBD_MOD_SHIFT);
+
+	// handles out of range vt sequences
+	strcpy(buf, "\033[100;2~");
+	memset(&ev, 0, sizeof(ev));
+	n = parse_keyboard_seq(&ev, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	assert((size_t)n == strlen(buf));
+	assert(ev.key == TKBD_KEY_UNKNOWN);
+	assert(ev.mod == TKBD_MOD_SHIFT);
+
+	// handles out of range xterm sequences
+	strcpy(buf, "\033[2Z");
+	memset(&ev, 0, sizeof(ev));
+	n = parse_keyboard_seq(&ev, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	assert((size_t)n == strlen(buf));
+	assert(ev.key == TKBD_KEY_UNKNOWN);
+	assert(ev.mod == TKBD_MOD_SHIFT);
 }
 
 static void test_parse_keyboard_seq_params(void) {

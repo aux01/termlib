@@ -68,6 +68,8 @@ test/sgr_encode_test: test/sgr_encode_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
 test/sgr_attrs_test: test/sgr_attrs_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
+test/tkbd_test: test/tkbd_test.c tkbd.c tkbd.h
+	$(TEST_CC) $< -o $@
 test: tests
 	test/runtest $(TESTS)
 .PHONY: test

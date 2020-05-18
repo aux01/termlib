@@ -80,18 +80,18 @@ static void test_parse_keyboard_seq(void) {
 	assert(strcmp(ev.seq, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;") == 0);
 }
 
-static void test_parse_keyboard_seq_params(void) {
+static void test_parse_seq_params(void) {
 	int parms[2];
 	int n;
 
-	n = parse_keyboard_seq_params(parms, 2, "123");
+	n = parse_seq_params(parms, 2, "123");
 	printf("n = %d, parms[0] = %d, parms[1] = %d\n", n, parms[0], parms[1]);
 	assert(n == 1);
 	assert(parms[0] == 123);
 	assert(parms[1] == 0);
 
 	memset(&parms, 0, sizeof(parms));
-	n = parse_keyboard_seq_params(parms, 2, "123;456;789;");
+	n = parse_seq_params(parms, 2, "123;456;789;");
 	printf("n = %d, parms[0] = %d, parms[1] = %d\n", n, parms[0], parms[1]);
 	assert(n == 2);
 	assert(parms[0] == 123);
@@ -102,7 +102,7 @@ int main(void) {
 	// make stdout line buffered
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 
-	test_parse_keyboard_seq_params();
+	test_parse_seq_params();
 	test_parse_keyboard_seq();
 
 	return 0;

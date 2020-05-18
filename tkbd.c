@@ -44,6 +44,22 @@ static int starts_with(const char *s1, int len, const char *s2)
 		return 0;
 }
 
+// Parse multiple numeric parameters from a CSI sequence and store in the array
+// pointed to by ar. A maximum of n parameters will be parsed and filled into
+// the array. If a parameter is blank, 0 will be set in the array.
+//
+// Returns the number of parsed parsed and filled into the array.
+static int parse_seq_params(int* ar, int n, char *pdata) {
+	int i = 0;
+	while (i < n) {
+		ar[i++] = strtol(pdata, &pdata, 10);
+		if (*pdata++ == '\0')
+			break;
+	}
+
+	return i;
+}
+
 // Decode various mouse event char sequences into the given event struct.
 // Returns the number of bytes read from buf when the sequence is recognized and
 // decoded; or, a negative integer count of bytes when the sequence is recognized
@@ -77,7 +93,7 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 		default:
 			return -6;
 		}
-		ev->type = TKBD_MOUSE; // TB_EVENT_KEY by default
+		ev->type = TKBD_MOUSE; // TBKB_KEY by default
 		if ((b & 32) != 0)
 			ev->mod |= TKBD_MOD_MOTION;
 
@@ -86,7 +102,8 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 		ev->y = (uint8_t)buf[5] - 1 - 32;
 
 		return 6;
-	} else if (starts_with(buf, len, "\033[<") || starts_with(buf, len, "\033[")) {
+	} else if (starts_with(buf, len, "\033[<") ||
+		   starts_with(buf, len, "\033[")) {
 		// xterm 1006 extended mode or urxvt 1015 extended mode
 		// xterm: \033 [ < Cb ; Cx ; Cy (M or m)
 		// urxvt: \033 [ Cb ; Cx ; Cy M
@@ -261,22 +278,6 @@ static uint16_t const xt_key_table[] = {
 	TKBD_KEY_F4,
 };
 
-// Parse multiple numeric parameters from a CSI sequence and store in the array
-// pointed to by ar. A maximum of n parameters will be parsed and filled into
-// the array. If a parameter is blank, 0 will be set in the array.
-//
-// Returns the number of parsed parsed and filled into the array.
-static int parse_keyboard_seq_params(int* ar, int n, char *pdata) {
-	int i = 0;
-	while (i < n) {
-		ar[i++] = strtol(pdata, &pdata, 10);
-		if (*pdata++ == '\0')
-			break;
-	}
-
-	return i;
-}
-
 // Parse a special keyboard sequence and fill the zeroed event structure.
 // No more than len bytes will be read from buf.
 //
@@ -319,7 +320,7 @@ static int parse_keyboard_seq(struct tkbd_event *ev, const char *buf, int len)
 	int parms[2] = {0};
 	if (*p == '~') {
 		// vt style sequence: \E[5;3~ = ALT+PGUP
-		parse_keyboard_seq_params(parms, ARRAYLEN(parms), parmdata);
+		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
 		if (parms[0] < (int)ARRAYLEN(vt_key_table))
 			ev->key = vt_key_table[parms[0]];
@@ -332,7 +333,7 @@ static int parse_keyboard_seq(struct tkbd_event *ev, const char *buf, int len)
 		p++;
 	} else if (*p >= 'A' && *p <= 'Z') {
 		// xterm style sequence: \E[3A = ALT+UP
-		parse_keyboard_seq_params(parms, ARRAYLEN(parms), parmdata);
+		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
 		int index = *p - 'A';
 		if (index < (int)ARRAYLEN(xt_key_table))

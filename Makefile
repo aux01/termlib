@@ -56,17 +56,17 @@ demo/capdump: demo/capdump.o $(OBJS)
 # Test programs
 TEST_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) -Wno-missing-field-initializers $(LDFLAGS)
 tests: $(TESTS)
-test/ti_load_test: test/ti_load_test.c
+test/ti_load_test: test/ti_load_test.c ti.c ti.h
 	$(TEST_CC) $< -o $@
-test/ti_getcaps_test: test/ti_getcaps_test.c
+test/ti_getcaps_test: test/ti_getcaps_test.c  ti.c ti.h
 	$(TEST_CC) $< -o $@
-test/ti_parm_test: test/ti_parm_test.c
+test/ti_parm_test: test/ti_parm_test.c ti.c ti.h
 	$(TEST_CC) $< -o $@
-test/sgr_unpack_test: test/sgr_unpack_test.c
+test/sgr_unpack_test: test/sgr_unpack_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
-test/sgr_encode_test: test/sgr_encode_test.c
+test/sgr_encode_test: test/sgr_encode_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
-test/sgr_attrs_test: test/sgr_attrs_test.c
+test/sgr_attrs_test: test/sgr_attrs_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
 test: tests
 	test/runtest $(TESTS)

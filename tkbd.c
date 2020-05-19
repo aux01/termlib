@@ -172,7 +172,7 @@ static int parse_alt_seq(struct tkbd_event *ev, char const *buf, int len)
 }
 
 /*
- * VT sequences
+ * vt sequences
  *
  * Table of EMCA-48 / VT special key input sequences.
  * Array elements correspond to first parameter in escape sequence.
@@ -272,13 +272,16 @@ static uint16_t const xt_key_table[] = {
 // Parse a special keyboard sequence and fill the zeroed event structure.
 // No more than len bytes will be read from buf.
 //
+// Special keyboard sequences are typically only generated for function keys
+// F1-F12, INS, DEL, HOME, END, PGUP, PGDOWN, and the cursor arrow keys.
+//
 // IMPORTANT: This function assumes the event struct is zeroed. Not doing so
 // will lead to unpredictable behavior like ev->seq not being null terminated.
 //
 // Returns the number of bytes read from buf to fill the event structure.
 // Returns zero when no escape sequence is present at front of buf or when the
 // sequence is not recognized.
-static int parse_keyboard_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 {
 	char const *p  = buf;
 	char const *pe = p + len;
@@ -485,7 +488,7 @@ static int parse_key_seq(struct tkbd_stream *s, struct tkbd_event *ev)
 	if ((len = parse_mouse_seq(ev, s->buf, s->buflen)))
 		return len;
 
-	if ((len = parse_keyboard_seq(ev, s->buf, s->buflen)))
+	if ((len = parse_special_seq(ev, s->buf, s->buflen)))
 		return len;
 
 	if ((len = parse_alt_seq(ev, s->buf, s->buflen)))

@@ -138,12 +138,15 @@ static int parse_ctrl_seq(struct tkbd_event *ev, char const *buf, int len)
 	return 1;
 }
 
-// Parse a ALT+CH, CTRL+ALT+CH, SHIFT+ALT+CH sequence.
-// ALT+CH:       \Eg
-// SHIFT+ALT+CH: \EG
-// CTRL+ALT+CH:  \E^G
-// TODO: CTRL+SHIFT+ALT+CH?
-// TODO: ALT+; and other printable keys
+// Parse an ALT key sequence and fill event struct.
+// Any character or C0 control sequence may be preceded by ESC, indicating
+// that ALT was pressed at the same time.
+//
+// ALT+CH:       \Eg   (parse_char_seq)
+// SHIFT+ALT+CH: \EG   (parse_char_seq)
+// CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
+//
+// Returns the number of bytes consumed to fill the event struct.
 static int parse_alt_seq(struct tkbd_event *ev, char const *buf, int len)
 {
 	char const *p  = buf;
@@ -152,43 +155,17 @@ static int parse_alt_seq(struct tkbd_event *ev, char const *buf, int len)
 	if (p >= pe || *p++ != '\033')
 		return 0;
 
-	// ALT+CH a...z
-	if (*p >= 'a' && *p <= 'z') {
-		ev->mod |= TKBD_MOD_ALT;
-		ev->key = TKBD_KEY_A + (*p - 'a');
-		ev->ch = *p++;
-		memcpy(ev->seq, buf, p - buf);
-		return p - buf;
-	}
+	int n = parse_char_seq(ev, p, pe - p);
+	if (n == 0)
+		n = parse_ctrl_seq(ev, p, pe - p);
 
-	// ALT+CH 0...9
-	if (*p >= '0' && *p <= '9') {
-		ev->mod |= TKBD_MOD_ALT;
-		ev->key = TKBD_KEY_0 + (*p - '0');
-		ev->ch = *p++;
-		memcpy(ev->seq, buf, p - buf);
-		return p - buf;
-	}
+	if (n == 0)
+		return 0;
 
-	// SHIFT+ALT+CH A...Z
-	if (*p >= 'A' && *p <= 'Z') {
-		ev->mod |= TKBD_MOD_ALT|TKBD_MOD_SHIFT;
-		ev->key = TKBD_KEY_A + (*p - 'A');
-		ev->ch = *p++;
-		memcpy(ev->seq, buf, p - buf);
-		return p - buf;
-	}
-
-	// CTRL+ALT+CH or ALT+BS, ALT+TAB, ALT+ENTER
-	int n = parse_ctrl_seq(ev, p, 1);
-	if (n > 0) {
-		ev->mod |= TKBD_MOD_ALT;
-		p += n;
-		memcpy(ev->seq, buf, p - buf);
-		return p - buf;
-	}
-
-	return 0;
+	ev->mod |= TKBD_MOD_ALT;
+	p += n;
+	memcpy(ev->seq, buf, p - buf);
+	return p - buf;
 }
 
 /*
@@ -498,21 +475,24 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 }
 
 // Parse mouse, special key, alt key, or ctrl key sequence and fill event.
-static int parse_escape_seq(struct tkbd_stream *s, struct tkbd_event *ev)
+static int parse_key_seq(struct tkbd_stream *s, struct tkbd_event *ev)
 {
-	int seq_len;
+	int len;
 
-	if ((seq_len = parse_mouse_seq(ev, s->buf, s->buflen)))
-		return seq_len;
+	if ((len = parse_mouse_seq(ev, s->buf, s->buflen)))
+		return len;
 
-	if ((seq_len = parse_keyboard_seq(ev, s->buf, s->buflen)))
-		return seq_len;
+	if ((len = parse_keyboard_seq(ev, s->buf, s->buflen)))
+		return len;
 
-	if ((seq_len = parse_alt_seq(ev, s->buf, s->buflen)))
-		return seq_len;
+	if ((len = parse_alt_seq(ev, s->buf, s->buflen)))
+		return len;
 
-	if ((seq_len = parse_ctrl_seq(ev, s->buf, s->buflen)))
-		return seq_len;
+	if ((len = parse_ctrl_seq(ev, s->buf, s->buflen)))
+		return len;
+
+	if ((len = parse_char_seq(ev, s->buf, s->buflen)))
+		return len;
 
 	return 0;
 }

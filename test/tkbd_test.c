@@ -25,6 +25,92 @@ static void test_parse_seq_params(void)
 	assert(parms[1] == 456);
 }
 
+static void test_parse_char_seq(void)
+{
+	int n;
+	char seq[2] = {0};
+
+	for (char c = 'a'; c <= 'z'; c++) {
+		struct tkbd_event ev = {0};
+		seq[0] = c;
+		n = parse_char_seq(&ev, seq, 1);
+		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
+		       n, (int)c, ev.key);
+		assert(n == 1);
+		assert(ev.key == TKBD_KEY_A + (c - 'a'));
+		assert(ev.mod == 0);
+		assert(ev.ch == (uint32_t)c);
+		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+	}
+
+	for (char c = 'A'; c <= 'Z'; c++) {
+		struct tkbd_event ev = {0};
+		seq[0] = c;
+		n = parse_char_seq(&ev, seq, 1);
+		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
+		       n, (int)c, ev.key);
+		assert(n == 1);
+		assert(ev.key == c);
+		assert(ev.mod == TKBD_MOD_SHIFT);
+		assert(ev.ch == (uint32_t)c);
+		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+	}
+
+	for (char c = '0'; c <= '9'; c++) {
+		struct tkbd_event ev = {0};
+		seq[0] = c;
+		n = parse_char_seq(&ev, seq, 1);
+		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
+		       n, (int)c, ev.key);
+		assert(n == 1);
+		assert(ev.key == c);
+		assert(ev.mod == 0);
+		assert(ev.ch == (uint32_t)c);
+		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+	}
+
+	char const * const punc1 = " `-=[]\\;',./";
+	for (int i = 0; punc1[i]; i++) {
+		char c = punc1[i];
+		seq[0] = c;
+		struct tkbd_event ev = {0};
+		n = parse_char_seq(&ev, seq, 1);
+		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
+		       n, (int)c, ev.key);
+		assert(n == 1);
+		assert(ev.key == c);
+		assert(ev.mod == 0);
+		assert(ev.ch == (uint32_t)c);
+		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+	}
+
+	char const * const punc2 = "~!@#$%^&*()_+{}|:\"<>?";
+	for (int i = 0; punc2[i]; i++) {
+		char c = punc2[i];
+		seq[0] = c;
+		struct tkbd_event ev = {0};
+		n = parse_char_seq(&ev, seq, 1);
+		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
+		       n, (int)c, ev.key);
+		assert(n == 1);
+		assert(ev.key == c);
+		assert(ev.mod == TKBD_MOD_SHIFT);
+		assert(ev.ch == (uint32_t)c);
+		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+	}
+
+	// parsing non control sequences returns zero
+	struct tkbd_event ev0 = {0};
+	char *buf = "\033ABCD";
+	n = parse_ctrl_seq(&ev0, buf, strlen(buf));
+	printf("n = %d\n", n);
+	assert(n == 0);
+	assert(ev0.key == 0);
+	assert(ev0.mod == 0);
+	assert(ev0.ch == 0);
+	assert(ev0.seq[0] == 0);
+}
+
 static void test_parse_ctrl_seq(void)
 {
 	int n;
@@ -208,6 +294,7 @@ int main(void)
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 
 	test_parse_seq_params();
+	test_parse_char_seq();
 	test_parse_ctrl_seq();
 	test_parse_alt_seq();
 	test_parse_keyboard_seq();

@@ -59,24 +59,29 @@
 #define TKBD_KEY_END               0x19
 
 #define TKBD_KEY_QUOTE             0x27
+#define TKBD_KEY_DOUBLE_QUOTE      0x22
 #define TKBD_KEY_COMMA             0x2C
-#define TKBD_KEY_LT                0x2C
+#define TKBD_KEY_LT                0x3C
 #define TKBD_KEY_MINUS             0x2D
 #define TKBD_KEY_DASH              0x2D
+#define TKBD_KEY_UNDERSCORE        0x5F
 #define TKBD_KEY_PERIOD            0x2E
-#define TKBD_KEY_GT                0x2E
+#define TKBD_KEY_GT                0x3E
+#define TKBD_KEY_SLASH             0x2F
+#define TKBD_KEY_QUESTION          0x3F
 #define TKBD_KEY_SEMICOLON         0x3B
-#define TKBD_KEY_COLON             0x3B
+#define TKBD_KEY_COLON             0x3A
 #define TKBD_KEY_EQUAL             0x3D
-#define TKBD_KEY_PLUS              0x3D
+#define TKBD_KEY_PLUS              0x2B
 #define TKBD_KEY_BRACKET_LEFT      0x5B
-#define TKBD_KEY_BRACE_LEFT        0x5B
+#define TKBD_KEY_BRACE_LEFT        0x7B
 #define TKBD_KEY_BACKSLASH         0x5C
-#define TKBD_KEY_PIPE              0x5C
+#define TKBD_KEY_PIPE              0x7C
 #define TKBD_KEY_BRACKET_RIGHT     0x5D
-#define TKBD_KEY_BRACE_RIGHT       0x5D
+#define TKBD_KEY_BRACE_RIGHT       0x7D
 #define TKBD_KEY_BACKQUOTE         0x60
-#define TKBD_KEY_TILDE             0x60
+#define TKBD_KEY_BACKTICK          0x60
+#define TKBD_KEY_TILDE             0x7E
 
 #define TKBD_KEY_0                 0x30
 #define TKBD_KEY_1                 0x31
@@ -88,6 +93,17 @@
 #define TKBD_KEY_7                 0x37
 #define TKBD_KEY_8                 0x38
 #define TKBD_KEY_9                 0x39
+
+#define TKBD_KEY_PAREN_RIGHT       0x29
+#define TKBD_KEY_BANG              0x21
+#define TKBD_KEY_AT                0x40
+#define TKBD_KEY_POUND             0x23
+#define TKBD_KEY_DOLLAR            0x24
+#define TKBD_KEY_PERCENT           0x25
+#define TKBD_KEY_CARROT            0x5E
+#define TKBD_KEY_AMP               0x26
+#define TKBD_KEY_STAR              0x2A
+#define TKBD_KEY_PAREN_LEFT        0x28
 
 #define TKBD_KEY_A                 0x41
 #define TKBD_KEY_B                 0x42

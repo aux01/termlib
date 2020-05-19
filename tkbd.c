@@ -60,6 +60,42 @@ static int parse_seq_params(int* ar, int n, char *pdata) {
 	return i;
 }
 
+// Parse a character from the buffer.
+static int parse_char_seq(struct tkbd_event *ev, char const *buf, int len)
+{
+	char const *p  = buf;
+	char const *pe = buf + len;
+
+	if (p >= pe || *p < 0x20 || *p > 0x7E)
+		return 0;
+
+	ev->ch = *p;
+	ev->seq[0] = *p;
+
+	if (*p >= 'a' && *p <= 'z') {
+		ev->key = TKBD_KEY_A + (*p - 'a');
+		return 1;
+	}
+
+	if (*p >= '0' && *p <= '9') {
+		ev->key = *p;
+		return 1;
+	}
+
+	if (*p >= 'A' && *p <= 'Z') {
+		ev->mod |= TKBD_MOD_SHIFT;
+		ev->key = *p;
+		return 1;
+	}
+
+	// punctuation character or space
+	ev->key = *p;
+	if (!strchr(" `-=[]\\;',./", *p))
+		ev->mod |= TKBD_MOD_SHIFT;
+
+	return 1;
+}
+
 // Parse a Ctrl+CH , BACKSPACE, TAB, or ENTER sequence.
 // These generate single-byte C0 sequences.
 //

@@ -12,19 +12,13 @@
 
 #include <stdlib.h>            // strtoul
 #include <string.h>            // memset
+#include <unistd.h>            // read
+#include <termios.h>           // tcgetattr, tcsetattr, struct termios
 #include <assert.h>
 
 #define ARRAYLEN(a) (sizeof(a) / sizeof(a[0]))
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
-
-void tkbd_init(struct tkbd_stream *s, int fd)
-{
-	s->fd = fd;
-	s->timeout = 0;
-	memset(s->buf, 0, sizeof(s->buf));
-	s->buflen = 0;
-}
 
 // Checks if s1 starts with s2 and returns the strlen of s2 if so.
 // Returns zero when s1 does not start with s2.
@@ -281,7 +275,7 @@ static uint16_t const xt_key_table[] = {
 // Returns the number of bytes read from buf to fill the event structure.
 // Returns zero when no escape sequence is present at front of buf or when the
 // sequence is not recognized.
-static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 {
 	char const *p  = buf;
 	char const *pe = p + len;
@@ -356,7 +350,7 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 // Returns the number of bytes read from buf when the sequence is recognized and
 // decoded; or, a negative integer count of bytes when the sequence is recognized
 // as a mouse sequence but invalid.
-static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_mouse_seq(struct tkbd_event *ev, char const *buf, int len)
 {
 	// TODO: split two main cases into separate functions
 	if (len >= 6 && starts_with(buf, len, "\033[M")) {
@@ -481,187 +475,87 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 }
 
 // Parse mouse, special key, alt key, or ctrl key sequence and fill event.
-static int parse_key_seq(struct tkbd_stream *s, struct tkbd_event *ev)
+static int parse_key_seq(struct tkbd_event *ev, char const *buf, int len)
 {
-	int len;
+	int n;
 
-	if ((len = parse_mouse_seq(ev, s->buf, s->buflen)))
-		return len;
-
-	if ((len = parse_special_seq(ev, s->buf, s->buflen)))
-		return len;
-
-	if ((len = parse_alt_seq(ev, s->buf, s->buflen)))
-		return len;
-
-	if ((len = parse_ctrl_seq(ev, s->buf, s->buflen)))
-		return len;
-
-	if ((len = parse_char_seq(ev, s->buf, s->buflen)))
-		return len;
+	if ((n = parse_mouse_seq(ev, buf, len)))
+		return n;
+	if ((n = parse_special_seq(ev, buf, len)))
+		return n;
+	if ((n = parse_alt_seq(ev, buf, len)))
+		return n;
+	if ((n = parse_ctrl_seq(ev, buf, len)))
+		return n;
+	if ((n = parse_char_seq(ev, buf, len)))
+		return n;
 
 	return 0;
 }
 
-
-#if 0
-static int extract_event(struct tkbd_stream *s, struct tb_event *ev)
+// Attach the keyboard input stream stuct to the given file descriptor, which
+// is almost always STDIN_FILENO.
+int tkbd_attach(struct tkbd_stream *s, int fd)
 {
-	const char *buf = s->buf;
-	const int len = s->len;
-	if (len == 0)
-		return 0;
+	int rc;
 
-	if (buf[0] == '\033') {
-		int n = parse_escape_seq(s, ev);
-		if (n != 0) {
-			int rc = 1;
-			if (n < 0) {
-				rc = 0;
-				n = -n;
-			}
-			// TODO return unknown event
-			bytebuffer_truncate(inbuf, n);
-			return rc;
-		} else {
-			// it's not escape sequence, then it's ALT or ESC,
-			// check inputmode
-			if (s->mode&TB_INPUT_ESC) {
-				// if we're in escape mode, fill ESC event, pop
-				// buffer, return success
-				ev->ch = 0;
-				ev->key = TB_KEY_ESC;
-				ev->mod = 0;
-				bytebuffer_truncate(inbuf, 1); // TODO
-				return 1;
-			} else if (s->mode&TB_INPUT_ALT) {
-				// if we're in alt mode, set ALT modifier to
-				// event and redo parsing
-				ev->mod = TB_MOD_ALT;
-				bytebuffer_truncate(inbuf, 1); // TODO
-				return extract_event(s, ev);
-			}
-			assert(!"unreachable");
-		}
-	}
+	// save current termios settings for detach()
+	if ((rc = tcgetattr(fd, &s->tc)))
+		return rc;
 
-	// if we're here, this is not an escape sequence and not an alt sequence
-	// so, it's a FUNCTIONAL KEY or a UNICODE character
+	// set raw mode input flags
+	struct termios raw = s->tc;
+	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+	raw.c_cflag |= (CS8);
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	raw.c_cc[VMIN] = 0;
+	raw.c_cc[VTIME] = 0;
+	if ((rc = tcsetattr(fd, TCSAFLUSH, &raw)))
+		return rc;
 
-	// first of all check if it's a functional key
-	if ((unsigned char)buf[0] <= TB_KEY_SPACE ||
-	    (unsigned char)buf[0] == TB_KEY_BACKSPACE2)
-	{
-		// fill event, pop buffer, return success */
-		ev->ch = 0;
-		ev->key = (uint16_t)buf[0];
-		bytebuffer_truncate(inbuf, 1);
-		return 1;
-	}
+	s->fd = fd;
+	s->timeout = 0;
+	memset(s->buf, 0, sizeof(s->buf));
+	s->buflen = 0;
 
-	// feh... we got utf8 here
-
-	// check if there is all bytes
-	if (len >= tb_utf8_char_length(buf[0])) {
-		/* everything ok, fill event, pop buffer, return success */
-		tb_utf8_char_to_unicode(&ev->ch, buf);
-		ev->key = 0;
-		bytebuffer_truncate(inbuf, tb_utf8_char_length(buf[0]));
-		return 1;
-	}
-
-	// event isn't recognized, perhaps there is not enough bytes in utf8
-	// sequence
 	return 0;
 }
 
-
-static int read_up_to(int n) {
-	assert(n > 0);
-	const int prevlen = input_buffer.len;
-	bytebuffer_resize(&input_buffer, prevlen + n);
-
-	int read_n = 0;
-	while (read_n <= n) {
-		ssize_t r = 0;
-		if (read_n < n) {
-			r = read(inout, input_buffer.buf + prevlen + read_n, n - read_n);
-		}
-#ifdef __CYGWIN__
-		// While linux man for tty says when VMIN == 0 && VTIME == 0, read
-		// should return 0 when there is nothing to read, cygwin's read returns
-		// -1. Not sure why and if it's correct to ignore it, but let's pretend
-		// it's zero.
-		if (r < 0) r = 0;
-#endif
-		if (r < 0) {
-			// EAGAIN / EWOULDBLOCK shouldn't occur here
-			assert(errno != EAGAIN && errno != EWOULDBLOCK);
-			return -1;
-		} else if (r > 0) {
-			read_n += r;
-		} else {
-			bytebuffer_resize(&input_buffer, prevlen + read_n);
-			return read_n;
-		}
-	}
-	assert(!"unreachable");
-	return 0;
+// Reset file descriptor termios attributes.
+int tkbd_detach(struct tkbd_stream *s)
+{
+	int rc = tcsetattr(s->fd, TCSAFLUSH, &s->tc);
+	return rc;
 }
 
-static int wait_fill_event(struct tb_event *event, struct timeval *timeout)
-{
-	// ;-)
-#define ENOUGH_DATA_FOR_PARSING 64
-	fd_set events;
-	memset(event, 0, sizeof(struct tb_event));
+// Read a key, mouse, or character from the keyboard input stream.
+int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev) {
+	// fill buffer with data from fd, possibly restructuring the buffer to
+	// free already processed input.
+	if (s->buflen < TKBD_SEQ_MAX) {
+		int bufspc = sizeof(s->buf) - s->bufpos - s->buflen;
 
-	// try to extract event from input buffer, return on success
-	event->type = TB_EVENT_KEY;
-	if (extract_event(event, &input_buffer, inputmode))
-		return event->type;
+		if (bufspc < TKBD_SEQ_MAX) {
+			memmove(s->buf, s->buf + s->bufpos, s->buflen);
+			s->bufpos = 0;
+			bufspc = sizeof(s->buf) - s->buflen;
+		}
 
-	// it looks like input buffer is incomplete, let's try the short path,
-	// but first make sure there is enough space
-	int n = read_up_to(ENOUGH_DATA_FOR_PARSING);
-	if (n < 0)
-		return -1;
-	if (n > 0 && extract_event(event, &input_buffer, inputmode))
-		return event->type;
-
-	// n == 0, or not enough data, let's go to select
-	while (1) {
-		FD_ZERO(&events);
-		FD_SET(inout, &events);
-		FD_SET(winch_fds[0], &events);
-		int maxfd = (winch_fds[0] > inout) ? winch_fds[0] : inout;
-		int result = select(maxfd+1, &events, 0, 0, timeout);
-		if (!result)
-			return 0;
-
-		if (FD_ISSET(inout, &events)) {
-			event->type = TB_EVENT_KEY;
-			n = read_up_to(ENOUGH_DATA_FOR_PARSING);
-			if (n < 0)
+		if (bufspc > 0) {
+			ssize_t sz = read(s->fd, s->buf + s->bufpos + s->buflen, bufspc);
+			if (sz == -1)
 				return -1;
-
-			if (n == 0)
-				continue;
-
-			if (extract_event(event, &input_buffer, inputmode))
-				return event->type;
-		}
-		if (FD_ISSET(winch_fds[0], &events)) {
-			event->type = TB_EVENT_RESIZE;
-			int zzz = 0;
-			if (read(winch_fds[0], &zzz, sizeof(int)) < (ssize_t)sizeof(int)) {
-				// ignore short read / error
-				// could be due to signal.
-			}
-			buffer_size_change_request = 1;
-			get_term_size(&event->w, &event->h);
-			return TB_EVENT_RESIZE;
+			s->buflen += sz;
 		}
 	}
+
+	char *buf = s->buf + s->bufpos;
+	int len = s->buflen;
+	assert(buf+len <= s->buf+sizeof(s->buf));
+
+	int n = parse_key_seq(ev, buf, len);
+	s->bufpos += n;
+	s->buflen -= n;
+
+	return n;
 }
-#endif

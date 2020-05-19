@@ -12,6 +12,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <termios.h>           // struct termios
 
 /*
  * Event types
@@ -169,7 +170,10 @@ struct tkbd_stream {
 	int  fd;                // file descriptor to read from
 	int  timeout;           // non-blocking
 	char buf[1024];         // input buffer
-	int  buflen;            // used part of buf
+	int  bufpos;            // next byte position buf
+	int  buflen;            // number of bytes available after bufpos
+
+	struct termios tc;      // original termios
 };
 
 struct tkbd_event {
@@ -182,17 +186,30 @@ struct tkbd_event {
 };
 
 /*
- * Initialize the input stream structures.
+ * Attach a keyboard input stream structure to a file descriptor.
+ * The file descriptor is put into raw mode and stream buffers are reset.
+ *
+ * Returns 0 on success, -1 on failure and sets errno to indicate error.
  */
-void tkbd_init(struct tkbd_stream *s, int fd);
+int tkbd_attach(struct tkbd_stream *s, int fd);
 
 /*
- * Read a single keyboard/mouse/resize sequence or UTF8 encoded character
- * from the file descriptor and fill the event structure pointed to by ev
- * with information.
+ * Detach the keyboard input stream from the attached file descriptor.
+ * This must be called on the stream before the program exits or the terminal
+ * will remain in raw input mode. It's recommended this be set up to happen in
+ * an atexit or signal hook.
  *
- * Returns the number of bytes read from buf when the event structure is filled.
- * Returns zero when not enough data is available to decode an event.
+ * Returns 0 on success, -1 on failure and sets errno to indicate error.
+ */
+int tkbd_detach(struct tkbd_stream *s);
+
+/*
+ * Read a single keyboard, mouse, or UTF8 encoded character sequence from the
+ * stream and fill the event structure pointed to by ev with information.
+ *
+ * Returns the number of bytes consumed to fill the event on success.
+ * Returns 0 when not enough data is available to decode an event.
+ * Returns -1 when a read error occurs and sets errno appropriately.
  */
 int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
 

@@ -101,7 +101,7 @@ static void test_parse_char_seq(void)
 
 	// parsing non control sequences returns zero
 	struct tkbd_event ev0 = {0};
-	char *buf = "\033ABCD";
+	char *buf = "ABCD";
 	n = parse_ctrl_seq(&ev0, buf, strlen(buf));
 	printf("n = %d\n", n);
 	assert(n == 0);
@@ -131,6 +131,7 @@ static void test_parse_ctrl_seq(void)
 		{ "\x7F", TKBD_KEY_BACKSPACE2, TKBD_MOD_NONE },
 		{ "\x01", TKBD_KEY_A, TKBD_MOD_CTRL },
 		{ "\x06", TKBD_KEY_F, TKBD_MOD_CTRL },
+		{ "\x1b", TKBD_KEY_ESC, TKBD_MOD_NONE },
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {
@@ -188,6 +189,7 @@ static void test_parse_alt_seq(void)
 		{ "\033\x7F", TKBD_KEY_BACKSPACE2, TKBD_MOD_NONE|TKBD_MOD_ALT },
 		{ "\033\x01", TKBD_KEY_A, TKBD_MOD_CTRL|TKBD_MOD_ALT },
 		{ "\033\x06", TKBD_KEY_F, TKBD_MOD_CTRL|TKBD_MOD_ALT },
+		{ "\033\033", TKBD_KEY_ESC, TKBD_MOD_ALT },
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {

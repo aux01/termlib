@@ -96,7 +96,7 @@ static int parse_char_seq(struct tkbd_event *ev, char const *buf, int len)
 	return 1;
 }
 
-// Parse a Ctrl+CH , BACKSPACE, TAB, or ENTER sequence.
+// Parse a Ctrl+CH, BACKSPACE, TAB, ENTER, and ESC char sequences.
 // These generate single-byte C0 sequences.
 //
 // Control sequences handled
@@ -110,7 +110,10 @@ static int parse_ctrl_seq(struct tkbd_event *ev, char const *buf, int len)
 	if (p >= pe)
 		return 0;
 
-	if (*p >= 0x1C && *p <= 0x1F) {
+	if (*p == '\033') {
+		// ESC key
+		ev->key = TKBD_KEY_ESC;
+	} else if (*p >= 0x1C && *p <= 0x1F) {
 		// Ctrl+\ or Ctrl+4, Ctrl+] or Ctrl+5,
 		// Ctrl+^ or Ctrl+6, Ctrl+_ or Ctrl+7
 		ev->mod |= TKBD_MOD_CTRL;

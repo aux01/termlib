@@ -22,6 +22,7 @@
 /*
  * Key modifier flags
  */
+#define TKBD_MOD_NONE   0x00
 #define TKBD_MOD_SHIFT  0x01
 #define TKBD_MOD_ALT    0x02
 #define TKBD_MOD_CTRL   0x04
@@ -38,10 +39,12 @@
  */
 #define TKBD_KEY_UNKNOWN           0xFFFF
 
+#define TKBD_KEY_BACKSPACE         0x08
 #define TKBD_KEY_TAB               0x09
-#define TKBD_KEY_ENTER             0x0D
+#define TKBD_KEY_ENTER             0x0A
 #define TKBD_KEY_ESC               0x1B
 #define TKBD_KEY_SPACE             0x20
+#define TKBD_KEY_BACKSPACE2        0x7F
 
 #define TKBD_KEY_UP                0x10
 #define TKBD_KEY_DOWN              0x11
@@ -55,25 +58,25 @@
 #define TKBD_KEY_HOME              0x18
 #define TKBD_KEY_END               0x19
 
-#define TKBD_KEY_SEMICOLON         0x3B
-#define TKBD_KEY_COLON             0x3B
-#define TKBD_KEY_EQUAL             0x3D
-#define TKBD_KEY_PLUS              0x3D
+#define TKBD_KEY_QUOTE             0x27
 #define TKBD_KEY_COMMA             0x2C
 #define TKBD_KEY_LT                0x2C
 #define TKBD_KEY_MINUS             0x2D
 #define TKBD_KEY_DASH              0x2D
 #define TKBD_KEY_PERIOD            0x2E
 #define TKBD_KEY_GT                0x2E
-#define TKBD_KEY_BACKQUOTE         0x60
-#define TKBD_KEY_TILDE             0x60
-#define TKBD_KEY_QUOTE             0x27
+#define TKBD_KEY_SEMICOLON         0x3B
+#define TKBD_KEY_COLON             0x3B
+#define TKBD_KEY_EQUAL             0x3D
+#define TKBD_KEY_PLUS              0x3D
 #define TKBD_KEY_BRACKET_LEFT      0x5B
 #define TKBD_KEY_BRACE_LEFT        0x5B
 #define TKBD_KEY_BACKSLASH         0x5C
 #define TKBD_KEY_PIPE              0x5C
 #define TKBD_KEY_BRACKET_RIGHT     0x5D
 #define TKBD_KEY_BRACE_RIGHT       0x5D
+#define TKBD_KEY_BACKQUOTE         0x60
+#define TKBD_KEY_TILDE             0x60
 
 #define TKBD_KEY_0                 0x30
 #define TKBD_KEY_1                 0x31

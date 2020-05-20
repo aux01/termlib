@@ -235,7 +235,7 @@ static uint16_t const vt_key_table[] = {
  * \E[B   DOWN       \E[L    -         \E[V   -
  * \E[C   RIGHT      \E[M    -         \E[W   -
  * \E[D   LEFT       \E[N    -         \E[X   -
- * \E[E   -          \E[O    -         \E[Y   -
+ * \E[E   KP 5       \E[O    -         \E[Y   -
  * \E[F   END        \E[P    F1        \E[Z   -
  * \E[G   KP 5       \E[Q    F2
  * \E[H   HOME       \E[R    F3
@@ -534,12 +534,14 @@ int tkbd_attach(struct tkbd_stream *s, int fd)
 	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 	raw.c_cc[VMIN] = 0;
 	raw.c_cc[VTIME] = 0;
+
 	if ((rc = tcsetattr(fd, TCSAFLUSH, &raw)))
 		return rc;
 
 	s->fd = fd;
 	s->timeout = 0;
 	memset(s->buf, 0, sizeof(s->buf));
+	s->bufpos = 0;
 	s->buflen = 0;
 
 	return 0;
@@ -566,9 +568,10 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev) {
 		}
 
 		if (bufspc > 0) {
-			ssize_t sz = read(s->fd, s->buf + s->bufpos + s->buflen, bufspc);
-			if (sz == -1)
-				return -1;
+			char *p = s->buf + s->bufpos + s->buflen;
+			ssize_t sz = read(s->fd, p, bufspc);
+			if (sz < 0)
+				return sz;
 			s->buflen += sz;
 		}
 	}

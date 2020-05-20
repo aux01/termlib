@@ -236,7 +236,7 @@ static uint16_t const vt_key_table[] = {
  * \E[C   RIGHT      \E[M    -         \E[W   -
  * \E[D   LEFT       \E[N    -         \E[X   -
  * \E[E   KP 5       \E[O    -         \E[Y   -
- * \E[F   END        \E[P    F1        \E[Z   -
+ * \E[F   END        \E[P    F1        \E[Z   Shift+Tab
  * \E[G   KP 5       \E[Q    F2
  * \E[H   HOME       \E[R    F3
  * \E[I   -          \E[S    F4

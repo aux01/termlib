@@ -43,7 +43,8 @@ static int starts_with(const char *s1, int len, const char *s2)
 // the array. If a parameter is blank, 0 will be set in the array.
 //
 // Returns the number of parsed parsed and filled into the array.
-static int parse_seq_params(int* ar, int n, char *pdata) {
+static int parse_seq_params(int* ar, int n, char *pdata)
+{
 	int i = 0;
 	while (i < n) {
 		ar[i++] = strtol(pdata, &pdata, 10);
@@ -499,7 +500,8 @@ static int parse_mouse_seq(struct tkbd_event *ev, char const *buf, int len)
 }
 
 // Parse mouse, special key, alt key, or ctrl key sequence and fill event.
-static int parse_key_seq(struct tkbd_event *ev, char const *buf, int len)
+// Order is important here since funcs like parse_alt_seq eat \033 chars.
+int tkbd_parse(struct tkbd_event *ev, char const *buf, int len)
 {
 	int n;
 
@@ -539,7 +541,6 @@ int tkbd_attach(struct tkbd_stream *s, int fd)
 		return rc;
 
 	s->fd = fd;
-	s->timeout = 0;
 	memset(s->buf, 0, sizeof(s->buf));
 	s->bufpos = 0;
 	s->buflen = 0;
@@ -555,7 +556,8 @@ int tkbd_detach(struct tkbd_stream *s)
 }
 
 // Read a key, mouse, or character from the keyboard input stream.
-int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev) {
+int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
+{
 	// fill buffer with data from fd, possibly restructuring the buffer to
 	// free already processed input.
 	if (s->buflen < TKBD_SEQ_MAX) {

@@ -166,16 +166,12 @@
  */
 #define TKBD_SEQ_MAX 32         // max length in bytes of an escape sequence
 
-struct tkbd_stream {
-	int  fd;                // file descriptor to read from
-	int  timeout;           // non-blocking
-	char buf[1024];         // input buffer
-	int  bufpos;            // next byte position buf
-	int  buflen;            // number of bytes available after bufpos
-
-	struct termios tc;      // original termios
-};
-
+/*
+ * Keyboard, mouse, or unicode character event structure.
+ *
+ * The tkbd_parse() and tkbd_read() functions fill this structure with
+ * information consumed from a char buffer or file descriptor.
+ */
 struct tkbd_event {
 	uint8_t  type;          // event type
 	uint8_t  mod;           // modifiers
@@ -185,11 +181,21 @@ struct tkbd_event {
 	char seq[TKBD_SEQ_MAX]; // char sequence source of event
 };
 
+struct tkbd_stream {
+	int  fd;                // file descriptor to read from
+	char buf[1024];         // input buffer
+	int  bufpos;            // current byte position buf
+	int  buflen;            // number of bytes available after bufpos
+
+	struct termios tc;      // original termios
+};
+
 /*
  * Attach a keyboard input stream structure to a file descriptor.
  * The file descriptor is put into raw mode and stream buffers are reset.
  *
- * Returns 0 on success, -1 on failure and sets errno to indicate error.
+ * Returns 0 on success.
+ * Returns -1 on failure and sets errno appropriately.
  */
 int tkbd_attach(struct tkbd_stream *s, int fd);
 

@@ -223,22 +223,38 @@ static uint16_t const vt_key_table[] = {
 };
 
 /*
- * xterm sequences:
- *
  * Table of xterm key input sequences.
- * Array elements correspond to CHR - A in escape sequence.
- * First parameter specifies mod key flags.
+ *
+ * First parameter, when given, specifies the key modifier except when 1 and
+ * the second parameter is set, in which case the second parameter specifies
+ * key modifier flags.
+ *
+ * Array elements correspond to CHR - A in escape sequence table.
  *
  * \E[A   UP         \E[K    -         \E[U   -
  * \E[B   DOWN       \E[L    -         \E[V   -
  * \E[C   RIGHT      \E[M    -         \E[W   -
  * \E[D   LEFT       \E[N    -         \E[X   -
  * \E[E   -          \E[O    -         \E[Y   -
- * \E[F   END        \E[1P   F1        \E[Z   -
- * \E[G   KP 5       \E[1Q   F2
- * \E[H   HOME       \E[1R   F3
- * \E[I   -          \E[1S   F4
+ * \E[F   END        \E[P    F1        \E[Z   -
+ * \E[G   KP 5       \E[Q    F2
+ * \E[H   HOME       \E[R    F3
+ * \E[I   -          \E[S    F4
  * \E[J   -          \E[T    -
+ *
+ * In some cases, SS3 is used to introduce the sequence instead of CSI. Known
+ * keys of this form:
+ *
+ * \EOA   -          \EOK    -         \EOU   -
+ * \EOB   -          \EOL    -         \EOV   -
+ * \EOC   -          \EOM    -         \EOW   -
+ * \EOD   -          \EON    -         \EOX   -
+ * \EOE   -          \EOO    -         \EOY   -
+ * \EOF   -          \EOP    F1        \EOZ   -
+ * \EOG   -          \EOQ    F2
+ * \EOH   -          \EOR    F3
+ * \EOI   -          \EOS    F4
+ * \EOJ   -          \EOT    -
  *
  */
 static uint16_t const xt_key_table[] = {
@@ -284,8 +300,13 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 	if (p >= pe || *p++ != '\033')
 		return 0;
 
-	// bail if not a CSI sequence
-	if (p >= pe || *p++ != '[')
+	// bail if we're out of chars
+	if (p >= pe)
+		return 0;
+
+	// figure out CSI vs. SS3 sequence type; bail if neither
+	char const seq = *p++;
+	if (seq != '[' && seq != 'O')
 		return 0;
 
 	// consume all numeric sequence parameters so we can get to the final
@@ -300,13 +321,13 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 			p++;
 	}
 
-	// looked like CSI sequence but no final byte code available; bail
+	// looked like CSI/SS3 sequence but no final byte code available; bail
 	if (p >= pe)
 		return 0;
 
 	// determine if vt or xterm style key sequence and map key and mods
 	int parms[2] = {0};
-	if (*p == '~') {
+	if (seq == '[' && *p == '~') {
 		// vt style sequence: (Ex: \E[5;3~ = ALT+PGUP)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
@@ -320,7 +341,7 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 
 		p++;
 	} else if (*p >= 'A' && *p <= 'Z') {
-		// xterm style sequence (Ex: \E[3A = ALT+UP)
+		// xterm style sequence (Ex: \E[3A = ALT+UP, \EOP = F1)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
 		int index = *p - 'A';

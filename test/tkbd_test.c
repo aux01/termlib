@@ -240,8 +240,18 @@ static void test_parse_special_seq(void)
 	assert(ev.key == TKBD_KEY_UP);
 	assert(strcmp(ev.seq, "\033[A") == 0);
 
-	// parses mod parameters in xterm style sequence
+	// parses mod parameters in xterm style sequence (form 1)
 	strcpy(buf, "\033[7A");
+	memset(&ev, 0, sizeof(ev));
+	n = parse_special_seq(&ev, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	assert((size_t)n == strlen(buf));
+	assert(ev.key == TKBD_KEY_UP);
+	assert(ev.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
+	assert(strcmp(ev.seq, buf) == 0);
+
+	// parses mod parameters in xterm style sequence (form 2)
+	strcpy(buf, "\033[1;7A");
 	memset(&ev, 0, sizeof(ev));
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);

@@ -307,7 +307,7 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 	// determine if vt or xterm style key sequence and map key and mods
 	int parms[2] = {0};
 	if (*p == '~') {
-		// vt style sequence: \E[5;3~ = ALT+PGUP
+		// vt style sequence: (Ex: \E[5;3~ = ALT+PGUP)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
 		if (parms[0] < (int)ARRAYLEN(vt_key_table))
@@ -320,7 +320,7 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 
 		p++;
 	} else if (*p >= 'A' && *p <= 'Z') {
-		// xterm style sequence: \E[3A = ALT+UP
+		// xterm style sequence (Ex: \E[3A = ALT+UP)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
 		int index = *p - 'A';
@@ -329,7 +329,10 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 		else
 			ev->key = TKBD_KEY_UNKNOWN;
 
-		if (parms[0])
+		// handle both forms: "\E[3A" and "\E[1;3A" both = ALT+UP
+		if (parms[0] == 1 && parms[1])
+			ev->mod = parms[1] - 1;
+		else if (parms[0])
 			ev->mod = parms[0] - 1;
 
 		p++;

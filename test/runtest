@@ -2,8 +2,18 @@
 # Usage: runtest <testname>...
 set -eu
 
+# some tests assume working dir is set to .
 cd "$(dirname "$0")"
 
+# check that we have 'cat -v' for escaping non-printable characters
+# since it's non-posix
+if cat -v </dev/null 2>/dev/null 1>&2; then
+    catv="cat -v"
+else
+    catv="cat"
+fi
+
+# run each test, showing output only on failure
 oks=0 fails=0
 while [ $# -gt 0 ]; do
     printf "test: %-20s%s" "$1" "..."
@@ -13,11 +23,12 @@ while [ $# -gt 0 ]; do
     else
         fails=$(( fails+1 ))
         echo " FAILED"
-        printf "%s\n" "$out" | sed 's/^/    /'
+        printf "%s\n" "$out" | sed 's/^/    /' | $catv
     fi
     shift
 done
 
 echo "Ran $(( oks+fails )) tests: $oks ok, $fails failed."
 
+# exit non-zero if any tests failed
 test "$fails" -eq 0

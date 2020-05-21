@@ -20,15 +20,13 @@ TESTS    = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
            test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
            test/tkbd_test test/tkbd_desc_test
 
-AMAL_OBJS = amalgamation/termbox.o
-
 # make profile=release (default)
 # make profile=debug
 # make profile=clang
 profile = release
 include build/$(profile).mk
 
-# Build everything except the amalgamation sources
+# Build everything
 all: $(OBJS) $(LIBS) demo tests
 .PHONY: all
 
@@ -74,21 +72,7 @@ test/tkbd_desc_test: test/tkbd_desc_test.c tkbd.c tkbd.h
 	$(TEST_CC) $< -o $@
 test: tests
 	test/runtest $(TESTS)
-.PHONY: test
-
-# Targets for building the single file source library.
-# The termbox.c and .h files can be copied directly into
-amalgamation: $(AMAL_OBJS)
-amalgamation/termbox.c: termbox.c bytebuffer.inl term.inl input.inl utf8.c
-	mkdir -p amalgamation
-	awk <termbox.c >$@ -F '"' \
-	    '/^#include .*\.inl/ { system("cat " $$2); next }; { print }'
-	grep >>$@ -v '^#include "termbox\.h"' utf8.c
-amalgamation/termbox.h: termbox.h
-	cat $< >$@
-amalgamation/termbox.o: amalgamation/termbox.c amalgamation/termbox.h
-	$(CC) $(CFLAGS) -c amalgamation/termbox.c -o $@
-.PHONY: amalgamation
+.PHONY: test tests
 
 # Clean everything
 clean:

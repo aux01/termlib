@@ -18,7 +18,6 @@ Major planned and completed changes:
 
  - [x] Replace waf-based build with simple Makefile.
  - [x] Remove Python extension related components. This is a C library only.
- - [x] Add an amalgamation build for packaging as a [Single-File Library][sfl].
  - [x] Add support for _italic_, faint, and <del>crossed-out</del> text.
  - [x] Fix bug loading terminfo files that leave capabilities undefined (blink)
  - [x] Don't use terminfo for SGR color, bold, italic, underline, etc.

@@ -339,25 +339,32 @@ static const uint16_t vt_key_table[] = {
  *
  */
 static const uint16_t xt_key_table[] = {
-	TKBD_KEY_UP,
-	TKBD_KEY_DOWN,
-	TKBD_KEY_RIGHT,
-	TKBD_KEY_LEFT,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_END,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_HOME,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_UNKNOWN,
-	TKBD_KEY_F1,
-	TKBD_KEY_F2,
-	TKBD_KEY_F3,
-	TKBD_KEY_F4,
+	TKBD_KEY_UP,          // A
+	TKBD_KEY_DOWN,        // B
+	TKBD_KEY_RIGHT,       // C
+	TKBD_KEY_LEFT,        // D
+	TKBD_KEY_UNKNOWN,     // E
+	TKBD_KEY_END,         // F
+	TKBD_KEY_UNKNOWN,     // G
+	TKBD_KEY_HOME,        // H
+	TKBD_KEY_UNKNOWN,     // I
+	TKBD_KEY_UNKNOWN,     // J
+	TKBD_KEY_UNKNOWN,     // K
+	TKBD_KEY_UNKNOWN,     // L
+	TKBD_KEY_UNKNOWN,     // M
+	TKBD_KEY_UNKNOWN,     // N
+	TKBD_KEY_UNKNOWN,     // O
+	TKBD_KEY_F1,          // P
+	TKBD_KEY_F2,          // Q
+	TKBD_KEY_F3,          // R
+	TKBD_KEY_F4,          // S
+	TKBD_KEY_UNKNOWN,     // T
+	TKBD_KEY_UNKNOWN,     // U
+	TKBD_KEY_UNKNOWN,     // V
+	TKBD_KEY_UNKNOWN,     // W
+	TKBD_KEY_UNKNOWN,     // X
+	TKBD_KEY_UNKNOWN,     // Y
+	TKBD_KEY_TAB,         // Z
 };
 
 // Parse a special keyboard sequence and fill the zeroed event structure.
@@ -396,7 +403,7 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 	char parmdata[32] = {0};
 	while (p < pe && *p >= '0' && *p <= ';') {
 		// continue seeking if parms overflow buffer
-		if(i < (int)sizeof(parmdata)-1)
+		if (i < (int)sizeof(parmdata)-1)
 			parmdata[i++] = *p++;
 		else
 			p++;
@@ -424,12 +431,11 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 	} else if (*p >= 'A' && *p <= 'Z') {
 		// xterm style sequence (Ex: \E[3A = ALT+UP, \EOP = F1)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
+		ev->key = xt_key_table[*p - 'A'];
 
-		int index = *p - 'A';
-		if (index < (int)ARRAYLEN(xt_key_table))
-			ev->key = xt_key_table[index];
-		else
-			ev->key = TKBD_KEY_UNKNOWN;
+		// special case \E[Z = Shift+Tab
+		if (*p == 'Z')
+			ev->mod |= TKBD_MOD_SHIFT;
 
 		// handle both forms: "\E[3A" and "\E[1;3A" both = ALT+UP
 		if (parms[0] == 1 && parms[1])

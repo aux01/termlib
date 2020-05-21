@@ -300,8 +300,8 @@ static void test_parse_special_seq(void)
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
 
-	// handles out of range xterm sequences
-	strcpy(buf, "\033[2Z");
+	// handles unmapped xterm style sequences
+	strcpy(buf, "\033[2Y");
 	memset(&ev, 0, sizeof(ev));
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
@@ -310,9 +310,19 @@ static void test_parse_special_seq(void)
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
 
+	// handles special case \E[Z = Shift+Tab
+	strcpy(buf, "\033[Z");
+	memset(&ev, 0, sizeof(ev));
+	n = parse_special_seq(&ev, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	assert((size_t)n == strlen(buf));
+	assert(ev.key == TKBD_KEY_TAB);
+	assert(ev.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(ev.seq, buf) == 0);
+
 	// try to overflow the ev->seq buffer
 	assert(TKBD_SEQ_MAX == 32 && "update overflow test below");
-	strcpy(buf, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Z");
+	strcpy(buf, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Y");
 	memset(&ev, 0, sizeof(ev));
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);

@@ -13,8 +13,8 @@ SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
 
-DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o
-DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
+DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o demo/pkbd.o
+DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump demo/pkbd
 
 TESTS     = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
             test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
@@ -47,6 +47,7 @@ demo/keyboard: demo/keyboard.o $(OBJS)
 demo/output: demo/output.o $(OBJS)
 demo/paint: demo/paint.o $(OBJS)
 demo/capdump: demo/capdump.o $(OBJS)
+demo/pkbd: demo/pkbd.o tkbd.o
 demo: $(DEMO_CMDS)
 .PHONY: demo
 

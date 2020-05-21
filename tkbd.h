@@ -33,6 +33,7 @@ struct tkbd_event {
 	uint32_t ch;            // unicode character
 	int32_t  x, y;          // mouse coordinates
 	char seq[TKBD_SEQ_MAX]; // char sequence source of event
+	size_t seqlen;          // length of seq string in bytes
 };
 
 /*

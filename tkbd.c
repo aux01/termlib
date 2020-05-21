@@ -147,6 +147,7 @@ static int parse_char_seq(struct tkbd_event *ev, const char *buf, int len)
 	ev->type = TKBD_KEY;
 	ev->ch = *p;
 	ev->seq[0] = *p;
+	ev->seqlen = 1;
 
 	if (*p >= 'a' && *p <= 'z') {
 		ev->key = TKBD_KEY_A + (*p - 'a');
@@ -214,6 +215,7 @@ static int parse_ctrl_seq(struct tkbd_event *ev, const char *buf, int len)
 
 	ev->ch = *p;
 	ev->seq[0] = *p;
+	ev->seqlen = 1;
 	ev->type = TKBD_KEY;
 	return 1;
 }
@@ -244,7 +246,8 @@ static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
 
 	ev->mod |= TKBD_MOD_ALT;
 	p += n;
-	memcpy(ev->seq, buf, p - buf);
+	ev->seqlen = p - buf;
+	memcpy(ev->seq, buf, ev->seqlen);
 	return p - buf;
 }
 
@@ -375,8 +378,7 @@ static const uint16_t xt_key_table[] = {
 // Special keyboard sequences are typically only generated for function keys
 // F1-F12, INS, DEL, HOME, END, PGUP, PGDOWN, and the cursor arrow keys.
 //
-// IMPORTANT: This function assumes the event struct is zeroed. Not doing so
-// will lead to unpredictable behavior like ev->seq not being null terminated.
+// IMPORTANT: This function assumes the event struct is zeroed.
 //
 // Returns the number of bytes read from buf to fill the event structure.
 // Returns zero when no escape sequence is present at front of buf or when the
@@ -452,8 +454,8 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 	}
 
 	// copy seq source data into event seq buffer
-	size_t sz = MIN(p-buf, TKBD_SEQ_MAX-1);
-	memcpy(ev->seq, buf, sz);
+	ev->seqlen = MIN(p-buf, TKBD_SEQ_MAX);
+	memcpy(ev->seq, buf, ev->seqlen);
 
 	ev->type = TKBD_KEY;
 	return p - buf;

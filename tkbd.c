@@ -59,10 +59,10 @@ static int parse_seq_params(int* ar, int n, char *pdata)
 }
 
 // Parse a character from the buffer.
-static int parse_char_seq(struct tkbd_event *ev, char const *buf, int len)
+static int parse_char_seq(struct tkbd_event *ev, const char *buf, int len)
 {
-	char const *p  = buf;
-	char const *pe = buf + len;
+	const char *p  = buf;
+	const char *pe = buf + len;
 
 	if (p >= pe || *p < 0x20 || *p > 0x7E)
 		return 0;
@@ -100,10 +100,10 @@ static int parse_char_seq(struct tkbd_event *ev, char const *buf, int len)
 // Control sequences handled
 // Ctrl+\ or Ctrl+4, Ctrl+] or Ctrl+5, Ctrl+^ or Ctrl+6, Ctrl+_ or Ctrl+7,
 // Ctrl+@ or Ctrl+2, Ctrl+A...Ctrl+Z (0x01...0x1A).
-static int parse_ctrl_seq(struct tkbd_event *ev, char const *buf, int len)
+static int parse_ctrl_seq(struct tkbd_event *ev, const char *buf, int len)
 {
-	char const *p  = buf;
-	char const *pe = buf + len;
+	const char *p  = buf;
+	const char *pe = buf + len;
 
 	if (p >= pe)
 		return 0;
@@ -148,10 +148,10 @@ static int parse_ctrl_seq(struct tkbd_event *ev, char const *buf, int len)
 // CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
 //
 // Returns the number of bytes consumed to fill the event struct.
-static int parse_alt_seq(struct tkbd_event *ev, char const *buf, int len)
+static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
 {
-	char const *p  = buf;
-	char const *pe = buf + len;
+	const char *p  = buf;
+	const char *pe = buf + len;
 
 	if (p >= pe || *p++ != '\033')
 		return 0;
@@ -188,7 +188,7 @@ static int parse_alt_seq(struct tkbd_event *ev, char const *buf, int len)
  * \E[9~  -          \E[19~  F8        \E[29~  F16
  *
  */
-static uint16_t const vt_key_table[] = {
+static const uint16_t vt_key_table[] = {
 	TKBD_KEY_UNKNOWN,
 	TKBD_KEY_HOME,
 	TKBD_KEY_INS,
@@ -261,7 +261,7 @@ static uint16_t const vt_key_table[] = {
  * \EOJ   -          \EOT    -
  *
  */
-static uint16_t const xt_key_table[] = {
+static const uint16_t xt_key_table[] = {
 	TKBD_KEY_UP,
 	TKBD_KEY_DOWN,
 	TKBD_KEY_RIGHT,
@@ -295,10 +295,10 @@ static uint16_t const xt_key_table[] = {
 // Returns the number of bytes read from buf to fill the event structure.
 // Returns zero when no escape sequence is present at front of buf or when the
 // sequence is not recognized.
-static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
+static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 {
-	char const *p  = buf;
-	char const *pe = p + len;
+	const char *p  = buf;
+	const char *pe = p + len;
 
 	// bail if not an escape sequence
 	if (p >= pe || *p++ != '\033')
@@ -309,7 +309,7 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 		return 0;
 
 	// figure out CSI vs. SS3 sequence type; bail if neither
-	char const seq = *p++;
+	const char seq = *p++;
 	if (seq != '[' && seq != 'O')
 		return 0;
 
@@ -378,7 +378,7 @@ static int parse_special_seq(struct tkbd_event *ev, char const *buf, int len)
 // Returns the number of bytes read from buf when the sequence is recognized and
 // decoded; or, a negative integer count of bytes when the sequence is recognized
 // as a mouse sequence but invalid.
-static int parse_mouse_seq(struct tkbd_event *ev, char const *buf, int len)
+static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 {
 	// TODO: split two main cases into separate functions
 	if (len >= 6 && starts_with(buf, len, "\033[M")) {
@@ -504,7 +504,7 @@ static int parse_mouse_seq(struct tkbd_event *ev, char const *buf, int len)
 
 // Parse mouse, special key, alt key, or ctrl key sequence and fill event.
 // Order is important here since funcs like parse_alt_seq eat \033 chars.
-int tkbd_parse(struct tkbd_event *ev, char const *buf, int len)
+int tkbd_parse(struct tkbd_event *ev, const char *buf, int len)
 {
 	int n;
 
@@ -594,7 +594,7 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
 
 
 // Modifier keys map to MOD - 1
-static char const * const modifier_key_names[] = {
+static const char * const modifier_key_names[] = {
 	"Shift",
 	"Alt",
 	"Shift+Alt",
@@ -613,7 +613,7 @@ static char const * const modifier_key_names[] = {
 };
 
 // Special key name indexes map to KEY - TKBD_KEY_UP
-static char const * const special_key_names[] = {
+static const char * const special_key_names[] = {
 	"Up",           // TKBD_KEY_UP      0x10
 	"Down",         // TKBD_KEY_DOWN    0x11
 	"Right",        // TKBD_KEY_RIGHT   0x12
@@ -627,7 +627,7 @@ static char const * const special_key_names[] = {
 };
 
 // Function key names map to KEY - TKBD_KEY_F1
-static char const * const function_key_names[] = {
+static const char * const function_key_names[] = {
 	"F1",          // TKBD_KEY_F1                0x61
 	"F2",          // TKBD_KEY_F2                0x62
 	"F3",          // TKBD_KEY_F3                0x63
@@ -653,20 +653,20 @@ static char const * const function_key_names[] = {
 	"F20",         // TKBD_KEY_F20               0x77
 };
 
-int tkbd_desc(char *dest, size_t sz, struct tkbd_event const *ev)
+int tkbd_desc(char *dest, size_t sz, const struct tkbd_event *ev)
 {
 	if (ev->type != TKBD_KEY)
 		return 0;
 
 	// figure out modifier string part
-	char const *modstr = "";
+	const char *modstr = "";
 	uint8_t mod = ev->mod & (TKBD_MOD_SHIFT|TKBD_MOD_ALT|
 	                         TKBD_MOD_CTRL|TKBD_MOD_META);
 	if (mod)
 		modstr = modifier_key_names[mod-1];
 
 	// figure out key name string
-	char const *keystr = "";
+	const char *keystr = "";
 	char ch[2] = {0}; // for single char keys
 
 	if (ev->key >= TKBD_KEY_UP && ev->key <= TKBD_KEY_END) {

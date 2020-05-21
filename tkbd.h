@@ -43,7 +43,7 @@ struct tkbd_event {
  * Returns the number of bytes read from buf when the event structure is filled.
  * Returns 0 when not enough data is available to decode an event.
  */
-int tkbd_parse(struct tkbd_event *ev, char const *buf, int len);
+int tkbd_parse(struct tkbd_event *ev, const char *buf, int len);
 
 /*
  * Write a key description ("Ctrl+C", "Shift+Alt+PgUp", "Z", etc.) to the buffer
@@ -53,7 +53,7 @@ int tkbd_parse(struct tkbd_event *ev, char const *buf, int len);
  * the description. No more than sz bytes will be written by the function but if
  * the return value is greater than sz, the description was truncated.
  */
-int tkbd_desc(char *buf, size_t sz, struct tkbd_event const *ev);
+int tkbd_desc(char *buf, size_t sz, const struct tkbd_event *ev);
 
 /*
  * Keyboard input stream structure.

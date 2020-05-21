@@ -16,9 +16,9 @@ LIBS      = $(SO_NAME) $(SA_NAME)
 DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o
 DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
 
-TESTS    = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
-           test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
-           test/tkbd_parse_test test/tkbd_desc_test
+TESTS     = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
+            test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
+            test/tkbd_parse_test test/tkbd_desc_test
 
 # make profile=release (default)
 # make profile=debug
@@ -41,35 +41,28 @@ $(SA_NAME): $(OBJS)
 
 # Demo programs
 DEMOS_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) $(OBJS) $(LDLIBS)
-demo: $(DEMO_CMDS)
+$(DEMO_CMDS):
+	$(DEMOS_CC) $@.o -o $@
 demo/keyboard: demo/keyboard.o $(OBJS)
-	$(DEMOS_CC) $@.o -o $@
 demo/output: demo/output.o $(OBJS)
-	$(DEMOS_CC) $@.o -o $@
 demo/paint: demo/paint.o $(OBJS)
-	$(DEMOS_CC) $@.o -o $@
 demo/capdump: demo/capdump.o $(OBJS)
-	$(DEMOS_CC) $@.o -o $@
+demo: $(DEMO_CMDS)
+.PHONY: demo
 
 # Test programs
 TEST_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) -Wno-missing-field-initializers $(LDFLAGS)
-tests: $(TESTS)
+$(TESTS):
+	$(TEST_CC) $< -o $@
 test/ti_load_test: test/ti_load_test.c ti.c ti.h
-	$(TEST_CC) $< -o $@
 test/ti_getcaps_test: test/ti_getcaps_test.c  ti.c ti.h
-	$(TEST_CC) $< -o $@
 test/ti_parm_test: test/ti_parm_test.c ti.c ti.h
-	$(TEST_CC) $< -o $@
 test/sgr_unpack_test: test/sgr_unpack_test.c sgr.c sgr.h
-	$(TEST_CC) $< -o $@
 test/sgr_encode_test: test/sgr_encode_test.c sgr.c sgr.h
-	$(TEST_CC) $< -o $@
 test/sgr_attrs_test: test/sgr_attrs_test.c sgr.c sgr.h
-	$(TEST_CC) $< -o $@
 test/tkbd_parse_test: test/tkbd_parse_test.c tkbd.c tkbd.h
-	$(TEST_CC) $< -o $@
 test/tkbd_desc_test: test/tkbd_desc_test.c tkbd.c tkbd.h
-	$(TEST_CC) $< -o $@
+tests: $(TESTS)
 test: tests
 	test/runtest $(TESTS)
 .PHONY: test tests
@@ -80,7 +73,6 @@ clean:
 	rm -f $(DEMO_CMDS)
 	rm -f $(OBJS)
 	rm -f $(LIBS)
-	rm -f $(AMAL_OBJS)
 	rm -f $(TESTS)
 .PHONY: clean
 
@@ -89,8 +81,8 @@ clean:
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA) -c $< -o $@
 
-tags: # ignore amalgamation sources
-	ctags -R --exclude='*amalgamation*' --totals
+tags:
+	ctags -R --totals
 .PHONY: tags
 
 Caps: # fetch latest curses Caps file from GitHub

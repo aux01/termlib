@@ -11,9 +11,12 @@
 #include "ti.h"
 
 #include <stdlib.h>            // strtoul
+#include <stddef.h>            // size_t
+#include <stdio.h>             // snprintf
 #include <string.h>            // memset
 #include <unistd.h>            // read
 #include <termios.h>           // tcgetattr, tcsetattr, struct termios
+#include <ctype.h>             // isprint
 #include <assert.h>
 
 #define ARRAYLEN(a) (sizeof(a) / sizeof(a[0]))
@@ -587,4 +590,129 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
 	s->buflen -= n;
 
 	return n;
+}
+
+
+// Modifier keys map to MOD - 1
+static char const * const modifier_key_names[] = {
+	"Shift",
+	"Alt",
+	"Shift+Alt",
+	"Ctrl",
+	"Ctrl+Shift",
+	"Ctrl+Alt",
+	"Ctrl+Shift+Alt",
+	"Meta",
+	"Meta+Shift",
+	"Meta+Alt",
+	"Meta+Shift+Alt",
+	"Meta+Ctrl",
+	"Meta+Ctrl+Shift",
+	"Meta+Ctrl+Alt",
+	"Meta+Ctrl+Shift+Alt",
+};
+
+// Special key name indexes map to KEY - TKBD_KEY_UP
+static char const * const special_key_names[] = {
+	"Up",           // TKBD_KEY_UP      0x10
+	"Down",         // TKBD_KEY_DOWN    0x11
+	"Right",        // TKBD_KEY_RIGHT   0x12
+	"Left",         // TKBD_KEY_LEFT    0x13
+	"INS",          // TKBD_KEY_INS     0x14
+	"DEL",          // TKBD_KEY_DEL     0x15
+	"PgUp",         // TKBD_KEY_PGUP    0x16
+	"PgDn",         // TKBD_KEY_PGDN    0x17
+	"HOME",         // TKBD_KEY_HOME    0x18
+	"END",          // TKBD_KEY_END     0x19
+};
+
+// Function key names map to KEY - TKBD_KEY_F1
+static char const * const function_key_names[] = {
+	"F1",          // TKBD_KEY_F1                0x61
+	"F2",          // TKBD_KEY_F2                0x62
+	"F3",          // TKBD_KEY_F3                0x63
+	"F4",          // TKBD_KEY_F4                0x64
+	"F5",          // TKBD_KEY_F5                0x65
+	NULL,
+	"F6",          // TKBD_KEY_F6                0x67
+	"F7",          // TKBD_KEY_F7                0x68
+	"F8",          // TKBD_KEY_F8                0x69
+	"F9",          // TKBD_KEY_F9                0x6A
+	"F10",         // TKBD_KEY_F10               0x6B
+	"F11",         // TKBD_KEY_F11               0x6C
+	"F12",         // TKBD_KEY_F12               0x6D
+	"F13",         // TKBD_KEY_F13               0x6E
+	"F14",         // TKBD_KEY_F14               0x6F
+	NULL,
+	"F15",         // TKBD_KEY_F15               0x71
+	"F16",         // TKBD_KEY_F16               0x72
+	NULL,
+	"F17",         // TKBD_KEY_F17               0x74
+	"F18",         // TKBD_KEY_F18               0x75
+	"F19",         // TKBD_KEY_F19               0x76
+	"F20",         // TKBD_KEY_F20               0x77
+};
+
+int tkbd_desc(char *dest, size_t sz, struct tkbd_event const *ev)
+{
+	if (ev->type != TKBD_KEY)
+		return 0;
+
+	// figure out modifier string part
+	char const *modstr = "";
+	uint8_t mod = ev->mod & (TKBD_MOD_SHIFT|TKBD_MOD_ALT|
+	                         TKBD_MOD_CTRL|TKBD_MOD_META);
+	if (mod)
+		modstr = modifier_key_names[mod-1];
+
+	// figure out key name string
+	char const *keystr = "";
+	char ch[2] = {0}; // for single char keys
+
+	if (ev->key >= TKBD_KEY_UP && ev->key <= TKBD_KEY_END) {
+		keystr = special_key_names[ev->key - TKBD_KEY_UP];
+	} else if (ev->key >= TKBD_KEY_F1 && ev->key <= TKBD_KEY_F20) {
+		keystr = function_key_names[ev->key - TKBD_KEY_F1];
+	} else {
+		switch (ev->key) {
+		case TKBD_KEY_ESC:
+			keystr = "ESC";
+			break;
+		case TKBD_KEY_TAB:
+			keystr = "Tab";
+			break;
+		case TKBD_KEY_ENTER:
+			keystr = "Enter";
+			break;
+		case TKBD_KEY_SPACE:
+			keystr = "Space";
+			break;
+		case TKBD_KEY_BACKSPACE:
+		case TKBD_KEY_BACKSPACE2:
+			keystr = "Backspace";
+			break;
+		case TKBD_KEY_UNKNOWN:
+			keystr = "Unknown";
+			break;
+		default:
+			assert(isprint(ev->key));
+			ch[0] = (char)ev->key;
+			keystr = ch;
+			break;
+		}
+	}
+
+	if (keystr == NULL)
+		keystr = "Unknown";
+
+	if (modstr[0] && keystr[0])
+		return snprintf(dest, sz, "%s+%s", modstr, keystr);
+
+	if (keystr[0])
+		return snprintf(dest, sz, "%s", keystr);
+
+	if (modstr[0])
+		return snprintf(dest, sz, "%s", modstr);
+
+	return 0;
 }

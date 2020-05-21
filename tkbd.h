@@ -12,6 +12,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>            // size_t
 #include <termios.h>           // struct termios
 
 /*
@@ -43,6 +44,16 @@ struct tkbd_event {
  * Returns 0 when not enough data is available to decode an event.
  */
 int tkbd_parse(struct tkbd_event *ev, char const *buf, int len);
+
+/*
+ * Write a key description ("Ctrl+C", "Shift+Alt+PgUp", "Z", etc.) to the buffer
+ * pointed to by buf. No more than sz bytes are written.
+ *
+ * Returns the number of bytes (excluding terminating null byte) needed to write
+ * the description. No more than sz bytes will be written by the function but if
+ * the return value is greater than sz, the description was truncated.
+ */
+int tkbd_desc(char *buf, size_t sz, struct tkbd_event const *ev);
 
 /*
  * Keyboard input stream structure.
@@ -86,6 +97,8 @@ int tkbd_detach(struct tkbd_stream *s);
  * Returns -1 when a read error occurs and sets errno appropriately.
  */
 int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
+
+
 
 /*
  * Event types
@@ -132,30 +145,22 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
 #define TKBD_KEY_HOME              0x18
 #define TKBD_KEY_END               0x19
 
-#define TKBD_KEY_QUOTE             0x27
 #define TKBD_KEY_DOUBLE_QUOTE      0x22
-#define TKBD_KEY_COMMA             0x2C
-#define TKBD_KEY_LT                0x3C
-#define TKBD_KEY_MINUS             0x2D
-#define TKBD_KEY_DASH              0x2D
-#define TKBD_KEY_UNDERSCORE        0x5F
-#define TKBD_KEY_PERIOD            0x2E
-#define TKBD_KEY_GT                0x3E
-#define TKBD_KEY_SLASH             0x2F
-#define TKBD_KEY_QUESTION          0x3F
-#define TKBD_KEY_SEMICOLON         0x3B
-#define TKBD_KEY_COLON             0x3A
-#define TKBD_KEY_EQUAL             0x3D
+#define TKBD_KEY_QUOTE             0x27
 #define TKBD_KEY_PLUS              0x2B
-#define TKBD_KEY_BRACKET_LEFT      0x5B
-#define TKBD_KEY_BRACE_LEFT        0x7B
-#define TKBD_KEY_BACKSLASH         0x5C
-#define TKBD_KEY_PIPE              0x7C
-#define TKBD_KEY_BRACKET_RIGHT     0x5D
-#define TKBD_KEY_BRACE_RIGHT       0x7D
-#define TKBD_KEY_BACKQUOTE         0x60
-#define TKBD_KEY_BACKTICK          0x60
-#define TKBD_KEY_TILDE             0x7E
+#define TKBD_KEY_COMMA             0x2C
+#define TKBD_KEY_DASH              0x2D
+#define TKBD_KEY_MINUS             0x2D
+#define TKBD_KEY_PERIOD            0x2E
+#define TKBD_KEY_SLASH             0x2F
+#define TKBD_KEY_BANG              0x21
+#define TKBD_KEY_POUND             0x23
+#define TKBD_KEY_DOLLAR            0x24
+#define TKBD_KEY_PERCENT           0x25
+#define TKBD_KEY_AMP               0x26
+#define TKBD_KEY_PAREN_LEFT        0x28
+#define TKBD_KEY_PAREN_RIGHT       0x29
+#define TKBD_KEY_STAR              0x2A
 
 #define TKBD_KEY_0                 0x30
 #define TKBD_KEY_1                 0x31
@@ -168,16 +173,13 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
 #define TKBD_KEY_8                 0x38
 #define TKBD_KEY_9                 0x39
 
-#define TKBD_KEY_PAREN_RIGHT       0x29
-#define TKBD_KEY_BANG              0x21
+#define TKBD_KEY_COLON             0x3A
+#define TKBD_KEY_SEMICOLON         0x3B
+#define TKBD_KEY_LT                0x3C
+#define TKBD_KEY_EQUAL             0x3D
+#define TKBD_KEY_GT                0x3E
+#define TKBD_KEY_QUESTION          0x3F
 #define TKBD_KEY_AT                0x40
-#define TKBD_KEY_POUND             0x23
-#define TKBD_KEY_DOLLAR            0x24
-#define TKBD_KEY_PERCENT           0x25
-#define TKBD_KEY_CARROT            0x5E
-#define TKBD_KEY_AMP               0x26
-#define TKBD_KEY_STAR              0x2A
-#define TKBD_KEY_PAREN_LEFT        0x28
 
 #define TKBD_KEY_A                 0x41
 #define TKBD_KEY_B                 0x42
@@ -206,6 +208,14 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
 #define TKBD_KEY_Y                 0x59
 #define TKBD_KEY_Z                 0x5A
 
+#define TKBD_KEY_BRACKET_LEFT      0x5B
+#define TKBD_KEY_BACKSLASH         0x5C
+#define TKBD_KEY_BRACKET_RIGHT     0x5D
+#define TKBD_KEY_CARROT            0x5E
+#define TKBD_KEY_UNDERSCORE        0x5F
+#define TKBD_KEY_BACKTICK          0x60
+#define TKBD_KEY_BACKQUOTE         0x60
+
 #define TKBD_KEY_F1                0x61
 #define TKBD_KEY_F2                0x62
 #define TKBD_KEY_F3                0x63
@@ -226,6 +236,11 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
 #define TKBD_KEY_F18               0x75
 #define TKBD_KEY_F19               0x76
 #define TKBD_KEY_F20               0x77
+
+#define TKBD_KEY_BRACE_LEFT        0x7B
+#define TKBD_KEY_PIPE              0x7C
+#define TKBD_KEY_BRACE_RIGHT       0x7D
+#define TKBD_KEY_TILDE             0x7E
 
 #define TKBD_MOUSE_LEFT           (0xFFFF-1)
 #define TKBD_MOUSE_RIGHT          (0xFFFF-2)

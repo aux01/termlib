@@ -38,12 +38,12 @@ struct tkbd_event {
 /*
  * Parse a single keyboard/mouse/resize sequence or UTF8 encoded character from
  * the buffer pointed to by buf and fill the event structure pointed to by ev
- * with information.
+ * with information. No more than sz bytes will be read from buf.
  *
  * Returns the number of bytes read from buf when the event structure is filled.
  * Returns 0 when not enough data is available to decode an event.
  */
-int tkbd_parse(struct tkbd_event *ev, const char *buf, int len);
+int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz);
 
 /*
  * Write a key description ("Ctrl+C", "Shift+Alt+PgUp", "Z", etc.) to the buffer

@@ -581,19 +581,19 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 
 // Parse mouse, special key, alt key, or ctrl key sequence and fill event.
 // Order is important here since funcs like parse_alt_seq eat \033 chars.
-int tkbd_parse(struct tkbd_event *ev, const char *buf, int len)
+int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz)
 {
 	int n;
 
-	if ((n = parse_mouse_seq(ev, buf, len)))
+	if ((n = parse_mouse_seq(ev, buf, sz)))
 		return n;
-	if ((n = parse_special_seq(ev, buf, len)))
+	if ((n = parse_special_seq(ev, buf, sz)))
 		return n;
-	if ((n = parse_alt_seq(ev, buf, len)))
+	if ((n = parse_alt_seq(ev, buf, sz)))
 		return n;
-	if ((n = parse_ctrl_seq(ev, buf, len)))
+	if ((n = parse_ctrl_seq(ev, buf, sz)))
 		return n;
-	if ((n = parse_char_seq(ev, buf, len)))
+	if ((n = parse_char_seq(ev, buf, sz)))
 		return n;
 
 	return 0;

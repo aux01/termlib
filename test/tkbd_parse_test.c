@@ -196,6 +196,9 @@ static void test_parse_alt_seq(void)
 		{ "\033\x01", TKBD_KEY_A, TKBD_MOD_CTRL|TKBD_MOD_ALT },
 		{ "\033\x06", TKBD_KEY_F, TKBD_MOD_CTRL|TKBD_MOD_ALT },
 		{ "\033\033", TKBD_KEY_ESC, TKBD_MOD_ALT },
+
+		{ "\033\033[A",   TKBD_KEY_UP, TKBD_MOD_ALT },
+		{ "\033\x08[24~", TKBD_KEY_F12, TKBD_MOD_ALT },
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {

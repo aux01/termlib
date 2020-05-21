@@ -220,37 +220,6 @@ static int parse_ctrl_seq(struct tkbd_event *ev, const char *buf, int len)
 	return 1;
 }
 
-// Parse an ALT key sequence and fill event struct.
-// Any character or C0 control sequence may be preceded by ESC, indicating
-// that ALT was pressed at the same time.
-//
-// ALT+CH:       \Eg   (parse_char_seq)
-// SHIFT+ALT+CH: \EG   (parse_char_seq)
-// CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
-//
-// Returns the number of bytes consumed to fill the event struct.
-static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
-{
-	const char *p  = buf;
-	const char *pe = buf + len;
-
-	if (p >= pe || *p++ != '\033')
-		return 0;
-
-	int n = parse_char_seq(ev, p, pe - p);
-	if (n == 0)
-		n = parse_ctrl_seq(ev, p, pe - p);
-
-	if (n == 0)
-		return 0;
-
-	ev->mod |= TKBD_MOD_ALT;
-	p += n;
-	ev->seqlen = p - buf;
-	memcpy(ev->seq, buf, ev->seqlen);
-	return p - buf;
-}
-
 /*
  * vt sequences
  *
@@ -484,6 +453,39 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 	ev->type = TKBD_KEY;
 	return p - buf;
 
+}
+
+// Parse an ALT key sequence and fill event struct.
+// Any character or C0 control sequence may be preceded by ESC, indicating
+// that ALT was pressed at the same time.
+//
+// ALT+CH:       \Eg   (parse_char_seq)
+// SHIFT+ALT+CH: \EG   (parse_char_seq)
+// CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
+//
+// Returns the number of bytes consumed to fill the event struct.
+static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
+{
+	const char *p  = buf;
+	const char *pe = buf + len;
+
+	if (p >= pe || *p++ != '\033')
+		return 0;
+
+	int n = parse_char_seq(ev, p, pe - p);
+	if (n == 0)
+		n = parse_special_seq(ev, p, pe - p);
+	if (n == 0)
+		n = parse_ctrl_seq(ev, p, pe - p);
+
+	if (n == 0)
+		return 0;
+
+	ev->mod |= TKBD_MOD_ALT;
+	p += n;
+	ev->seqlen = p - buf;
+	memcpy(ev->seq, buf, ev->seqlen);
+	return p - buf;
 }
 
 // Decode various mouse event char sequences into the given event struct.

@@ -5,8 +5,14 @@
 #include <errno.h>             // errno
 #include <string.h>            // strerror
 
-int main(void)
+#define rmcup "\033[?1049l"    // enter ca mode
+#define smcup "\033[?1049h"    // exit ca mode
+
+int main(int argc, char **argv)
 {
+	int appmode = (argc > 1 && strcmp(argv[1], "-a") == 0);
+
+	// attach to standard input and enter raw mode
 	struct tkbd_stream s = {0};
 	int err = tkbd_attach(&s, STDIN_FILENO);
 	if (err) {
@@ -15,6 +21,11 @@ int main(void)
 		return 1;
 	}
 
+	// enter application mode
+	if (appmode)
+		printf("%s", rmcup);
+
+	// read keys and print info
 	for (;;) {
 		struct tkbd_event ev = {0};
 		int n = tkbd_read(&s, &ev);
@@ -36,10 +47,15 @@ int main(void)
 			break;
 	}
 
+	// exit application mode
+	if (appmode)
+		printf("%s", smcup);
+
+	// detach from standard input and exit raw mode
 	err = tkbd_detach(&s);
 	if (err) {
 		err = errno;
-		fprintf(stderr, "error: tkbd_attach: %s %d\n", strerror(err), err);
+		fprintf(stderr, "error: tkbd_detach: %s %d\n", strerror(err), err);
 		return 1;
 	}
 

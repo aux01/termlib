@@ -372,6 +372,26 @@ static const uint16_t xt_key_table[] = {
 	TKBD_KEY_TAB,         // Z
 };
 
+// Linux terminal special case: F1 - F5 keys are \E[[A - \E[[E.
+static int parse_linux_seq(struct tkbd_event *ev, const char *p, int len)
+{
+	static const int seqlen = 4;
+	if (len < seqlen)
+		return 0;
+
+	if (p[0] != '\033' || p[1] != '[' || p[2] != '[')
+		return 0;
+
+	if (p[3] < 'A' || p[3] > 'E')
+		return 0;
+
+	ev->type = TKBD_KEY;
+	ev->key = TKBD_KEY_F1 + (p[3] - 'A');
+	ev->seqlen = seqlen;
+	memcpy(ev->seq, p, seqlen);
+	return 4;
+}
+
 // Parse a special keyboard sequence and fill the zeroed event structure.
 // No more than len bytes will be read from buf.
 //
@@ -400,6 +420,10 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 	const char seq = *p++;
 	if (seq != '[' && seq != 'O')
 		return 0;
+
+	// special case Linux term F1-F5 keys: \E[[A - \E[[E
+	if (p < pe && *p == '[')
+		return parse_linux_seq(ev, buf, len);
 
 	// consume all numeric sequence parameters so we can get to the final
 	// byte code. we'll use later.

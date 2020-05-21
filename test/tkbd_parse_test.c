@@ -325,28 +325,17 @@ static void test_parse_special_seq(void)
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
 
-	// handles special case \E[Z = Shift+Tab
-	strcpy(buf, "\033[Z");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
-	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_TAB);
-	assert(ev.mod == TKBD_MOD_SHIFT);
-	assert(strcmp(ev.seq, buf) == 0);
-
 	// try to overflow the ev->seq buffer
 	assert(TKBD_SEQ_MAX == 32 && "update overflow test below");
 	strcpy(buf, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Y");
 	memset(&ev, 0, sizeof(ev));
 	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	printf("n = %d, key = %d, mod = %d, seq = %s\n", n, ev.key, ev.mod, ev.seq);
 	assert((size_t)n == strlen(buf));
 	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UNKNOWN);
 	assert(ev.mod == TKBD_MOD_SHIFT);
-	assert(strcmp(ev.seq, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;") == 0);
+	assert(memcmp(ev.seq, buf, ev.seqlen) == 0);
 }
 
 static void test_parse()
@@ -397,6 +386,13 @@ static void test_parse()
 		                               TKBD_MOD_ALT|
 		                               TKBD_MOD_CTRL },
 		{ "\033[24;2~",  TKBD_KEY_F12, TKBD_MOD_SHIFT },
+
+		// Shift+Tab special case
+		{ "\033[Z",  TKBD_KEY_TAB, TKBD_MOD_SHIFT },
+
+		// linux term special cases
+		{ "\033[[A", TKBD_KEY_F1, TKBD_MOD_NONE },
+		{ "\033[[E", TKBD_KEY_F5, TKBD_MOD_NONE },
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {
@@ -408,7 +404,8 @@ static void test_parse()
 		assert(n == (int)strlen(k.seq));
 		assert(ev.type == TKBD_KEY);
 		assert(ev.mod == k.mod);
-		assert(strcmp(ev.seq, k.seq) == 0);
+		assert(ev.seqlen == (size_t)n);
+		assert(memcmp(ev.seq, k.seq, ev.seqlen) == 0);
 	}
 }
 

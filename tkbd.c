@@ -737,3 +737,47 @@ int tkbd_desc(char *dest, size_t sz, const struct tkbd_event *ev)
 
 	return 0;
 }
+
+
+/*
+ * tkbd_stresc()
+ *
+ */
+
+// TODO: non-ascii
+int tkbd_stresc(char *buf, const char *str, size_t strsz)
+{
+	assert(buf);
+	assert(str);
+
+	// characters to escape and corresponding codes
+	static const char chars[] = {'\\','\t','\n','\r','\033','\0'};
+	static const char codes[] = {'\\', 't', 'n', 'r', 'e',   '0'};
+
+	char *pb = buf;
+	const char *ps = str;
+	const char * const pse = str + strsz;
+
+	for (; ps < pse; ps++) {
+		if (*ps >= ' ' && *ps <= '~' && *ps != '\\') {
+			*pb++ = *ps;
+			continue;
+		}
+
+		*pb++ = '\\';
+		size_t i = 0;
+		for (; i < sizeof(chars); i++) {
+			if (*ps == chars[i]) {
+				*pb++ = codes[i];
+				break;
+			}
+		}
+		if (i < sizeof(chars))
+			continue;
+
+		pb += sprintf(pb, "%03hho", *ps);
+	}
+	*pb = 0;
+
+	return pb - buf;
+}

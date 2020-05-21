@@ -99,6 +99,21 @@ int tkbd_detach(struct tkbd_stream *s);
 int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
 
 
+/*
+ * Write an escaped version of a keyboard sequence to a character buffer.
+ *
+ * This is most often useful when printing the tkbd_event.seq member for display
+ * since writing the raw characters to the terminal may be interpreted as
+ * commands instead of text.
+ *
+ * The strsz argument specifies the length of the sequence string in bytes since
+ * it may contain null characters.
+ * The character buffer is assumed to be 4x strsz in bytes.
+ *
+ * Returns the number of bytes written to buf, excluding the null terminator.
+ */
+int tkbd_stresc(char *buf, const char *str, size_t strsz);
+
 
 /*
  * Event types

@@ -15,6 +15,79 @@
 #include <termios.h>           // struct termios
 
 /*
+ * Limits
+ */
+#define TKBD_SEQ_MAX 32         // max length in bytes of an escape sequence
+
+/*
+ * Keyboard, mouse, or unicode character event structure.
+ *
+ * The tkbd_parse() and tkbd_read() functions fill this structure with
+ * information consumed from a char buffer or file descriptor.
+ */
+struct tkbd_event {
+	uint8_t  type;          // event type
+	uint8_t  mod;           // modifiers
+	uint16_t key;           // one of the TKBD_KEY_* constants
+	uint32_t ch;            // unicode character
+	int32_t  x, y;          // mouse coordinates
+	char seq[TKBD_SEQ_MAX]; // char sequence source of event
+};
+
+/*
+ * Parse a single keyboard/mouse/resize sequence or UTF8 encoded character from
+ * the buffer pointed to by buf and fill the event structure pointed to by ev
+ * with information.
+ *
+ * Returns the number of bytes read from buf when the event structure is filled.
+ * Returns 0 when not enough data is available to decode an event.
+ */
+int tkbd_parse(struct tkbd_event *ev, char const *buf, int len);
+
+/*
+ * Keyboard input stream structure.
+ *
+ * Used with tkbd_read() to manage buffering and termios state.
+ */
+struct tkbd_stream {
+	int  fd;                // file descriptor to read from
+	char buf[1024];         // input buffer
+	int  bufpos;            // current byte position buf
+	int  buflen;            // number of bytes available after bufpos
+
+	struct termios tc;      // original termios
+};
+
+/*
+ * Attach a keyboard input stream structure to a file descriptor.
+ * The file descriptor is put into raw mode and stream buffers are reset.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure and sets errno appropriately.
+ */
+int tkbd_attach(struct tkbd_stream *s, int fd);
+
+/*
+ * Detach the keyboard input stream from the attached file descriptor.
+ * This must be called on the stream before the program exits or the terminal
+ * will remain in raw input mode. It's recommended this be set up to happen in
+ * an atexit or signal hook.
+ *
+ * Returns 0 on success, -1 on failure and sets errno to indicate error.
+ */
+int tkbd_detach(struct tkbd_stream *s);
+
+/*
+ * Read a single keyboard, mouse, or UTF8 encoded character sequence from the
+ * stream and fill the event structure pointed to by ev with information.
+ *
+ * Returns the number of bytes consumed to fill the event on success.
+ * Returns 0 when not enough data is available to decode an event.
+ * Returns -1 when a read error occurs and sets errno appropriately.
+ */
+int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
+
+/*
  * Event types
  */
 #define TKBD_KEY    1    // A key was pressed
@@ -161,70 +234,3 @@
 #define TKBD_MOUSE_WHEEL_UP       (0xFFFF-5)
 #define TKBD_MOUSE_WHEEL_DOWN     (0xFFFF-6)
 
-/*
- * Limits
- */
-#define TKBD_SEQ_MAX 32         // max length in bytes of an escape sequence
-
-/*
- * Keyboard, mouse, or unicode character event structure.
- *
- * The tkbd_parse() and tkbd_read() functions fill this structure with
- * information consumed from a char buffer or file descriptor.
- */
-struct tkbd_event {
-	uint8_t  type;          // event type
-	uint8_t  mod;           // modifiers
-	uint16_t key;           // one of the TKBD_KEY_* constants
-	uint32_t ch;            // unicode character
-	int32_t  x, y;          // mouse coordinates
-	char seq[TKBD_SEQ_MAX]; // char sequence source of event
-};
-
-struct tkbd_stream {
-	int  fd;                // file descriptor to read from
-	char buf[1024];         // input buffer
-	int  bufpos;            // current byte position buf
-	int  buflen;            // number of bytes available after bufpos
-
-	struct termios tc;      // original termios
-};
-
-/*
- * Parse a single keyboard/mouse/resize sequence or UTF8 encoded character from
- * the buffer pointed to by buf and fill the event structure pointed to by ev
- * with information.
- *
- * Returns the number of bytes read from buf when the event structure is filled.
- * Returns 0 when not enough data is available to decode an event.
- */
-int tkbd_parse(struct tkbd_event *ev, char const *buf, int len);
-
-/*
- * Attach a keyboard input stream structure to a file descriptor.
- * The file descriptor is put into raw mode and stream buffers are reset.
- *
- * Returns 0 on success.
- * Returns -1 on failure and sets errno appropriately.
- */
-int tkbd_attach(struct tkbd_stream *s, int fd);
-
-/*
- * Detach the keyboard input stream from the attached file descriptor.
- * This must be called on the stream before the program exits or the terminal
- * will remain in raw input mode. It's recommended this be set up to happen in
- * an atexit or signal hook.
- *
- * Returns 0 on success, -1 on failure and sets errno to indicate error.
- */
-int tkbd_detach(struct tkbd_stream *s);
-
-/*
- * Read a single keyboard, mouse, or UTF8 encoded character sequence from the
- * stream and fill the event structure pointed to by ev with information.
- *
- * Returns the number of bytes consumed to fill the event on success.
- * Returns 0 when not enough data is available to decode an event.
- * Returns -1 when a read error occurs and sets errno appropriately.
- */
-int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);

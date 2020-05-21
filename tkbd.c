@@ -23,6 +23,83 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+
+// Attach the keyboard input stream stuct to the given file descriptor, which
+// is almost always STDIN_FILENO.
+int tkbd_attach(struct tkbd_stream *s, int fd)
+{
+	int rc;
+
+	// save current termios settings for detach()
+	if ((rc = tcgetattr(fd, &s->tc)))
+		return rc;
+
+	// set raw mode input flags
+	struct termios raw = s->tc;
+	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+	raw.c_cflag |= (CS8);
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	raw.c_cc[VMIN] = 0;
+	raw.c_cc[VTIME] = 0;
+
+	if ((rc = tcsetattr(fd, TCSAFLUSH, &raw)))
+		return rc;
+
+	s->fd = fd;
+	memset(s->buf, 0, sizeof(s->buf));
+	s->bufpos = 0;
+	s->buflen = 0;
+
+	return 0;
+}
+
+// Reset file descriptor termios attributes.
+int tkbd_detach(struct tkbd_stream *s)
+{
+	int rc = tcsetattr(s->fd, TCSAFLUSH, &s->tc);
+	return rc;
+}
+
+// Read a key, mouse, or character from the keyboard input stream.
+int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
+{
+	// fill buffer with data from fd, possibly restructuring the buffer to
+	// free already processed input.
+	if (s->buflen < TKBD_SEQ_MAX) {
+		int bufspc = sizeof(s->buf) - s->bufpos - s->buflen;
+
+		if (bufspc < TKBD_SEQ_MAX) {
+			memmove(s->buf, s->buf + s->bufpos, s->buflen);
+			s->bufpos = 0;
+			bufspc = sizeof(s->buf) - s->buflen;
+		}
+
+		if (bufspc > 0) {
+			char *p = s->buf + s->bufpos + s->buflen;
+			ssize_t sz = read(s->fd, p, bufspc);
+			if (sz < 0)
+				return sz;
+			s->buflen += sz;
+		}
+	}
+
+	char *buf = s->buf + s->bufpos;
+	int len = s->buflen;
+	assert(buf+len <= s->buf+sizeof(s->buf));
+
+	int n = tkbd_parse(ev, buf, len);
+	s->bufpos += n;
+	s->buflen -= n;
+
+	return n;
+}
+
+
+/*
+ * tkbd_parse() internal routines and constants
+ *
+ */
+
 // Checks if s1 starts with s2 and returns the strlen of s2 if so.
 // Returns zero when s1 does not start with s2.
 // len is the length of s1
@@ -522,76 +599,11 @@ int tkbd_parse(struct tkbd_event *ev, const char *buf, int len)
 	return 0;
 }
 
-// Attach the keyboard input stream stuct to the given file descriptor, which
-// is almost always STDIN_FILENO.
-int tkbd_attach(struct tkbd_stream *s, int fd)
-{
-	int rc;
 
-	// save current termios settings for detach()
-	if ((rc = tcgetattr(fd, &s->tc)))
-		return rc;
-
-	// set raw mode input flags
-	struct termios raw = s->tc;
-	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-	raw.c_cflag |= (CS8);
-	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-	raw.c_cc[VMIN] = 0;
-	raw.c_cc[VTIME] = 0;
-
-	if ((rc = tcsetattr(fd, TCSAFLUSH, &raw)))
-		return rc;
-
-	s->fd = fd;
-	memset(s->buf, 0, sizeof(s->buf));
-	s->bufpos = 0;
-	s->buflen = 0;
-
-	return 0;
-}
-
-// Reset file descriptor termios attributes.
-int tkbd_detach(struct tkbd_stream *s)
-{
-	int rc = tcsetattr(s->fd, TCSAFLUSH, &s->tc);
-	return rc;
-}
-
-// Read a key, mouse, or character from the keyboard input stream.
-int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
-{
-	// fill buffer with data from fd, possibly restructuring the buffer to
-	// free already processed input.
-	if (s->buflen < TKBD_SEQ_MAX) {
-		int bufspc = sizeof(s->buf) - s->bufpos - s->buflen;
-
-		if (bufspc < TKBD_SEQ_MAX) {
-			memmove(s->buf, s->buf + s->bufpos, s->buflen);
-			s->bufpos = 0;
-			bufspc = sizeof(s->buf) - s->buflen;
-		}
-
-		if (bufspc > 0) {
-			char *p = s->buf + s->bufpos + s->buflen;
-			ssize_t sz = read(s->fd, p, bufspc);
-			if (sz < 0)
-				return sz;
-			s->buflen += sz;
-		}
-	}
-
-	char *buf = s->buf + s->bufpos;
-	int len = s->buflen;
-	assert(buf+len <= s->buf+sizeof(s->buf));
-
-	int n = tkbd_parse(ev, buf, len);
-	s->bufpos += n;
-	s->buflen -= n;
-
-	return n;
-}
-
+/*
+ * tkbd_desc() internal constants
+ *
+ */
 
 // Modifier keys map to MOD - 1
 static const char * const modifier_key_names[] = {

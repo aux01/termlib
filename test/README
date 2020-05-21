@@ -1,0 +1,24 @@
+Tests in this directory are just normal programs that generate output and exit
+zero on success and non-zero on failure. There is no framework per se.
+
+The `make test' target builds and runs all tests in this directory.
+
+The `runtest' program in this directory runs one or more tests and reports
+output only when a test failure occurs. Use it like this:
+
+    test/runtest tkbd_parse_test
+
+Tests written in C typically use printf(3) to provide context information and
+assert(3) to check state and abort. On failure, test output is provided and the
+failed assertion should output the file and line number. That's typically enough
+to go on.
+
+It's also possible to load a test in gdb and break at an assertion failure to
+get a backtrace, inspect memory state, etc.
+
+    make profile=test debug
+    gdb test/tkbd_parse_test
+    (gdb) run
+    <breaks on failure>
+    (gdb) bt
+

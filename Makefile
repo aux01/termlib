@@ -18,7 +18,7 @@ DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump
 
 TESTS    = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
            test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
-           test/tkbd_test test/tkbd_desc_test
+           test/tkbd_parse_test test/tkbd_desc_test
 
 # make profile=release (default)
 # make profile=debug
@@ -66,7 +66,7 @@ test/sgr_encode_test: test/sgr_encode_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
 test/sgr_attrs_test: test/sgr_attrs_test.c sgr.c sgr.h
 	$(TEST_CC) $< -o $@
-test/tkbd_test: test/tkbd_test.c tkbd.c tkbd.h
+test/tkbd_parse_test: test/tkbd_parse_test.c tkbd.c tkbd.h
 	$(TEST_CC) $< -o $@
 test/tkbd_desc_test: test/tkbd_desc_test.c tkbd.c tkbd.h
 	$(TEST_CC) $< -o $@

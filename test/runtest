@@ -13,7 +13,7 @@ while [ $# -gt 0 ]; do
     else
         fails=$(( fails+1 ))
         echo " FAILED"
-        echo "$out" | sed 's/^/    /'
+        printf "%s\n" "$out" | sed 's/^/    /'
     fi
     shift
 done

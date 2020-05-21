@@ -37,6 +37,7 @@ static void test_parse_char_seq(void)
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.key == TKBD_KEY_A + (c - 'a'));
 		assert(ev.mod == 0);
 		assert(ev.ch == (uint32_t)c);
@@ -50,6 +51,7 @@ static void test_parse_char_seq(void)
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.key == c);
 		assert(ev.mod == TKBD_MOD_SHIFT);
 		assert(ev.ch == (uint32_t)c);
@@ -63,6 +65,7 @@ static void test_parse_char_seq(void)
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.key == c);
 		assert(ev.mod == 0);
 		assert(ev.ch == (uint32_t)c);
@@ -78,6 +81,7 @@ static void test_parse_char_seq(void)
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.key == c);
 		assert(ev.mod == 0);
 		assert(ev.ch == (uint32_t)c);
@@ -93,6 +97,7 @@ static void test_parse_char_seq(void)
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.key == c);
 		assert(ev.mod == TKBD_MOD_SHIFT);
 		assert(ev.ch == (uint32_t)c);
@@ -141,6 +146,7 @@ static void test_parse_ctrl_seq(void)
 		printf("n=%d expect key=0x%x, got key=0x%x\n",
 		       n, k->key, ev.key);
 		assert(n == 1);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.key == k->key);
 		assert(ev.mod == k->mod);
 		assert(ev.ch == (uint32_t)k->seq[0]);
@@ -198,6 +204,7 @@ static void test_parse_alt_seq(void)
 		n = parse_alt_seq(&ev, k->seq, 2);
 		printf("n = %d, key = 0x%x\n", n, k->key);
 		assert(n == 2);
+		assert(ev.type == TKBD_KEY);
 		assert(ev.mod == k->mod);
 		assert(ev.ch == (uint32_t)ev.seq[1]);
 		assert(ev.seq[0] == '\033');
@@ -237,6 +244,7 @@ static void test_parse_special_seq(void)
 	memset(&ev, 0, sizeof(ev));
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	assert(n == strlen("\033[A"));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UP);
 	assert(strcmp(ev.seq, "\033[A") == 0);
 
@@ -246,6 +254,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UP);
 	assert(ev.mod == TKBD_MOD_NONE);
 	assert(strcmp(ev.seq, buf) == 0);
@@ -256,6 +265,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UP);
 	assert(ev.mod == TKBD_MOD_NONE);
 	assert(strcmp(ev.seq, buf) == 0);
@@ -266,6 +276,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UP);
 	assert(ev.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
 	assert(strcmp(ev.seq, buf) == 0);
@@ -276,6 +287,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UP);
 	assert(ev.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
 	assert(strcmp(ev.seq, buf) == 0);
@@ -286,6 +298,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_F12);
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
@@ -296,6 +309,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UNKNOWN);
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
@@ -306,6 +320,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UNKNOWN);
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
@@ -316,6 +331,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_TAB);
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, buf) == 0);
@@ -327,6 +343,7 @@ static void test_parse_special_seq(void)
 	n = parse_special_seq(&ev, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
 	assert((size_t)n == strlen(buf));
+	assert(ev.type == TKBD_KEY);
 	assert(ev.key == TKBD_KEY_UNKNOWN);
 	assert(ev.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(ev.seq, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;") == 0);
@@ -389,6 +406,7 @@ static void test_parse()
 		printf("n = %d, expect key=%x, mod=%x; got key=%x, mod=%x\n",
 		       n, k.key, k.mod, ev.key, ev.mod);
 		assert(n == (int)strlen(k.seq));
+		assert(ev.type == TKBD_KEY);
 		assert(ev.mod == k.mod);
 		assert(strcmp(ev.seq, k.seq) == 0);
 	}

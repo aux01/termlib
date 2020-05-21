@@ -144,6 +144,7 @@ static int parse_char_seq(struct tkbd_event *ev, const char *buf, int len)
 	if (p >= pe || *p < 0x20 || *p > 0x7E)
 		return 0;
 
+	ev->type = TKBD_KEY;
 	ev->ch = *p;
 	ev->seq[0] = *p;
 
@@ -213,6 +214,7 @@ static int parse_ctrl_seq(struct tkbd_event *ev, const char *buf, int len)
 
 	ev->ch = *p;
 	ev->seq[0] = *p;
+	ev->type = TKBD_KEY;
 	return 1;
 }
 
@@ -453,6 +455,7 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 	size_t sz = MIN(p-buf, TKBD_SEQ_MAX-1);
 	memcpy(ev->seq, buf, sz);
 
+	ev->type = TKBD_KEY;
 	return p - buf;
 
 }

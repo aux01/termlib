@@ -25,8 +25,12 @@ int main(void)
 
 		char desc[64];
 		tkbd_desc(desc, sizeof(desc), &ev);
-		printf("key: %-20s [n=%d, key=0x%02hhx, mod=0x%02hhx, ch=0x%02hhx]\n",
-		       desc, n, ev.key, ev.mod, ev.ch);
+
+		char seq[TKBD_SEQ_MAX*4];
+		tkbd_stresc(seq, ev.seq, ev.seqlen);
+
+		printf("%-22s %-14s key=0x%02hhx, mod=0x%02hhx, ch=0x%02hhx, sz=%d\n",
+		       desc, seq, ev.key, ev.mod, ev.ch, n);
 
 		if (ev.key == TKBD_KEY_Q && ev.mod == TKBD_MOD_NONE)
 			break;

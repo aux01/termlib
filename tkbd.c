@@ -582,7 +582,7 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
 	int len = s->buflen;
 	assert(buf+len <= s->buf+sizeof(s->buf));
 
-	int n = parse_key_seq(ev, buf, len);
+	int n = tkbd_parse(ev, buf, len);
 	s->bufpos += n;
 	s->buflen -= n;
 

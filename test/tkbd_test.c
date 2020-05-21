@@ -322,6 +322,68 @@ static void test_parse_special_seq(void)
 	assert(strcmp(ev.seq, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;") == 0);
 }
 
+static void test_parse()
+{
+	int n;
+
+	struct key {
+		char *seq;
+		int key;
+		int mod;
+	};
+
+	struct key keys[] = {
+		// parse_char_seq
+		{ "a",        TKBD_KEY_A,         TKBD_MOD_NONE },
+		{ "z",        TKBD_KEY_Z,         TKBD_MOD_NONE },
+		{ "A",        TKBD_KEY_A,         TKBD_MOD_SHIFT },
+		{ "Z",        TKBD_KEY_Z,         TKBD_MOD_SHIFT },
+		{ "`",        TKBD_KEY_BACKTICK,  TKBD_MOD_NONE },
+		{ "/",        TKBD_KEY_SLASH,     TKBD_MOD_NONE },
+
+		// parse_ctrl_seq
+		{ "\033",     TKBD_KEY_ESC,       TKBD_MOD_NONE },
+		{ "\x01",     TKBD_KEY_A,         TKBD_MOD_CTRL },
+		{ "\x1A",     TKBD_KEY_Z,         TKBD_MOD_CTRL },
+		{ "\x09",     TKBD_KEY_TAB,       TKBD_MOD_NONE },
+		{ "\x0A",     TKBD_KEY_ENTER,     TKBD_MOD_NONE },
+
+		// parse_alt_seq
+		{ "\033A",    TKBD_KEY_A,         TKBD_MOD_SHIFT|TKBD_MOD_ALT },
+		{ "\033Z",    TKBD_KEY_Z,         TKBD_MOD_SHIFT|TKBD_MOD_ALT },
+		{ "\033a",    TKBD_KEY_A,         TKBD_MOD_ALT },
+		{ "\033z",    TKBD_KEY_Z,         TKBD_MOD_ALT },
+		{ "\0330",    TKBD_KEY_0,         TKBD_MOD_ALT },
+		{ "\0339",    TKBD_KEY_9,         TKBD_MOD_ALT },
+		{ "\033;",    TKBD_KEY_SEMICOLON, TKBD_MOD_ALT },
+		{ "\033>",    TKBD_KEY_GT,        TKBD_MOD_SHIFT|TKBD_MOD_ALT },
+		{ "\033\x09", TKBD_KEY_TAB,       TKBD_MOD_ALT },
+		{ "\033\x0A", TKBD_KEY_ENTER,     TKBD_MOD_ALT },
+		{ "\033\x01", TKBD_KEY_A,         TKBD_MOD_CTRL|TKBD_MOD_ALT },
+		{ "\033\033", TKBD_KEY_ESC,       TKBD_MOD_ALT },
+
+		// parse_special_seq
+		{ "\033[A",      TKBD_KEY_UP,  TKBD_MOD_NONE },
+		{ "\033[1A",     TKBD_KEY_UP,  TKBD_MOD_NONE },
+		{ "\033[1;2A",   TKBD_KEY_UP,  TKBD_MOD_SHIFT },
+		{ "\033[1;8A",   TKBD_KEY_UP,  TKBD_MOD_SHIFT|
+		                               TKBD_MOD_ALT|
+		                               TKBD_MOD_CTRL },
+		{ "\033[24;2~",  TKBD_KEY_F12, TKBD_MOD_SHIFT },
+	};
+
+	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {
+		struct tkbd_event ev = {0};
+		struct key k = keys[i];
+		n = tkbd_parse(&ev, k.seq, strlen(k.seq));
+		printf("n = %d, expect key=%x, mod=%x; got key=%x, mod=%x\n",
+		       n, k.key, k.mod, ev.key, ev.mod);
+		assert(n == (int)strlen(k.seq));
+		assert(ev.mod == k.mod);
+		assert(strcmp(ev.seq, k.seq) == 0);
+	}
+}
+
 int main(void)
 {
 	// make stdout line buffered
@@ -332,6 +394,7 @@ int main(void)
 	test_parse_ctrl_seq();
 	test_parse_alt_seq();
 	test_parse_special_seq();
+	test_parse();
 
 	return 0;
 }

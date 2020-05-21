@@ -191,6 +191,16 @@ struct tkbd_stream {
 };
 
 /*
+ * Parse a single keyboard/mouse/resize sequence or UTF8 encoded character from
+ * the buffer pointed to by buf and fill the event structure pointed to by ev
+ * with information.
+ *
+ * Returns the number of bytes read from buf when the event structure is filled.
+ * Returns 0 when not enough data is available to decode an event.
+ */
+int tkbd_parse(struct tkbd_event *ev, char const *buf, int len);
+
+/*
  * Attach a keyboard input stream structure to a file descriptor.
  * The file descriptor is put into raw mode and stream buffers are reset.
  *
@@ -218,13 +228,3 @@ int tkbd_detach(struct tkbd_stream *s);
  * Returns -1 when a read error occurs and sets errno appropriately.
  */
 int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
-
-/*
- * Parse a single keyboard/mouse/resize sequence or UTF8 encoded character from
- * the buffer pointed to by buf and fill the event structure pointed to by ev
- * with information.
- *
- * Returns the number of bytes read from buf when the event structure is filled.
- * Returns zero when not enough data is available to decode an event.
- */
-int tkbd_parse(struct tkbd_event *ev, const char *buf, int len, int mode);

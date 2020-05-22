@@ -100,24 +100,6 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
  *
  */
 
-// Checks if s1 starts with s2 and returns the strlen of s2 if so.
-// Returns zero when s1 does not start with s2.
-// len is the length of s1
-// s2 should be null-terminated
-static int starts_with(const char *s1, int len, const char *s2)
-{
-	int n = 0;
-	while (*s2 && n < len) {
-		if (*s1++ != *s2++)
-			return 0;
-		n++;
-	}
-	if (*s2 == 0)
-		return n;
-	else
-		return 0;
-}
-
 // Parse multiple numeric parameters from a CSI sequence and store in the array
 // pointed to by ar. A maximum of n parameters will be parsed and filled into
 // the array. If a parameter is blank, 0 will be set in the array.
@@ -494,8 +476,11 @@ static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
 // as a mouse sequence but invalid.
 static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 {
+	if (len < 3 || !(buf[0] == '\033' && buf[1] == '['))
+		return 0;
+
 	// TODO: split two main cases into separate functions
-	if (len >= 6 && starts_with(buf, len, "\033[M")) {
+	if (len >= 6 && buf[2] == 'M') {
 		// X10 mouse encoding, the simplest one
 		// \033 [ M Cb Cx Cy
 		int b = buf[3] - 32;
@@ -519,6 +504,7 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 			ev->key = TKBD_MOUSE_RELEASE;
 			break;
 		default:
+			// TODO: unknown sequence type instead of neg return
 			return -6;
 		}
 		ev->type = TKBD_MOUSE; // TBKB_KEY by default
@@ -530,8 +516,7 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 		ev->y = (uint8_t)buf[5] - 1 - 32;
 
 		return 6;
-	} else if (starts_with(buf, len, "\033[<") ||
-		   starts_with(buf, len, "\033[")) {
+	} else {
 		// xterm 1006 extended mode or urxvt 1015 extended mode
 		// xterm: \033 [ < Cb ; Cx ; Cy (M or m)
 		// urxvt: \033 [ Cb ; Cx ; Cy M

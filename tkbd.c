@@ -118,7 +118,7 @@ static int parse_seq_params(int* ar, int n, char *pdata)
 }
 
 // Parse a character from the buffer.
-static int parse_char_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_ascii_seq(struct tkbd_event *ev, const char *buf, int len)
 {
 	const char *p  = buf;
 	const char *pe = buf + len;
@@ -270,7 +270,7 @@ static const uint16_t vt_key_table[] = {
  *
  * \E[A   UP         \E[K    -         \E[U   -
  * \E[B   DOWN       \E[L    -         \E[V   -
- * \E[C   RIGHT      \E[M    -         \E[W   -
+ * \E[C   RIGHT      \E[M    MOUSE     \E[W   -
  * \E[D   LEFT       \E[N    -         \E[X   -
  * \E[E   KP 5       \E[O    -         \E[Y   -
  * \E[F   END        \E[P    F1        \E[Z   Shift+Tab
@@ -441,8 +441,8 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 // Any character or C0 control sequence may be preceded by ESC, indicating
 // that ALT was pressed at the same time.
 //
-// ALT+CH:       \Eg   (parse_char_seq)
-// SHIFT+ALT+CH: \EG   (parse_char_seq)
+// ALT+CH:       \Eg   (parse_ascii_seq)
+// SHIFT+ALT+CH: \EG   (parse_ascii_seq)
 // CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
 //
 // Returns the number of bytes consumed to fill the event struct.
@@ -454,7 +454,7 @@ static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
 	if (p >= pe || *p++ != '\033')
 		return 0;
 
-	int n = parse_char_seq(ev, p, pe - p);
+	int n = parse_ascii_seq(ev, p, pe - p);
 	if (n == 0)
 		n = parse_special_seq(ev, p, pe - p);
 	if (n == 0)
@@ -615,7 +615,7 @@ int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz)
 		return n;
 	if ((n = parse_ctrl_seq(ev, buf, sz)))
 		return n;
-	if ((n = parse_char_seq(ev, buf, sz)))
+	if ((n = parse_ascii_seq(ev, buf, sz)))
 		return n;
 
 	return 0;

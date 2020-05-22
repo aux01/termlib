@@ -8,7 +8,7 @@ OPTIMIZE  = -O2
 LDFLAGS   =
 LDLIBS    =
 
-OBJS      = termbox.o ti.o sgr.o utf8.o tkbd.o
+OBJS      = termbox.o sgr.o ti.o tkbd.o utf8.o
 SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
@@ -18,7 +18,8 @@ DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump demo/pkbd
 
 TESTS     = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
             test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
-            test/tkbd_parse_test test/tkbd_desc_test test/tkbd_stresc_test
+            test/tkbd_parse_test test/tkbd_desc_test test/tkbd_stresc_test \
+            test/utf8_test
 
 # make profile=release (default)
 # make profile=debug
@@ -30,8 +31,12 @@ include build/$(profile).mk
 all: $(OBJS) $(LIBS) demo tests
 .PHONY: all
 
-# Rebuild termbox.o when deps change
+# Main objects and their dependencies
 termbox.o: termbox.h bytebuffer.inl term.inl input.inl
+sgr.o: sgr.h
+ti.o: ti.h
+tkbd.o: tkbd.h
+utf8.o: utf8.h
 
 # Shared and static libraries
 $(SO_NAME): $(OBJS)
@@ -64,6 +69,7 @@ test/sgr_attrs_test: test/sgr_attrs_test.c sgr.c sgr.h
 test/tkbd_parse_test: test/tkbd_parse_test.c tkbd.c tkbd.h
 test/tkbd_desc_test: test/tkbd_desc_test.c tkbd.c tkbd.h
 test/tkbd_stresc_test: test/tkbd_stresc_test.c tkbd.c tkbd.h
+test/utf8_test: test/utf8_test.c utf8.c utf8.h
 tests: $(TESTS)
 test: tests
 	test/runtest $(TESTS)

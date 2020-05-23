@@ -2,13 +2,14 @@
 .SUFFIXES:
 
 CC        = cc
-CFLAGS    = -std=c99 $(WARN) $(OPTIMIZE) -fPIC
+CFLAGS    = -std=c99 $(INCLUDE) $(WARN) $(OPTIMIZE) -fPIC
 WARN      = -Wall -Wextra
 OPTIMIZE  = -O2
+INCLUDE   = -iquote termbox -iquote .
 LDFLAGS   =
 LDLIBS    =
 
-OBJS      = termbox.o sgr.o ti.o tkbd.o utf8.o
+OBJS      = sgr.o ti.o tkbd.o utf8.o termbox/termbox.o
 SO_NAME   = libtermbox.so
 SA_NAME   = termbox.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
@@ -28,15 +29,17 @@ profile = release
 include build/$(profile).mk
 
 # Build everything
-all: $(OBJS) $(LIBS) demo tests
+all: $(OBJS) $(LIBS) demo $(TESTS)
 .PHONY: all
 
 # Main objects and their dependencies
-termbox.o: termbox.h bytebuffer.inl term.inl input.inl
 sgr.o: sgr.h
 ti.o: ti.h
 tkbd.o: tkbd.h
 utf8.o: utf8.h
+
+# Termbox compatibility
+termbox/termbox.o: termbox/termbox.h termbox/bytebuffer.inl termbox/term.inl termbox/input.inl
 
 # Shared and static libraries
 $(SO_NAME): $(OBJS)
@@ -45,9 +48,6 @@ $(SA_NAME): $(OBJS)
 	ar rcs $@ $(OBJS)
 
 # Demo programs
-DEMOS_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) $(OBJS) $(LDLIBS)
-$(DEMO_CMDS):
-	$(DEMOS_CC) $@.o -o $@
 demo/keyboard: demo/keyboard.o $(OBJS)
 demo/output: demo/output.o $(OBJS)
 demo/paint: demo/paint.o $(OBJS)
@@ -70,10 +70,9 @@ test/tkbd_parse_test: test/tkbd_parse_test.c tkbd.c tkbd.h
 test/tkbd_desc_test: test/tkbd_desc_test.c tkbd.c tkbd.h
 test/tkbd_stresc_test: test/tkbd_stresc_test.c tkbd.c tkbd.h
 test/utf8_test: test/utf8_test.c utf8.c utf8.h
-tests: $(TESTS)
-test: tests
+test: $(TESTS)
 	test/runtest $(TESTS)
-.PHONY: test tests
+.PHONY: test
 
 # Clean everything
 clean:

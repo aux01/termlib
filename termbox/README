@@ -1,0 +1,30 @@
+Termbox compatibility library
+
+termlib started life as a fork of termbox¹ but grew pretty quickly into a
+different type of project.
+
+These are the original forked termbox sources modified to work with termlib. The
+idea is for them to eventually be a compatibility shim that could be used to
+quickly port existing termbox programs to termlib.
+
+The termbox interface consists of only 12 functions:
+
+        tb_init()                // initialization
+        tb_shutdown()            // shutdown
+
+        tb_width()               // width of the terminal screen
+        tb_height()              // height of the terminal screen
+
+        tb_clear()               // clear buffer
+        tb_present()             // sync internal buffer with terminal
+
+        tb_put_cell()
+        tb_change_cell()
+
+        tb_select_input_mode()   // change input mode
+        tb_peek_event()          // peek a keyboard event
+        tb_poll_event()          // wait for a keyboard event
+
+See the the termbox.h file for more details.
+
+¹ <https://github.com/nsf/termbox>

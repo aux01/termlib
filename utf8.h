@@ -19,6 +19,9 @@
 
 #pragma once
 
+/* Illegal character replacement char */
+#define UTF8_REPLACEMENT_CHAR "\xEF\xBF\xBD" // � U+FFFD
+
 /*
  * Returns the length in bytes of a utf8 character sequence with ch as the
  * first byte.

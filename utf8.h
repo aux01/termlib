@@ -29,7 +29,8 @@ int utf8_seq_len(char ch);
  * codepoint. No more than len bytes will be consumed from the seq array.
  *
  * Returns the number of bytes read from the seq buffer on success.
- * Returns 0 when not enough bytes are available in the seq buffer.
+ * Returns 0 when not enough bytes are available in the seq buffer or when the
+ * first byte is not a valid leading byte value.
  */
 int utf8_seq_to_codepoint(uint32_t *codepoint, const char *seq, size_t len);
 
@@ -37,9 +38,10 @@ int utf8_seq_to_codepoint(uint32_t *codepoint, const char *seq, size_t len);
  * to the char buffer pointed to by seq. No null terminator character is
  * written to the buffer.
  *
- * The buffer should be allocated to be at least six bytes unless the utf8 byte
+ * The buffer should be allocated to be at least 4 bytes unless the utf8 byte
  * length of the codepoint is determined to be less beforehand.
  *
- * Returns the number of bytes written to the seq buffer: 1..6.
+ * Returns the number of bytes written to the seq buffer (1..4) on success.
+ * Returns 0 when the codepoint value exceeds the 0x10FFFF maximum value.
  */
 int utf8_codepoint_to_seq(char *seq, uint32_t codepoint);

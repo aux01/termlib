@@ -12,7 +12,7 @@ static void test_utf8_len(void)
 	assert(utf8_seq_len('\x7f') == 1);
 
 	// U+80 - U+07FF range
-	assert(utf8_seq_len('\xc0') == 2);
+	assert(utf8_seq_len('\xc2') == 2);
 	assert(utf8_seq_len('\xdf') == 2);
 
 	// U+0800 - U+FFFF range
@@ -23,24 +23,21 @@ static void test_utf8_len(void)
 	assert(utf8_seq_len('\xf0') == 4);
 	assert(utf8_seq_len('\xf7') == 4);
 
-	// U+200000 - U+3FFFFFF range
-	assert(utf8_seq_len('\xf8') == 5);
-	assert(utf8_seq_len('\xfb') == 5);
-
-	// U+4000000 - U+7FFFFFFF range
-	assert(utf8_seq_len('\xfc') == 6);
-	assert(utf8_seq_len('\xfd') == 6);
-
-	// 0x80-0xbf, 0xfe, 0xff are continuation bytes
-	assert(utf8_seq_len('\x80') == 1);
-	assert(utf8_seq_len('\xbf') == 1);
-	assert(utf8_seq_len('\xfe') == 1);
-	assert(utf8_seq_len('\xff') == 1);
+	// illegal leading bytes
+	assert(utf8_seq_len('\x80') == 0);
+	assert(utf8_seq_len('\xbf') == 0);
+	assert(utf8_seq_len('\xc1') == 0);
+	assert(utf8_seq_len('\xf8') == 0);
+	assert(utf8_seq_len('\xfb') == 0);
+	assert(utf8_seq_len('\xfc') == 0);
+	assert(utf8_seq_len('\xfd') == 0);
+	assert(utf8_seq_len('\xfe') == 0);
+	assert(utf8_seq_len('\xff') == 0);
 }
 
 struct t {
 	char *seq;
-	uint32_t codepoint;
+	uint32_t code;
 };
 
 static const struct t tests[] = {
@@ -74,21 +71,39 @@ static const struct t tests[] = {
 
 static void test_utf8_seq_to_codepoint(void)
 {
+	// test valid sequence to codepoint table
 	for (int i = 0; i < (int)(sizeof(tests)/sizeof(tests[0])); i++) {
 		const struct t *t = &tests[i];
-		uint32_t codepoint;
-		int n = utf8_seq_to_codepoint(&codepoint, t->seq, strlen(t->seq));
-		printf("n=%d, codepoint=U+%04X\n", n, codepoint);
+		uint32_t code;
+		int n = utf8_seq_to_codepoint(&code, t->seq, strlen(t->seq));
+		printf("n=%d, codepoint=U+%04X\n", n, code);
 		assert(n == (int)strlen(t->seq));
-		assert(codepoint == t->codepoint);
+		assert(code == t->code);
 	}
 
 	// test \0 separately because of strlen issues
-	uint32_t codepoint;
-	int n = utf8_seq_to_codepoint(&codepoint, "\0", 1);
-	printf("n=%d, codepoint=U+%04X\n", n, codepoint);
+	uint32_t code;
+	int n = utf8_seq_to_codepoint(&code, "\0", 1);
+	printf("n=%d, code=U+%04X\n", n, code);
 	assert(n == 1);
-	assert(codepoint == 0x00);
+	assert(code == 0x00);
+
+	// illegal leading bytes return 0 and don't write codepoint
+	char * chars[] = { "\x80;;;", "\xc1;;;", "\xf8;;;", "\xff;;;" };
+	for (int i = 0; i < (int)(sizeof(chars)/sizeof(chars[0])); i++) {
+		uint32_t code = 1;
+		int n = utf8_seq_to_codepoint(&code, chars[i], 4);
+		printf("n=%d, code=U+%04X, seq=%s\n", n, code, chars[i]);
+		assert(n == 0);
+		assert(code == 1);
+	}
+
+	// not enough bytes returns 0 and doesn't write to codepoint
+	code = 1;
+	n = utf8_seq_to_codepoint(&code, "\xe0\xa4", 2);
+	printf("n=%d, code=U+%04X, seq=%s\n", n, code, "\xe0\xa4");
+	assert(n == 0);
+	assert(code == 1);
 }
 
 static void test_utf8_codepoint_to_seq(void)
@@ -96,19 +111,27 @@ static void test_utf8_codepoint_to_seq(void)
 	for (int i = 0; i < (int)(sizeof(tests)/sizeof(tests[0])); i++) {
 		const struct t *t = &tests[i];
 		char buf[7] = {0};
-		int n = utf8_codepoint_to_seq(buf, t->codepoint);
-		printf("n=%d, codepoint=U+%04X, seq=%s\n", n, t->codepoint, buf);
+		int n = utf8_codepoint_to_seq(buf, t->code);
+		printf("n=%d, code=U+%04X, seq=%s\n", n, t->code, buf);
 		assert(n == (int)strlen(buf));
 		assert(strcmp(buf, t->seq) == 0);
 	}
 
 	// test \0 separately because of strlen issues
-	char buf[2] = { 'A', '\0' };
+	char buf[4] = { 'A' };
 	int n = utf8_codepoint_to_seq(buf, 0x00);
-	printf("n=%d, codepoint=U+%04X\n", n, 0x00);
+	printf("n=%d, code=U+%04X\n", n, 0x00);
 	assert(n == 1);
 	assert(buf[0] == '\0');
+
+	// invalid codepoints return 0 and don't write buf
+	buf[0] = 'A';
+	n = utf8_codepoint_to_seq(buf, 0x10FFFF+1);
+	printf("n=%d, code=U+%04X\n", n, 0x11FFFF+1);
+	assert(n == 0);
+	assert(buf[0] == 'A');
 }
+
 
 int main(void)
 {

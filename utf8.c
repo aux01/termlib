@@ -16,25 +16,20 @@
 
 #include "utf8.h"
 
+// Table of utf8 byte sequence lengths indexed by first byte value.
+// Invalid leading bytes are marked with a zero value.
 static const uint8_t utf8_length[256] = {
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x00
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x20
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x40
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x60
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x80
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0xa0
-	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // 0xc0
-	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1  // 0xe0
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0x80
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0xa0
+	0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // 0xc0
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0, // 0xe0
 };
 
-static const uint8_t utf8_mask[6] = {
-	0x7F,
-	0x1F,
-	0x0F,
-	0x07,
-	0x03,
-	0x01,
-};
+static const uint8_t utf8_mask[6] = { 0x7F, 0x1F, 0x0F, 0x07 };
 
 int utf8_seq_len(char c)
 {
@@ -47,7 +42,9 @@ int utf8_seq_to_codepoint(uint32_t *codepoint, const char *seq, size_t sz)
 		return 0;
 
 	int len = utf8_seq_len(seq[0]);
-	if (len > (int)sz)
+
+	// invalid leading byte or not enough bytes
+	if (len == 0 || len > (int)sz)
 		return 0;
 
 	uint8_t  mask = utf8_mask[len-1];
@@ -75,15 +72,11 @@ int utf8_codepoint_to_seq(char *seq, uint32_t c)
 	} else if (c < 0x10000) {
 		first = 0xe0;
 		len = 3;
-	} else if (c < 0x200000) {
+	} else if (c <= 0x10FFFF) {
 		first = 0xf0;
 		len = 4;
-	} else if (c < 0x4000000) {
-		first = 0xf8;
-		len = 5;
 	} else {
-		first = 0xfc;
-		len = 6;
+		return 0;
 	}
 
 	for (int i = len - 1; i > 0; --i) {

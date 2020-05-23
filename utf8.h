@@ -19,6 +19,9 @@
 
 #pragma once
 
+#include <stddef.h>            // size_t
+#include <stdint.h>
+
 /* Illegal character replacement char */
 #define UTF8_REPLACEMENT_CHAR "\xEF\xBF\xBD" // � U+FFFD
 

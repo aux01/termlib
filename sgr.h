@@ -145,7 +145,7 @@ struct sgr {
  *
  * Returns the number of bytes written.
  */
-int sgr_str(char *dest, struct sgr sgr);
+int sgr_str(char *dest, struct sgr);
 
 /*
  * Write SGR attributes as an escape sequence to a file descriptor.
@@ -154,7 +154,7 @@ int sgr_str(char *dest, struct sgr sgr);
  * Returns number of bytes written if successful, -1 on error.
  * Error information is available via errno(2).
  */
-int sgr_write(int fd, struct sgr sgr);
+int sgr_write(int fd, struct sgr);
 
 /*
  * Write SGR attributes as an escape sequence to a FILE stream.
@@ -163,7 +163,7 @@ int sgr_write(int fd, struct sgr sgr);
  * Returns number of bytes written if successful, -1 on error.
  * Error information should be available via ferror(3) and feof(3).
  */
-int sgr_fwrite(FILE *stream, struct sgr sgr);
+int sgr_fwrite(FILE *stream, struct sgr);
 
 /* Generic SGR value encoder. Takes a pointer to anything and a function that
  * will be called with the pointer any time chars should be emitted. This is
@@ -172,7 +172,7 @@ int sgr_fwrite(FILE *stream, struct sgr sgr);
  *
  * Returns the number of bytes sent to func.
  */
-int sgr_encode(void *p, void (*func)(void *, char *, int), struct sgr sgr);
+int sgr_encode(void *p, void (*func)(void *, char *, int), struct sgr);
 
 /*
  * Unpack a SGR value into an array of int formatting codes.
@@ -180,4 +180,4 @@ int sgr_encode(void *p, void (*func)(void *, char *, int), struct sgr sgr);
  *
  * Returns the number of formatting code ints written to the codes buffer.
  */
-int sgr_unpack(uint16_t codes[], struct sgr sgr);
+int sgr_unpack(uint16_t codes[], struct sgr);

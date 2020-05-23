@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <assert.h>
 
-int main(void) {
+int main(void)
+{
 	// make stdout line buffered
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 

@@ -132,8 +132,8 @@ extern "C" {
  *  - 'sgr' includes typographical and color information
  */
 struct tb_cell {
-	uint32_t ch;
-	sgr_t    sgr;
+	uint32_t   ch;
+	struct sgr sgr;
 };
 
 #define TB_EVENT_KEY    1

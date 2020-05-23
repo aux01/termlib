@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <assert.h>
 
-static void test_uitoa() {
+static void test_uitoa(void)
+{
 	// test that our uitoa function works correctly
 	char buf[16];
 	int sz = uitoa(3567, buf);
@@ -20,13 +21,15 @@ struct testbuf {
 };
 
 // write callback passed to sgr_encode
-static void testbuf_write(void *dest, char *src, int n) {
+static void testbuf_write(void *dest, char *src, int n)
+{
 	struct testbuf *buf = (struct testbuf*)dest;
 	memcpy(buf->str + buf->pos, src, n);
 	buf->pos += n;
 }
 
-static void test_sgr_encode() {
+static void test_sgr_encode(void)
+{
 	// Check that sgr_encode() calls the write callback
 	struct testbuf buf = {0};
 	struct sgr sgr = {SGR_BOLD|SGR_FG, SGR_RED};
@@ -57,7 +60,8 @@ static void test_sgr_encode() {
 }
 
 // Write SGR to string buffer.
-static void test_sgr_str() {
+static void test_sgr_str(void)
+{
 	char buf[SGR_STR_MAX];
 
 	unsigned n = sgr_str(buf, (struct sgr){SGR_BOLD|SGR_FG, SGR_RED});
@@ -86,7 +90,8 @@ static void test_sgr_str() {
 }
 
 // Write SGR to file descriptor.
-static void test_sgr_write() {
+static void test_sgr_write(void)
+{
 	int n = sgr_write(1, (struct sgr){SGR_BOLD|SGR_FG,SGR_RED});
 	char *expect = "\x1b[1;31m";
 	assert((unsigned)n == strlen(expect));
@@ -111,7 +116,8 @@ static void test_sgr_write() {
 }
 
 // Write SGR to file descriptor.
-static void test_sgr_fwrite() {
+static void test_sgr_fwrite(void)
+{
 	int n = sgr_fwrite(stdout, (struct sgr){SGR_BOLD|SGR_FG, SGR_RED});
 	char *expect = "\x1b[1;31m";
 	printf("n = %d\n", n);
@@ -136,7 +142,8 @@ static void test_sgr_fwrite() {
 	assert(ferror(stdin) != 0);
 }
 
-int main(void) {
+int main(void)
+{
 	// make stdout line buffered
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 

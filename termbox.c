@@ -54,7 +54,7 @@ static int lasty = LAST_COORD_INIT;
 static int cursor_x = -1;
 static int cursor_y = -1;
 
-static sgr_t default_sgr = { 0 };
+static struct sgr default_sgr = { 0 };
 
 static void write_cursor(int x, int y);
 
@@ -65,7 +65,7 @@ static void cellbuf_free(struct cellbuf *buf);
 
 static void update_size(void);
 static void update_term_size(void);
-static void send_attr(sgr_t sgr);
+static void send_attr(struct sgr sgr);
 static void send_char(int x, int y, uint32_t c);
 static void send_clear(void);
 static void sigwinch_handler(int xxx);
@@ -238,7 +238,7 @@ void tb_put_cell(int x, int y, const struct tb_cell *cell)
 	CELL(&back_buffer, x, y) = *cell;
 }
 
-static void sgr_set_fg(sgr_t *sgr, uint16_t fg) {
+static void sgr_set_fg(struct sgr *sgr, uint16_t fg) {
 	uint16_t fgcol = fg&0xFF;
 	if (fgcol != TB_DEFAULT) {
 		sgr->fg = fgcol;
@@ -261,7 +261,7 @@ static void sgr_set_fg(sgr_t *sgr, uint16_t fg) {
 	}
 }
 
-static void sgr_set_bg(sgr_t *sgr, uint16_t bg) {
+static void sgr_set_bg(struct sgr *sgr, uint16_t bg) {
 	uint16_t bgcol = bg&0xFF;
 	if (bgcol != TB_DEFAULT) {
 		sgr->bg = bgcol;
@@ -286,7 +286,7 @@ static void sgr_set_bg(sgr_t *sgr, uint16_t bg) {
 
 void tb_change_cell(int x, int y, uint32_t ch, uint16_t fg, uint16_t bg)
 {
-	sgr_t sgr = {0};
+	struct sgr sgr = {0};
 
 	if (fg&TB_BOLD)      sgr.at |= SGR_BOLD;
 	if (fg&TB_FAINT)     sgr.at |= SGR_FAINT;
@@ -408,7 +408,7 @@ int tb_select_output_mode(int mode)
 }
 
 void tb_set_clear_attributes(uint16_t fg, uint16_t bg) {
-	default_sgr = (sgr_t){0};
+	default_sgr = (struct sgr){0};
 	sgr_set_fg(&default_sgr, fg);
 	sgr_set_bg(&default_sgr, bg);
 }
@@ -513,10 +513,10 @@ static void update_term_size(void)
 	termh = sz.ws_row;
 }
 
-static void send_attr(sgr_t sgr)
+static void send_attr(struct sgr sgr)
 {
-	static sgr_t last = {0,0,0};
-	if (memcmp(&sgr, &last, sizeof(sgr_t)) == 0) {
+	static struct sgr last = {0,0,0};
+	if (memcmp(&sgr, &last, sizeof(struct sgr)) == 0) {
 		return;
 	}
 

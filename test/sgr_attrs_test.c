@@ -9,7 +9,8 @@
  * extreme ways causes issues with terminal display.
  */
 
-static void write_attr_label(char *label, struct sgr sgr) {
+static void write_attr_label(char *label, struct sgr sgr)
+{
 	int sz;
 	sgr_write(1, sgr);
 	sz = write(1, label, strlen(label));
@@ -20,7 +21,8 @@ static void write_attr_label(char *label, struct sgr sgr) {
 
 #define writeln() sz=write(1, "\n", 1);(void)sz
 
-int main(void) {
+int main(void)
+{
 	// make stdout line buffered
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 

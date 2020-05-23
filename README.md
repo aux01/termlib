@@ -1,71 +1,73 @@
-# tbaux
+# Termlib
 
-*tbaux* is a minimal C library for writing text-based user interfaces.
+*termlib* is a collection of clean, modern, single-file C libraries for
+building Unix terminal programs.
 
-This is a fork of [termbox][og] that seeks to refocus, reorganize, and add some
-refinements to the project. tbaux is mostly source compatible with termbox.
-Existing termbox programs should run under tbaux with only modest changes
-to include lines and linker flags.
-
-[og]: https://github.com/nsf/termbox
+Termlib started as a fork of [Termbox][] and continues in the spirit of being a
+lightweight, approachable alternative to ncurses programming. Unlike Termbox,
+termlib aims to provide library routines useful for many types of
+terminal-enabled programs, not just curses-style full screen TUIs.
 
 ### Project status
 
 Under heavy development and reorganization.
 Serious use is not recommended at this time.
 
-Major planned and completed changes:
+### Libraries
 
- - [x] Replace waf-based build with simple Makefile.
- - [x] Remove Python extension related components. This is a C library only.
- - [x] Add support for _italic_, faint, and <del>crossed-out</del> text.
- - [x] Fix bug loading terminfo files that leave capabilities undefined (blink)
- - [x] Don't use terminfo for SGR color, bold, italic, underline, etc.
-   (See [fb2b0c3][fb2] for explanation)
- - [x] Split out SFL for loading terminfo capabilities.
-   (See [ti.h](https://github.com/aux01/tbaux/blob/master/ti.h))
- - [x] Split out SFL for generating SGR sequences.
-   (See [sgr.h](https://github.com/aux01/tbaux/blob/master/sgr.h))
- - [ ] Split out SFL for keyboard and mouse input handling.
- - [x] Standalone terminfo reading library, including parameter string processing.
- - [ ] Support for scrolling buffer (rin/ind) and/or insert/delete line.
+#### sgr.h
 
-[sfl]: https://github.com/nothings/single_file_libs
-[fb2]: https://github.com/aux01/tbaux/commit/fb2b0c3b6fd2897a3ec5b52a72497ca7ff0fcffe
+The sgr library includes data structures and routines for constructing
+ANSI/ECMA-48 Select Graphic Render (SGR) sequences. It supports all typographic
+attributes——<b>bold</b>, faint, <i>italic</i>, <u>underline</u>,
+<blink>blink</blink>, <del>cross-out</del>, and reverse——as well background and
+foreground colors in a variety of color modes.
 
-### Basic interface
+[Usage][sgr.h]
 
-The interface consists of only 12 functions::
+#### tkbd.h
 
-```
-tb_init()              // initialization
-tb_shutdown()          // shutdown
+The tkbd library decodes ECMA-48/VT/xterm keyboard, mouse, and UTF-8 character
+sequences into a simple struct. It can be used to remove most of the tedium
+involved with supporting the myriad encoding schemes employed by different
+popular terminal emulators.
 
-tb_width()             // width of the terminal screen
-tb_height()            // height of the terminal screen
+[Usage][tkbd.h]
 
-tb_clear()             // clear buffer
-tb_present()           // sync internal buffer with terminal
+#### ti.h
 
-tb_put_cell()
-tb_change_cell()
-tb_blit()              // drawing functions
+The ti library is a standalone [terminfo(5)][terminfo] processor. It can query
+the terminfo database for terminal capabilities and generate escape sequences
+without ncurses.
 
-tb_select_input_mode() // change input mode
-tb_peek_event()        // peek a keyboard event
-tb_poll_event()        // wait for a keyboard event
-```
+[Usage][ti.h]
 
-See the [termbox.h][] file for more details.
+#### utf8.h
 
-[termbox.h]: https://github.com/aux01/tbaux/blob/master/termbox.h
+The utf8 library is a bare bones utf8 encoder / decoder with some useful utility
+routines and constants. It supports the minimum baseline of features all
+terminal programs should be ready to support.
+
+[Usage][utf8.h]
 
 ### Acknowledgements
 
-This project was originally forked from [Termbox][og] by nsf and contributors.
+This project was originally forked from [Termbox][] by nsf and contributors.
 
 The [ti.c][] parameter processing logic is based on the Golang [TCell
 implementation][tcell] of the same by Garrett D'Amore and contributors.
 
-[ti.c]:  https://github.com/aux01/tbaux/blob/master/ti.c
-[tcell]: https://github.com/gdamore/tcell/blob/master/terminfo/terminfo.go
+
+[termbox]:  https://github.com/nsf/termbox
+[sfl]:      https://github.com/nothings/single_file_libs
+[tcell]:    https://github.com/gdamore/tcell/blob/master/terminfo/terminfo.go
+[terminfo]: https://pubs.opengroup.org/onlinepubs/007908799/xcurses/terminfo.html
+
+[ti.h]:     https://github.com/aux01/tbaux/blob/master/ti.h
+[ti.c]:     https://github.com/aux01/tbaux/blob/master/ti.c
+[sgr.h]:    https://github.com/aux01/tbaux/blob/master/sgr.h
+[sgr.c]:    https://github.com/aux01/tbaux/blob/master/sgr.c
+[tkbd.h]:   https://github.com/aux01/tbaux/blob/master/tkbd.h
+[tkbd.c]:   https://github.com/aux01/tbaux/blob/master/tkbd.c
+[utf8.h]:   https://github.com/aux01/tbaux/blob/master/utf8.h
+[utf8.c]:   https://github.com/aux01/tbaux/blob/master/utf8.c

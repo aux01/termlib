@@ -1,3 +1,4 @@
+# Termlib Makefile
 .POSIX:
 .SUFFIXES:
 
@@ -10,8 +11,8 @@ LDFLAGS   =
 LDLIBS    =
 
 OBJS      = sgr.o ti.o tkbd.o utf8.o termbox/termbox.o
-SO_NAME   = libtermbox.so
-SA_NAME   = termbox.sa
+SO_NAME   = libtermlib.so
+SA_NAME   = termlib.sa
 LIBS      = $(SO_NAME) $(SA_NAME)
 
 DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o demo/pkbd.o

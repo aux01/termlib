@@ -27,13 +27,15 @@
  * information consumed from a char buffer or file descriptor.
  */
 struct tkbd_event {
-	uint8_t  type;          // event type
-	uint8_t  mod;           // modifiers
+	uint8_t  type;          // TKBD_KEY, TKBD_CHAR, or TKBD_MOUSE
+	uint8_t  mod;           // one of the TKBD_MOD_* constants
 	uint16_t key;           // one of the TKBD_KEY_* constants
-	uint32_t ch;            // unicode character
+	uint32_t ch;            // unicode character codepoint
 	int32_t  x, y;          // mouse coordinates
-	char seq[TKBD_SEQ_MAX]; // char sequence source of event
-	size_t seqlen;          // length of seq string in bytes
+
+	// raw char sequence source data
+	size_t seqlen;
+	char seq[TKBD_SEQ_MAX];
 };
 
 /*
@@ -119,7 +121,7 @@ int tkbd_stresc(char *buf, const char *str, size_t strsz);
 /*
  * Event types
  */
-#define TKBD_KEY    1    // A key was pressed
+#define TKBD_KEY    1    // Key was pressed
 #define TKBD_MOUSE  2    // Move, scroll, or button event
 
 /*
@@ -140,6 +142,9 @@ int tkbd_stresc(char *buf, const char *str, size_t strsz);
  * Function keys are mapped to lower alpha range.
  *
  */
+
+#define TKBD_KEY_NONE              0x00
+
 #define TKBD_KEY_UNKNOWN           0xFFFF
 
 #define TKBD_KEY_BACKSPACE         0x08

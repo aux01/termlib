@@ -117,13 +117,47 @@ static int parse_seq_params(int* ar, int n, char *pdata)
 	return i;
 }
 
-// Parse a character from the buffer.
-static int parse_ascii_seq(struct tkbd_event *ev, const char *buf, int len)
-{
-	const char *p  = buf;
-	const char *pe = buf + len;
+static const uint8_t utf8_length[256] = {
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x00
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x20
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x40
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x60
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x80
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0xa0
+	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // 0xc0
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1  // 0xe0
+};
+static const uint8_t utf8_mask[6] = {0x7F, 0x1F, 0x0F, 0x07, 0x03, 0x01};
 
-	if (p >= pe || *p < 0x20 || *p > 0x7E)
+// Convert one or more bytes into unicode codepoint. No more than sz bytes is
+// read from the seq buffer.
+// Returns the number of bytes consumed.
+static int parse_utf8(uint32_t *codepoint, const char *seq, size_t sz)
+{
+	if (sz < 1)
+		return 0;
+
+	int len = utf8_length[(uint8_t)seq[0]];
+	if (len > (int)sz)
+		return 0;
+
+	uint8_t  mask = utf8_mask[len-1];
+	uint32_t res = seq[0] & mask;
+	for (int i = 1; i < len; ++i) {
+		res <<= 6;
+		res |= seq[i] & 0x3f;
+	}
+
+	*codepoint = res;
+	return len;
+}
+
+// Parse a printable US-ASCII, ISO-8859-1, or utf8 character and store in event.
+static int parse_char_seq(struct tkbd_event *ev, const char *p, int len)
+{
+	const char *pe = p + len;
+
+	if (p >= pe || *p < 0x20 || *p == 0x7F)
 		return 0;
 
 	ev->type = TKBD_KEY;
@@ -148,11 +182,28 @@ static int parse_ascii_seq(struct tkbd_event *ev, const char *buf, int len)
 	}
 
 	// punctuation character or space
-	ev->key = *p;
-	if (!strchr(" `-=[]\\;',./", *p))
-		ev->mod |= TKBD_MOD_SHIFT;
+	if (*p <= 0x7E) {
+		ev->key = *p;
+		if (!strchr(" `-=[]\\;',./", *p))
+			ev->mod |= TKBD_MOD_SHIFT;
+		return 1;
+	}
 
-	return 1;
+	// TODO: consider allowing extended ascii 0x80-0xc1, 0xF5-0xFF to
+	// represent codepoints U+80-U+C1, U+F5-U+FF.
+
+	// non-key utf8 character
+	uint32_t codepoint = 0;
+	int seqlen = parse_utf8(&codepoint, p, len);
+	if (seqlen > 0) {
+		ev->key = TKBD_KEY_NONE;
+		ev->ch = codepoint;
+		memcpy(ev->seq, p, seqlen);
+		ev->seqlen = seqlen;
+		return seqlen;
+	}
+
+	return 0;
 }
 
 // Parse a Ctrl+CH, BACKSPACE, TAB, ENTER, and ESC char sequences.
@@ -161,10 +212,9 @@ static int parse_ascii_seq(struct tkbd_event *ev, const char *buf, int len)
 // Control sequences handled
 // Ctrl+\ or Ctrl+4, Ctrl+] or Ctrl+5, Ctrl+^ or Ctrl+6, Ctrl+_ or Ctrl+7,
 // Ctrl+@ or Ctrl+2, Ctrl+A...Ctrl+Z (0x01...0x1A).
-static int parse_ctrl_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_ctrl_seq(struct tkbd_event *ev, const char *p, int len)
 {
-	const char *p  = buf;
-	const char *pe = buf + len;
+	const char *pe = p + len;
 
 	if (p >= pe)
 		return 0;
@@ -441,8 +491,8 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 // Any character or C0 control sequence may be preceded by ESC, indicating
 // that ALT was pressed at the same time.
 //
-// ALT+CH:       \Eg   (parse_ascii_seq)
-// SHIFT+ALT+CH: \EG   (parse_ascii_seq)
+// ALT+CH:       \Eg   (parse_char_seq)
+// SHIFT+ALT+CH: \EG   (parse_char_seq)
 // CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
 //
 // Returns the number of bytes consumed to fill the event struct.
@@ -454,7 +504,7 @@ static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
 	if (p >= pe || *p++ != '\033')
 		return 0;
 
-	int n = parse_ascii_seq(ev, p, pe - p);
+	int n = parse_char_seq(ev, p, pe - p);
 	if (n == 0)
 		n = parse_special_seq(ev, p, pe - p);
 	if (n == 0)
@@ -615,7 +665,7 @@ int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz)
 		return n;
 	if ((n = parse_ctrl_seq(ev, buf, sz)))
 		return n;
-	if ((n = parse_ascii_seq(ev, buf, sz)))
+	if ((n = parse_char_seq(ev, buf, sz)))
 		return n;
 
 	return 0;
@@ -757,7 +807,7 @@ int tkbd_desc(char *dest, size_t sz, const struct tkbd_event *ev)
  *
  */
 
-// TODO: non-ascii
+// TODO: non-ascii (just let 8bit chars through)
 int tkbd_stresc(char *buf, const char *str, size_t strsz)
 {
 	assert(buf);

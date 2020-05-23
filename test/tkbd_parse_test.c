@@ -25,7 +25,7 @@ static void test_parse_seq_params(void)
 	assert(parms[1] == 456);
 }
 
-static void test_parse_ascii_seq(void)
+static void test_parse_char_seq(void)
 {
 	int n;
 	char seq[2] = {0};
@@ -33,7 +33,7 @@ static void test_parse_ascii_seq(void)
 	for (char c = 'a'; c <= 'z'; c++) {
 		struct tkbd_event ev = {0};
 		seq[0] = c;
-		n = parse_ascii_seq(&ev, seq, 1);
+		n = parse_char_seq(&ev, seq, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
@@ -47,7 +47,7 @@ static void test_parse_ascii_seq(void)
 	for (char c = 'A'; c <= 'Z'; c++) {
 		struct tkbd_event ev = {0};
 		seq[0] = c;
-		n = parse_ascii_seq(&ev, seq, 1);
+		n = parse_char_seq(&ev, seq, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
@@ -61,7 +61,7 @@ static void test_parse_ascii_seq(void)
 	for (char c = '0'; c <= '9'; c++) {
 		struct tkbd_event ev = {0};
 		seq[0] = c;
-		n = parse_ascii_seq(&ev, seq, 1);
+		n = parse_char_seq(&ev, seq, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
@@ -77,7 +77,7 @@ static void test_parse_ascii_seq(void)
 		char c = punc1[i];
 		seq[0] = c;
 		struct tkbd_event ev = {0};
-		n = parse_ascii_seq(&ev, seq, 1);
+		n = parse_char_seq(&ev, seq, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
@@ -93,7 +93,7 @@ static void test_parse_ascii_seq(void)
 		char c = punc2[i];
 		seq[0] = c;
 		struct tkbd_event ev = {0};
-		n = parse_ascii_seq(&ev, seq, 1);
+		n = parse_char_seq(&ev, seq, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
 		       n, (int)c, ev.key);
 		assert(n == 1);
@@ -352,7 +352,7 @@ static void test_parse()
 	};
 
 	struct key keys[] = {
-		// parse_ascii_seq
+		// parse_char_seq
 		{ "a",        TKBD_KEY_A,         TKBD_MOD_NONE },
 		{ "z",        TKBD_KEY_Z,         TKBD_MOD_NONE },
 		{ "A",        TKBD_KEY_A,         TKBD_MOD_SHIFT },
@@ -418,7 +418,7 @@ int main(void)
 	setvbuf(stdout, NULL, _IOLBF, -BUFSIZ);
 
 	test_parse_seq_params();
-	test_parse_ascii_seq();
+	test_parse_char_seq();
 	test_parse_ctrl_seq();
 	test_parse_alt_seq();
 	test_parse_special_seq();

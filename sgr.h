@@ -10,6 +10,7 @@
  * This library generates SGR escape sequences only. It does not attempt to
  * query terminfo for terminal capability strings.
  *
+ *
  */
 
 #pragma once
@@ -20,12 +21,16 @@
 /*
  * SGR struct
  *
+ * The struct is designed to pack all typographic attributes and color
+ * information into 96 bits, making it practical to store sgr information for
+ * each cell in a terminal display in minimum amount of memory. A 100x100
+ * terminal would occupy about 120KB memory.
  */
-typedef struct sgr {
+struct sgr {
         int32_t  at; // attributes bitflags (defined below)
         int16_t  fg; // foreground color
         int16_t  bg; // background color
-} sgr_t;
+};
 
 /*
  * Basic 8-color mode colors.
@@ -51,7 +56,7 @@ typedef struct sgr {
  * The following MASKs can be used to extract ranges of flags from
  * the 32-bit attribute integer.
  *
- * BFIUL.R.S.......ffffbbbbrn.............
+ * .............nrbbbbffff.......S.R.LUIFB
  *
  */
 #define SGR_ATTR_MASK  0x000001ff   // all typographic attribute bits
@@ -65,7 +70,7 @@ typedef struct sgr {
  * These control typographical aspects of the text and character cell and may be
  * combined in any configuration:
  *
- *     sgr_t seq = { SGR_BOLD|SGR_UNDERLINE|SGR_ITALIC|SGR_REVERSE }
+ *     struct sgr seq = { SGR_BOLD|SGR_UNDERLINE|SGR_ITALIC|SGR_REVERSE }
  *
  */
 #define SGR_BOLD       0x00000001   // text is bold
@@ -87,7 +92,7 @@ typedef struct sgr {
  *
  * Example SGR sequence with bold cyan text on a bright yellow background:
  *
- *     sgr_t seq = { SGR_BOLD|SGR_FG|SGR_BG16, SGR_CYAN, SGR_YELLOW }
+ *     struct sgr seq = { SGR_BOLD|SGR_FG|SGR_BG16, SGR_CYAN, SGR_YELLOW }
  *
  */
 #define SGR_FG         0x00010000   // fg is normal 8-color mode color
@@ -129,7 +134,7 @@ typedef struct sgr {
  * SGR sequence construction strings
  *
  */
-#define SGR_OPEN            "\x1b["
+#define SGR_OPEN            "\033["
 #define SGR_CLOSE           "m"
 #define SGR_SEP             ";"
 
@@ -140,7 +145,7 @@ typedef struct sgr {
  *
  * Returns the number of bytes written.
  */
-int sgr_str(char *dest, sgr_t sgr);
+int sgr_str(char *dest, struct sgr sgr);
 
 /*
  * Write SGR attributes as an escape sequence to a file descriptor.
@@ -149,7 +154,7 @@ int sgr_str(char *dest, sgr_t sgr);
  * Returns number of bytes written if successful, -1 on error.
  * Error information is available via errno(2).
  */
-int sgr_write(int fd, sgr_t sgr);
+int sgr_write(int fd, struct sgr sgr);
 
 /*
  * Write SGR attributes as an escape sequence to a FILE stream.
@@ -158,7 +163,7 @@ int sgr_write(int fd, sgr_t sgr);
  * Returns number of bytes written if successful, -1 on error.
  * Error information should be available via ferror(3) and feof(3).
  */
-int sgr_fwrite(FILE *stream, sgr_t sgr);
+int sgr_fwrite(FILE *stream, struct sgr sgr);
 
 /* Generic SGR value encoder. Takes a pointer to anything and a function that
  * will be called with the pointer any time chars should be emitted. This is
@@ -167,7 +172,7 @@ int sgr_fwrite(FILE *stream, sgr_t sgr);
  *
  * Returns the number of bytes sent to func.
  */
-int sgr_encode(void *p, void (*func)(void *, char *, int), sgr_t sgr);
+int sgr_encode(void *p, void (*func)(void *, char *, int), struct sgr sgr);
 
 /*
  * Unpack a SGR value into an array of int formatting codes.
@@ -175,4 +180,4 @@ int sgr_encode(void *p, void (*func)(void *, char *, int), sgr_t sgr);
  *
  * Returns the number of formatting code ints written to the codes buffer.
  */
-int sgr_unpack(uint16_t codes[], sgr_t sgr);
+int sgr_unpack(uint16_t codes[], struct sgr sgr);

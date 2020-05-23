@@ -15,9 +15,9 @@
 #include <errno.h>
 #include <string.h>
 
-// Fills an array of ints with SGR formatting codes for the sgr_t structure.
+// Fills an array of ints with SGR formatting codes for the sgr structure.
 // This is mostly used internally to drive encoding to SGR string sequence.
-int sgr_unpack(uint16_t codes[], sgr_t sgr) {
+int sgr_unpack(uint16_t codes[], struct sgr sgr) {
         int pos = 0;
         int at = sgr.at;
 
@@ -122,7 +122,7 @@ static inline int uitoa(uint16_t n, char *buf) {
 // Emit string characters for an SGR value.
 // This lets us keep the uint32_t -> string logic in one place but allow writing
 // to different types of mediums (FILE, fd, char* buffer, etc.).
-int sgr_encode(void *p, void (*func)(void *, char *, int), sgr_t sgr) {
+int sgr_encode(void *p, void (*func)(void *, char *, int), struct sgr sgr) {
         uint16_t codes[SGR_ELMS_MAX];
         int ncodes = sgr_unpack(codes, sgr);
         if (ncodes == 0) return 0;
@@ -166,7 +166,7 @@ static void strbuf_write(void *dest, char *src, int n) {
         buf->pos += n;
 }
 
-int sgr_str(char *dest, sgr_t sgr) {
+int sgr_str(char *dest, struct sgr sgr) {
         struct strbuf buf = { 0, dest };
         int sz = sgr_encode(&buf, strbuf_write, sgr);
         dest[sz] = '\0';
@@ -196,7 +196,7 @@ static void fd_write(void *dest, char *src, int n) {
         f->sz += sz;
 }
 
-int sgr_write(int fd, sgr_t sgr) {
+int sgr_write(int fd, struct sgr sgr) {
         struct fdinfo f = { fd, 0, 0 };
         sgr_encode(&f, fd_write, sgr);
         if (f.err) {
@@ -227,7 +227,7 @@ static void stream_write(void *dest, char *src, int n) {
         }
 }
 
-int sgr_fwrite(FILE *stream, sgr_t sgr) {
+int sgr_fwrite(FILE *stream, struct sgr sgr) {
         struct streaminfo f = { stream, 0, 0, 0 };
         sgr_encode(&f, stream_write, sgr);
         if (f.err || f.eof) {

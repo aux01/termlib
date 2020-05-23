@@ -29,8 +29,8 @@ static void testbuf_write(void *dest, char *src, int n) {
 static void test_sgr_encode() {
 	// Check that sgr_encode() calls the write callback
 	struct testbuf buf = {0};
-	unsigned n = sgr_encode(&buf, testbuf_write,
-	                        (sgr_t){SGR_BOLD|SGR_FG,SGR_RED});
+	struct sgr sgr = {SGR_BOLD|SGR_FG, SGR_RED};
+	unsigned n = sgr_encode(&buf, testbuf_write, sgr);
 	printf("n = %d, str = %s\n", n, buf.str);
 	char *expect = "\x1b[1;31m";
 	assert(strcmp(expect, buf.str) == 0);
@@ -39,9 +39,8 @@ static void test_sgr_encode() {
 	// More complicated example using more codes
 	buf.pos = 0;
 	memset(buf.str, 0, SGR_STR_MAX);
-	n = sgr_encode(&buf, testbuf_write, (sgr_t){
-	                  SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|
-	                  SGR_BG216, 0, 128 });
+	sgr = (struct sgr){SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216, 0, 128};
+	n = sgr_encode(&buf, testbuf_write, sgr);
 	printf("n = %d, str = %s\n", n, buf.str);
 	expect = "\x1b[1;3;4;48;5;144m";
 	assert(strcmp(expect, buf.str) == 0);
@@ -50,7 +49,7 @@ static void test_sgr_encode() {
 	// Empty SGR value shouldn't generate any output
 	buf.pos = 0;
 	memset(buf.str, 0, SGR_STR_MAX);
-	n = sgr_encode(&buf, testbuf_write, (sgr_t){0});
+	n = sgr_encode(&buf, testbuf_write, (struct sgr){0});
 	printf("n = %d, str = %s\n", n, buf.str);
 	expect = "";
 	assert(strcmp(expect, buf.str) == 0);
@@ -61,14 +60,14 @@ static void test_sgr_encode() {
 static void test_sgr_str() {
 	char buf[SGR_STR_MAX];
 
-	unsigned n = sgr_str(buf, (sgr_t){SGR_BOLD|SGR_FG, SGR_RED});
+	unsigned n = sgr_str(buf, (struct sgr){SGR_BOLD|SGR_FG, SGR_RED});
 	printf("n = %d, str = %s\n", n, buf);
 	char *expect = "\x1b[1;31m";
 	assert(strcmp(expect, buf) == 0);
 	assert(n == strlen(expect));
 
 	// More complicated example using more codes
-	n = sgr_str(buf, (sgr_t){
+	n = sgr_str(buf, (struct sgr){
 		.at = SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216,
 		.fg = 0,
 		.bg = 128
@@ -79,7 +78,7 @@ static void test_sgr_str() {
 	assert(n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = sgr_str(buf, (sgr_t){0});
+	n = sgr_str(buf, (struct sgr){0});
 	printf("n = %d, str = %s\n", n, buf);
 	expect = "";
 	assert(strcmp(expect, buf) == 0);
@@ -88,12 +87,12 @@ static void test_sgr_str() {
 
 // Write SGR to file descriptor.
 static void test_sgr_write() {
-	int n = sgr_write(1, (sgr_t){SGR_BOLD|SGR_FG,SGR_RED});
+	int n = sgr_write(1, (struct sgr){SGR_BOLD|SGR_FG,SGR_RED});
 	char *expect = "\x1b[1;31m";
 	assert((unsigned)n == strlen(expect));
 
 	// More complicated example using more codes
-	n = sgr_write(1, (sgr_t){
+	n = sgr_write(1, (struct sgr){
 		.at = SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216,
 		.bg = 128
 	});
@@ -101,25 +100,25 @@ static void test_sgr_write() {
 	assert((unsigned)n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = sgr_write(1, (sgr_t){0});
+	n = sgr_write(1, (struct sgr){0});
 	expect = "";
 	assert((unsigned)n == strlen(expect));
 
 	// Write error
-	n = sgr_write(37, (sgr_t){SGR_BOLD, SGR_RED});
+	n = sgr_write(37, (struct sgr){SGR_BOLD, SGR_RED});
 	assert(errno != 0);
 	assert(n == -1);
 }
 
 // Write SGR to file descriptor.
 static void test_sgr_fwrite() {
-	int n = sgr_fwrite(stdout, (sgr_t){SGR_BOLD|SGR_FG, SGR_RED});
+	int n = sgr_fwrite(stdout, (struct sgr){SGR_BOLD|SGR_FG, SGR_RED});
 	char *expect = "\x1b[1;31m";
 	printf("n = %d\n", n);
 	assert((unsigned)n == strlen(expect));
 
 	// More complicated example using more codes
-	n = sgr_fwrite(stdout, (sgr_t){
+	n = sgr_fwrite(stdout, (struct sgr){
 		.at = SGR_BOLD|SGR_ITALIC|SGR_UNDERLINE|SGR_BG216,
 		.bg = 128
 	});
@@ -127,12 +126,12 @@ static void test_sgr_fwrite() {
 	assert((unsigned)n == strlen(expect));
 
 	// Empty SGR value shouldn't generate any output
-	n = sgr_fwrite(stdout, (sgr_t){0});
+	n = sgr_fwrite(stdout, (struct sgr){0});
 	expect = "";
 	assert((unsigned)n == strlen(expect));
 
 	// Write error
-	n = sgr_fwrite(stdin, (sgr_t){SGR_BOLD, SGR_RED});
+	n = sgr_fwrite(stdin, (struct sgr){SGR_BOLD, SGR_RED});
 	assert(n == -1);
 	assert(ferror(stdin) != 0);
 }

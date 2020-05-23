@@ -52,7 +52,7 @@ demo/keyboard: demo/keyboard.o $(OBJS)
 demo/output: demo/output.o $(OBJS)
 demo/paint: demo/paint.o $(OBJS)
 demo/capdump: demo/capdump.o $(OBJS)
-demo/pkbd: demo/pkbd.o tkbd.o
+demo/pkbd: demo/pkbd.o $(OBJS)
 demo: $(DEMO_CMDS)
 .PHONY: demo
 

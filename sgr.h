@@ -21,15 +21,20 @@
 /*
  * SGR struct
  *
- * The struct is designed to pack all typographic attributes and color
- * information into 96 bits, making it practical to store sgr information for
- * each cell in a terminal display in minimum amount of memory. A 100x100
- * terminal would occupy about 120KB memory.
+ * The struct is designed to pack all possible typographic attributes and color
+ * information into 64 bits, making it practical to store sgr information for
+ * each cell in a terminal display. An array holding sgr information for each
+ * cell in a 100x100 terminal would occupy about 80KB memory.
+ *
+ * Note that each member is represented as a 64bit integer but packed down to
+ * 16 bits for typographic attributes and 24 bits for each color.
+ *
  */
+
 struct sgr {
-        int32_t  at; // attributes bitflags (defined below)
-        int16_t  fg; // foreground color
-        int16_t  bg; // background color
+        uint64_t at : 16; // attributes bitflags (defined below)
+        uint64_t fg : 24; // foreground color
+        uint64_t bg : 24; // background color
 };
 
 /*
@@ -39,30 +44,38 @@ struct sgr {
  * background color, which may be different from color 0 / color 7.
  *
  */
-#define SGR_BLACK      0x0000
-#define SGR_RED        0x0001
-#define SGR_GREEN      0x0002
-#define SGR_YELLOW     0x0003
-#define SGR_BLUE       0x0004
-#define SGR_MAGENTA    0x0005
-#define SGR_CYAN       0x0006
-#define SGR_WHITE      0x0007
-#define SGR_DEFAULT    0x0009
+#define SGR_BLACK      0x00
+#define SGR_RED        0x01
+#define SGR_GREEN      0x02
+#define SGR_YELLOW     0x03
+#define SGR_BLUE       0x04
+#define SGR_MAGENTA    0x05
+#define SGR_CYAN       0x06
+#define SGR_WHITE      0x07
+#define SGR_DEFAULT    0x09
 
 /*
  * SGR attributes are defined as bitflags below and combined to specify
- * rendering features.
+ * rendering features.  These MASKs are used to extract ranges of flags from
+ * the 16-bit attribute integer.
  *
- * The following MASKs can be used to extract ranges of flags from
- * the 32-bit attribute integer.
+ * All attributes are stored in the least significant 16-bits and look like this
+ * in binary little endian:
  *
- * .............nrbbbbffff.......S.R.LUIFB
+ *         n r b b b f f f S . R L U I F B (flag)
+ *         1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 (octal position)
+ *         7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
+ *
+ * B=bold, F=faint, I=italic, U=underline, L=blink, R=reverse, S=strike
+ * f=foreground color mode, b=background color mode
+ * r=reset, n=negate
+ * .=unused
  *
  */
-#define SGR_ATTR_MASK  0x000001ff   // all typographic attribute bits
-#define SGR_FG_MASK    0x000f0000   // all fg color mode selection bits
-#define SGR_BG_MASK    0x00f00000   // all bg color mode selection bits
-#define SGR_CTRL_MASK  0x03000000   // all control bits
+#define SGR_ATTR_MASK  0x00ff   // all typographic attribute bits
+#define SGR_FG_MASK    0x0700   // all fg color mode selection bits
+#define SGR_BG_MASK    0x3800   // all bg color mode selection bits
+#define SGR_CTRL_MASK  0xc000   // all control bits
 
 /*
  * Typographic and cell display attributes
@@ -73,13 +86,14 @@ struct sgr {
  *     struct sgr seq = { SGR_BOLD|SGR_UNDERLINE|SGR_ITALIC|SGR_REVERSE }
  *
  */
-#define SGR_BOLD       0x00000001   // text is bold
-#define SGR_FAINT      0x00000002   // text is faint or dim
-#define SGR_ITALIC     0x00000004   // text is rendered in italic font
-#define SGR_UNDERLINE  0x00000008   // text is underlined
-#define SGR_BLINK      0x00000010   // cell is blinking
-#define SGR_REVERSE    0x00000040   // cell colors are reversed
-#define SGR_STRIKE     0x00000100   // text is strike-through
+#define SGR_BOLD       0x0001   // text is bold
+#define SGR_FAINT      0x0002   // text is faint or dim
+#define SGR_ITALIC     0x0004   // text is rendered in italic font
+#define SGR_UNDERLINE  0x0008   // text is underlined
+#define SGR_BLINK      0x0010   // cell is blinking
+#define SGR_REVERSE    0x0020   // cell colors are reversed
+#define SGR_CONCEAL    0x0040   // TODO: cell is concealed
+#define SGR_STRIKE     0x0080   // text is strike-through
 
 /*
  * Color mode attributes
@@ -95,19 +109,21 @@ struct sgr {
  *     struct sgr seq = { SGR_BOLD|SGR_FG|SGR_BG16, SGR_CYAN, SGR_YELLOW }
  *
  */
-#define SGR_FG         0x00010000   // fg is normal 8-color mode color
-#define SGR_FG16       0x00020000   // fg is bright 16-color mode color
-#define SGR_FG24       0x00040000   // fg is 24-color greyscale color
-#define SGR_FG216      0x00060000   // fg is 216-color mode color
-#define SGR_FG256      0x00070000   // fg is 256-color mode color
-#define SGR_FG65K      0x00080000   // fg is 65K-color "high color" mode color
+#define SGR_FG         0x0100   // fg is normal 8-color mode color
+#define SGR_FG16       0x0200   // fg is bright 16-color mode color
+#define SGR_FG24       0x0300   // fg is 24-color greyscale color
+#define SGR_FG216      0x0400   // fg is 216-color mode color
+#define SGR_FG256      0x0500   // fg is 256-color mode color
+#define SGR_FG65K      0x0600   // TODO: fg is 65K-color "high color" mode color
+#define SGR_FG16M      0x0700   // TODO: fg is 16M-color "true color" mode color
 
-#define SGR_BG         0x00100000   // bg is normal 8-color mode color
-#define SGR_BG16       0x00200000   // bg is bright 16-color mode color
-#define SGR_BG24       0x00400000   // bg is 24-color greyscale color
-#define SGR_BG216      0x00600000   // bg is 216-color mode color
-#define SGR_BG256      0x00700000   // bg is 256-color mode color
-#define SGR_BG65K      0x00800000   // bg is 65K-color "high color" mode color
+#define SGR_BG         0x0800   // bg is normal 8-color mode color
+#define SGR_BG16       0x1000   // bg is bright 16-color mode color
+#define SGR_BG24       0x1800   // bg is 24-color greyscale color
+#define SGR_BG216      0x2000   // bg is 216-color mode color
+#define SGR_BG256      0x2800   // bg is 256-color mode color
+#define SGR_BG65K      0x3000   // TODO: bg is 65K-color "high color" mode color
+#define SGR_BG16M      0x3800   // TODO: bg is 16M-color "true color" mode color
 
 /*
  * Render control attributes
@@ -118,9 +134,9 @@ struct sgr {
  * When the SGR_NEGATE attribute is set, all set attributes are reset to their
  * default values. i.e., SGR_NEGATE turns attributes off.
  */
-#define SGR_INHERIT    0x00000000   // inherit unset attributes (default)
-#define SGR_RESET      0x01000000   // sgr0 all attribute reset before applying
-#define SGR_NEGATE     0x02000000   // turn all set attrs off instead of on
+#define SGR_INHERIT    0x0000   // inherit unset attributes (default)
+#define SGR_RESET      0x4000   // sgr0 all attribute reset before applying
+#define SGR_NEGATE     0x8000   // turn all set attrs off instead of on
 
 /*
  * Fixed buffer size constants

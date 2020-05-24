@@ -19,7 +19,7 @@ static void write_attr_label(char *label, struct sgr sgr)
 	(void)sz;
 }
 
-#define writeln() sz=write(1, "\n", 1);(void)sz
+#define writeln() do { sz=write(1, "\n", 1);(void)sz; } while(0);
 
 int main(void)
 {
@@ -38,6 +38,7 @@ int main(void)
 	write_attr_label("reverse",   (struct sgr){SGR_REVERSE});
 	write_attr_label("strike",    (struct sgr){SGR_STRIKE});
 	writeln();
+	writeln();
 
 	char *colors[8] = {
 		"black", "red", "green", "yellow",
@@ -50,6 +51,7 @@ int main(void)
 	}
 	write_attr_label("default", (struct sgr){SGR_FG, SGR_DEFAULT});
 	writeln();
+	writeln();
 
 	// background colors
 	for (int i = 0; i < 8; i++) {
@@ -57,13 +59,16 @@ int main(void)
 	}
 	write_attr_label("default", (struct sgr){SGR_BG, 0, SGR_DEFAULT});
 	writeln();
+	writeln();
 
 	// reversed foreground colors
 	for (int i = 0; i < 8; i++) {
-		write_attr_label(colors[i], (struct sgr){SGR_REVERSE, i});
+		sgr = (struct sgr){SGR_REVERSE, i};
+		write_attr_label(colors[i], sgr);
 	}
 	sgr = (struct sgr){SGR_REVERSE|SGR_FG, SGR_DEFAULT};
 	write_attr_label("default", sgr);
+	writeln();
 	writeln();
 
 	// reversed background colors
@@ -74,12 +79,15 @@ int main(void)
 	sgr = (struct sgr){SGR_REVERSE|SGR_BG, 0, SGR_DEFAULT};
 	write_attr_label("default", sgr);
 	writeln();
+	writeln();
 
 	// 216-color mode
 	for (int i = 0; i < 216; i++) {
 		char buf[4];
 		sprintf(buf, "%03d", i);
 		write_attr_label(buf, (struct sgr){SGR_BG216, 0, i});
+		if ((i+1) % 12 == 0)
+			writeln();
 	}
 	writeln();
 
@@ -88,6 +96,9 @@ int main(void)
 		char buf[4];
 		sprintf(buf, "%03d", i);
 		write_attr_label(buf, (struct sgr){SGR_BG256, 0, i});
+		if ((i < 16 && (i+1) % 8 == 0) ||
+		    (i > 16 && (i-16+1) % 12 == 0))
+			writeln();
 	}
 	writeln();
 
@@ -101,6 +112,9 @@ int main(void)
 			.bg = i
 		};
 		write_attr_label(buf, sgr);
+		if ((i < 16 && (i+1) % 8 == 0) ||
+		    (i > 16 && (i-16+1) % 12 == 0))
+			writeln();
 	}
 	writeln();
 

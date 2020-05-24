@@ -19,7 +19,7 @@ DEMO_OBJS = demo/keyboard.o demo/output.o demo/paint.o demo/capdump.o demo/pkbd.
 DEMO_CMDS = demo/keyboard demo/output demo/paint demo/capdump demo/pkbd
 
 TESTS     = test/ti_load_test test/ti_getcaps_test test/ti_parm_test \
-            test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
+            test/sgr_test test/sgr_unpack_test test/sgr_encode_test test/sgr_attrs_test \
             test/tkbd_parse_test test/tkbd_desc_test test/tkbd_stresc_test \
             test/utf8_test
 
@@ -61,16 +61,17 @@ demo: $(DEMO_CMDS)
 TEST_CC = $(CC) $(CFLAGS) $(CFLAGS_EXTRA) -Wno-missing-field-initializers $(LDFLAGS)
 $(TESTS):
 	$(TEST_CC) $< -o $@
-test/ti_load_test: test/ti_load_test.c ti.c ti.h
-test/ti_getcaps_test: test/ti_getcaps_test.c  ti.c ti.h
-test/ti_parm_test: test/ti_parm_test.c ti.c ti.h
-test/sgr_unpack_test: test/sgr_unpack_test.c sgr.c sgr.h
-test/sgr_encode_test: test/sgr_encode_test.c sgr.c sgr.h
-test/sgr_attrs_test: test/sgr_attrs_test.c sgr.c sgr.h
-test/tkbd_parse_test: test/tkbd_parse_test.c tkbd.c tkbd.h
-test/tkbd_desc_test: test/tkbd_desc_test.c tkbd.c tkbd.h
+test/ti_load_test:     test/ti_load_test.c ti.c ti.h
+test/ti_getcaps_test:  test/ti_getcaps_test.c  ti.c ti.h
+test/ti_parm_test:     test/ti_parm_test.c ti.c ti.h
+test/sgr_test:         test/sgr_test.c sgr.c sgr.h
+test/sgr_unpack_test:  test/sgr_unpack_test.c sgr.c sgr.h
+test/sgr_encode_test:  test/sgr_encode_test.c sgr.c sgr.h
+test/sgr_attrs_test:   test/sgr_attrs_test.c sgr.c sgr.h
+test/tkbd_parse_test:  test/tkbd_parse_test.c tkbd.c tkbd.h
+test/tkbd_desc_test:   test/tkbd_desc_test.c tkbd.c tkbd.h
 test/tkbd_stresc_test: test/tkbd_stresc_test.c tkbd.c tkbd.h
-test/utf8_test: test/utf8_test.c utf8.c utf8.h
+test/utf8_test:        test/utf8_test.c utf8.c utf8.h
 test: $(TESTS)
 	test/runtest $(TESTS)
 .PHONY: test

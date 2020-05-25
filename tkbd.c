@@ -39,8 +39,11 @@ int tkbd_attach(struct tkbd_stream *s, int fd)
 	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
 	raw.c_cflag |= (CS8);
 	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+
+	// config read(2) to return a 0 read after 100ms of keyboard inactivity
+	// and to otherwise return as soon as data arrives
 	raw.c_cc[VMIN] = 0;
-	raw.c_cc[VTIME] = 0;
+	raw.c_cc[VTIME] = 1;
 
 	if ((rc = tcsetattr(fd, TCSAFLUSH, &raw)))
 		return rc;
@@ -65,7 +68,7 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
 {
 	// fill buffer with data from fd, possibly restructuring the buffer to
 	// free already processed input.
-	if (s->buflen < TKBD_SEQ_MAX) {
+	if (s->buflen == 0) {
 		int bufspc = sizeof(s->buf) - s->bufpos - s->buflen;
 
 		if (bufspc < TKBD_SEQ_MAX) {

@@ -29,10 +29,10 @@ int main(int argc, char **argv)
 	for (;;) {
 		struct tkbd_event ev = {0};
 		int n = tkbd_read(&s, &ev);
-		if (n == 0) {
-			sleep(1);
+
+		// timeout before data arrived
+		if (n == 0)
 			continue;
-		}
 
 		char desc[64];
 		tkbd_desc(desc, sizeof(desc), &ev);

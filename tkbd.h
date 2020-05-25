@@ -95,8 +95,12 @@ int tkbd_detach(struct tkbd_stream *s);
  * Read a single keyboard, mouse, or UTF8 encoded character sequence from the
  * stream and fill the event structure pointed to by ev with information.
  *
+ * Callers should be prepared to handle a filled key event or a zero return due
+ * to 100ms inactivity timeout. The latter is often used to check for SIGWINCH
+ * or perform other housekeeping tasks.
+ *
  * Returns the number of bytes consumed to fill the event on success.
- * Returns 0 when not enough data is available to decode an event.
+ * Returns 0 when 100ms has elapsed with no data arriving.
  * Returns -1 when a read error occurs and sets errno appropriately.
  */
 int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);

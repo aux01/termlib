@@ -27,15 +27,15 @@
  * information consumed from a char buffer or file descriptor.
  */
 struct tkbd_event {
-	uint8_t  type;          // TKBD_KEY, TKBD_CHAR, or TKBD_MOUSE
+	uint8_t  type;          // TKBD_KEY or TKBD_MOUSE
 	uint8_t  mod;           // one of the TKBD_MOD_* constants
 	uint16_t key;           // one of the TKBD_KEY_* constants
 	uint32_t ch;            // unicode character codepoint
 	int32_t  x, y;          // mouse coordinates
 
 	// raw char sequence source data
-	size_t seqlen;
-	char seq[TKBD_SEQ_MAX];
+	size_t   seqlen;
+	char     seq[TKBD_SEQ_MAX];
 };
 
 /*
@@ -74,7 +74,14 @@ struct tkbd_stream {
 
 /*
  * Attach a keyboard input stream structure to a file descriptor.
- * The file descriptor is put into raw mode and stream buffers are reset.
+ *
+ * The file descriptor is typically STDIN_FILENO or may be a file descriptor
+ * associated with /dev/tty via a call to open(2) like:
+ *
+ *     int fd = open("/dev/tty", O_RDWR);
+ *
+ * When the file descriptor is a tty, it's put into raw mode; non-tty file
+ * descriptors may also be given but reads will block until EOF.
  *
  * Returns 0 on success.
  * Returns -1 on failure and sets errno appropriately.
@@ -83,6 +90,7 @@ int tkbd_attach(struct tkbd_stream *s, int fd);
 
 /*
  * Detach the keyboard input stream from the attached file descriptor.
+ *
  * This must be called on the stream before the program exits or the terminal
  * will remain in raw input mode. It's recommended this be set up to happen in
  * an atexit or signal hook.

@@ -24,11 +24,21 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 
-// Attach the keyboard input stream stuct to the given file descriptor, which
-// is almost always STDIN_FILENO.
+// Attach the keyboard input stream stuct to the given file descriptor.
 int tkbd_attach(struct tkbd_stream *s, int fd)
 {
 	int rc;
+
+	s->fd = fd;
+	memset(s->buf, 0, sizeof(s->buf));
+	s->bufpos = 0;
+	s->buflen = 0;
+
+	// don't attempt to enter raw mode if fd isn't a tty
+	if(!isatty(fd)) {
+		s->tc = (struct termios){0};
+		return 0;
+	}
 
 	// save current termios settings for detach()
 	if ((rc = tcgetattr(fd, &s->tc)))
@@ -48,17 +58,16 @@ int tkbd_attach(struct tkbd_stream *s, int fd)
 	if ((rc = tcsetattr(fd, TCSAFLUSH, &raw)))
 		return rc;
 
-	s->fd = fd;
-	memset(s->buf, 0, sizeof(s->buf));
-	s->bufpos = 0;
-	s->buflen = 0;
-
 	return 0;
 }
 
-// Reset file descriptor termios attributes.
+// Reset file descriptor termios attributes if set in tkbd_attach().
 int tkbd_detach(struct tkbd_stream *s)
 {
+	struct termios empty = {0};
+	if (memcmp(&s->tc, &empty, sizeof(empty)) == 0)
+		return 0;
+
 	int rc = tcsetattr(s->fd, TCSAFLUSH, &s->tc);
 	return rc;
 }

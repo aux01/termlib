@@ -73,7 +73,7 @@ int tkbd_detach(struct tkbd_stream *s)
 }
 
 // Read a key, mouse, or character from the keyboard input stream.
-int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
+int tkbd_read(struct tkbd_stream *s, struct tkbd_seq *seq)
 {
 	// fill buffer with data from fd, possibly restructuring the buffer to
 	// free already processed input.
@@ -99,7 +99,7 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev)
 	int len = s->buflen;
 	assert(buf+len <= s->buf+sizeof(s->buf));
 
-	int n = tkbd_parse(ev, buf, len);
+	int n = tkbd_parse(seq, buf, len);
 	s->bufpos += n;
 	s->buflen -= n;
 
@@ -164,40 +164,40 @@ static int parse_utf8(uint32_t *codepoint, const char *seq, size_t sz)
 	return len;
 }
 
-// Parse a printable US-ASCII, ISO-8859-1, or utf8 character and store in event.
-static int parse_char_seq(struct tkbd_event *ev, const char *p, int len)
+// Parse a printable US-ASCII, ISO-8859-1, or utf8 character and store in seq.
+static int parse_char_seq(struct tkbd_seq *seq, const char *p, int len)
 {
 	const char *pe = p + len;
 
 	if (p >= pe || *p < 0x20 || *p == 0x7F)
 		return 0;
 
-	ev->type = TKBD_KEY;
-	ev->ch = *p;
-	ev->seq[0] = *p;
-	ev->seqlen = 1;
+	seq->type = TKBD_KEY;
+	seq->ch = *p;
+	seq->data[0] = *p;
+	seq->len = 1;
 
 	if (*p >= 'a' && *p <= 'z') {
-		ev->key = TKBD_KEY_A + (*p - 'a');
+		seq->key = TKBD_KEY_A + (*p - 'a');
 		return 1;
 	}
 
 	if (*p >= '0' && *p <= '9') {
-		ev->key = *p;
+		seq->key = *p;
 		return 1;
 	}
 
 	if (*p >= 'A' && *p <= 'Z') {
-		ev->mod |= TKBD_MOD_SHIFT;
-		ev->key = *p;
+		seq->mod |= TKBD_MOD_SHIFT;
+		seq->key = *p;
 		return 1;
 	}
 
 	// punctuation character or space
 	if (*p <= 0x7E) {
-		ev->key = *p;
+		seq->key = *p;
 		if (!strchr(" `-=[]\\;',./", *p))
-			ev->mod |= TKBD_MOD_SHIFT;
+			seq->mod |= TKBD_MOD_SHIFT;
 		return 1;
 	}
 
@@ -208,10 +208,10 @@ static int parse_char_seq(struct tkbd_event *ev, const char *p, int len)
 	uint32_t codepoint = 0;
 	int seqlen = parse_utf8(&codepoint, p, len);
 	if (seqlen > 0) {
-		ev->key = TKBD_KEY_NONE;
-		ev->ch = codepoint;
-		memcpy(ev->seq, p, seqlen);
-		ev->seqlen = seqlen;
+		seq->key = TKBD_KEY_NONE;
+		seq->ch = codepoint;
+		memcpy(seq->data, p, seqlen);
+		seq->len = seqlen;
 		return seqlen;
 	}
 
@@ -224,7 +224,7 @@ static int parse_char_seq(struct tkbd_event *ev, const char *p, int len)
 // Control sequences handled
 // Ctrl+\ or Ctrl+4, Ctrl+] or Ctrl+5, Ctrl+^ or Ctrl+6, Ctrl+_ or Ctrl+7,
 // Ctrl+@ or Ctrl+2, Ctrl+A...Ctrl+Z (0x01...0x1A).
-static int parse_ctrl_seq(struct tkbd_event *ev, const char *p, int len)
+static int parse_ctrl_seq(struct tkbd_seq *seq, const char *p, int len)
 {
 	const char *pe = p + len;
 
@@ -233,34 +233,34 @@ static int parse_ctrl_seq(struct tkbd_event *ev, const char *p, int len)
 
 	if (*p == '\033') {
 		// ESC key
-		ev->key = TKBD_KEY_ESC;
+		seq->key = TKBD_KEY_ESC;
 	} else if (*p >= 0x1C && *p <= 0x1F) {
 		// Ctrl+\ or Ctrl+4, Ctrl+] or Ctrl+5,
 		// Ctrl+^ or Ctrl+6, Ctrl+_ or Ctrl+7
-		ev->mod |= TKBD_MOD_CTRL;
-		ev->key = TKBD_KEY_BACKSLASH + (*p - 0x1C);
+		seq->mod |= TKBD_MOD_CTRL;
+		seq->key = TKBD_KEY_BACKSLASH + (*p - 0x1C);
 	} else if (*p >= 0x08 && *p <= 0x0A) {
 		// BACKSPACE (CTRL+H), TAB (CTRL+I), ENTER (CTRL+J)
-		ev->key = *p;
+		seq->key = *p;
 	} else if (*p == 0x00) {
 		// Ctrl+@ or Ctrl+2
-		ev->mod |= TKBD_MOD_CTRL;
-		ev->key = TKBD_KEY_2;
+		seq->mod |= TKBD_MOD_CTRL;
+		seq->key = TKBD_KEY_2;
 	} else if (*p == 0x7F) {
 		// BACKSPACE2 or Ctrl+8
-		ev->key = TKBD_KEY_BACKSPACE2;
+		seq->key = TKBD_KEY_BACKSPACE2;
 	} else if (*p <= 0x1A) {
 		// Ctrl+A (0x01) through Ctrl+Z (0x1A)
-		ev->mod |= TKBD_MOD_CTRL;
-		ev->key = TKBD_KEY_A + (*p - 0x01);
+		seq->mod |= TKBD_MOD_CTRL;
+		seq->key = TKBD_KEY_A + (*p - 0x01);
 	} else {
 		return 0;
 	}
 
-	ev->ch = *p;
-	ev->seq[0] = *p;
-	ev->seqlen = 1;
-	ev->type = TKBD_KEY;
+	seq->ch = *p;
+	seq->data[0] = *p;
+	seq->len = 1;
+	seq->type = TKBD_KEY;
 	return 1;
 }
 
@@ -386,7 +386,7 @@ static const uint16_t xt_key_table[] = {
 };
 
 // Linux terminal special case: F1 - F5 keys are \E[[A - \E[[E.
-static int parse_linux_seq(struct tkbd_event *ev, const char *p, int len)
+static int parse_linux_seq(struct tkbd_seq *seq, const char *p, int len)
 {
 	static const int seqlen = 4;
 	if (len < seqlen)
@@ -398,25 +398,25 @@ static int parse_linux_seq(struct tkbd_event *ev, const char *p, int len)
 	if (p[3] < 'A' || p[3] > 'E')
 		return 0;
 
-	ev->type = TKBD_KEY;
-	ev->key = TKBD_KEY_F1 + (p[3] - 'A');
-	ev->seqlen = seqlen;
-	memcpy(ev->seq, p, seqlen);
+	seq->type = TKBD_KEY;
+	seq->key = TKBD_KEY_F1 + (p[3] - 'A');
+	seq->len = seqlen;
+	memcpy(seq->data, p, seqlen);
 	return 4;
 }
 
-// Parse a special keyboard sequence and fill the zeroed event structure.
+// Parse a special keyboard sequence and fill the zeroed seq structure.
 // No more than len bytes will be read from buf.
 //
 // Special keyboard sequences are typically only generated for function keys
 // F1-F12, INS, DEL, HOME, END, PGUP, PGDOWN, and the cursor arrow keys.
 //
-// IMPORTANT: This function assumes the event struct is zeroed.
+// IMPORTANT: This function assumes the seq struct is zeroed.
 //
-// Returns the number of bytes read from buf to fill the event structure.
+// Returns the number of bytes read from buf to fill the seq structure.
 // Returns zero when no escape sequence is present at front of buf or when the
 // sequence is not recognized.
-static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 {
 	const char *p  = buf;
 	const char *pe = p + len;
@@ -430,13 +430,13 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 		return 0;
 
 	// figure out CSI vs. SS3 sequence type; bail if neither
-	const char seq = *p++;
-	if (seq != '[' && seq != 'O')
+	const char seqtype = *p++;
+	if (seqtype != '[' && seqtype != 'O')
 		return 0;
 
 	// special case Linux term F1-F5 keys: \E[[A - \E[[E
 	if (p < pe && *p == '[')
-		return parse_linux_seq(ev, buf, len);
+		return parse_linux_seq(seq, buf, len);
 
 	// consume all numeric sequence parameters so we can get to the final
 	// byte code. we'll use later.
@@ -456,33 +456,33 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 
 	// determine if vt or xterm style key sequence and map key and mods
 	int parms[2] = {0};
-	if (seq == '[' && *p == '~') {
+	if (seqtype == '[' && *p == '~') {
 		// vt style sequence: (Ex: \E[5;3~ = ALT+PGUP)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
 		if (parms[0] < (int)ARRAYLEN(vt_key_table))
-			ev->key = vt_key_table[parms[0]];
+			seq->key = vt_key_table[parms[0]];
 		else
-			ev->key = TKBD_KEY_UNKNOWN;
+			seq->key = TKBD_KEY_UNKNOWN;
 
 		if (parms[1])
-			ev->mod = parms[1] - 1;
+			seq->mod = parms[1] - 1;
 
 		p++;
 	} else if (*p >= 'A' && *p <= 'Z') {
 		// xterm style sequence (Ex: \E[3A = ALT+UP, \EOP = F1)
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
-		ev->key = xt_key_table[*p - 'A'];
+		seq->key = xt_key_table[*p - 'A'];
 
 		// special case \E[Z = Shift+Tab
 		if (*p == 'Z')
-			ev->mod |= TKBD_MOD_SHIFT;
+			seq->mod |= TKBD_MOD_SHIFT;
 
 		// handle both forms: "\E[3A" and "\E[1;3A" both = ALT+UP
 		if (parms[0] == 1 && parms[1])
-			ev->mod = parms[1] - 1;
+			seq->mod = parms[1] - 1;
 		else if (parms[0])
-			ev->mod = parms[0] - 1;
+			seq->mod = parms[0] - 1;
 
 		p++;
 	} else {
@@ -490,16 +490,16 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 		return 0;
 	}
 
-	// copy seq source data into event seq buffer
-	ev->seqlen = MIN(p-buf, TKBD_SEQ_MAX);
-	memcpy(ev->seq, buf, ev->seqlen);
+	// copy char source data into struct seq buffer
+	seq->len = MIN(p-buf, TKBD_SEQ_MAX);
+	memcpy(seq->data, buf, seq->len);
 
-	ev->type = TKBD_KEY;
+	seq->type = TKBD_KEY;
 	return p - buf;
 
 }
 
-// Parse an ALT key sequence and fill event struct.
+// Parse an ALT key sequence and fill seq struct.
 // Any character or C0 control sequence may be preceded by ESC, indicating
 // that ALT was pressed at the same time.
 //
@@ -507,8 +507,8 @@ static int parse_special_seq(struct tkbd_event *ev, const char *buf, int len)
 // SHIFT+ALT+CH: \EG   (parse_char_seq)
 // CTRL+ALT+CH:  \E^G  (parse_ctrl_seq)
 //
-// Returns the number of bytes consumed to fill the event struct.
-static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
+// Returns the number of bytes consumed to fill the seq struct.
+static int parse_alt_seq(struct tkbd_seq *seq, const char *buf, int len)
 {
 	const char *p  = buf;
 	const char *pe = buf + len;
@@ -516,27 +516,27 @@ static int parse_alt_seq(struct tkbd_event *ev, const char *buf, int len)
 	if (p >= pe || *p++ != '\033')
 		return 0;
 
-	int n = parse_char_seq(ev, p, pe - p);
+	int n = parse_char_seq(seq, p, pe - p);
 	if (n == 0)
-		n = parse_special_seq(ev, p, pe - p);
+		n = parse_special_seq(seq, p, pe - p);
 	if (n == 0)
-		n = parse_ctrl_seq(ev, p, pe - p);
+		n = parse_ctrl_seq(seq, p, pe - p);
 
 	if (n == 0)
 		return 0;
 
-	ev->mod |= TKBD_MOD_ALT;
+	seq->mod |= TKBD_MOD_ALT;
 	p += n;
-	ev->seqlen = p - buf;
-	memcpy(ev->seq, buf, ev->seqlen);
+	seq->len = p - buf;
+	memcpy(seq->data, buf, seq->len);
 	return p - buf;
 }
 
-// Decode various mouse event char sequences into the given event struct.
+// Decode various mouse event escape sequences into the given seq struct.
 // Returns the number of bytes read from buf when the sequence is recognized and
 // decoded; or, a negative integer count of bytes when the sequence is recognized
 // as a mouse sequence but invalid.
-static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
+static int parse_mouse_seq(struct tkbd_seq *seq, const char *buf, int len)
 {
 	if (len < 3 || !(buf[0] == '\033' && buf[1] == '['))
 		return 0;
@@ -549,33 +549,33 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 		switch (b & 3) {
 		case 0:
 			if ((b & 64) != 0)
-				ev->key = TKBD_MOUSE_WHEEL_UP;
+				seq->key = TKBD_MOUSE_WHEEL_UP;
 			else
-				ev->key = TKBD_MOUSE_LEFT;
+				seq->key = TKBD_MOUSE_LEFT;
 			break;
 		case 1:
 			if ((b & 64) != 0)
-				ev->key = TKBD_MOUSE_WHEEL_DOWN;
+				seq->key = TKBD_MOUSE_WHEEL_DOWN;
 			else
-				ev->key = TKBD_MOUSE_MIDDLE;
+				seq->key = TKBD_MOUSE_MIDDLE;
 			break;
 		case 2:
-			ev->key = TKBD_MOUSE_RIGHT;
+			seq->key = TKBD_MOUSE_RIGHT;
 			break;
 		case 3:
-			ev->key = TKBD_MOUSE_RELEASE;
+			seq->key = TKBD_MOUSE_RELEASE;
 			break;
 		default:
 			// TODO: unknown sequence type instead of neg return
 			return -6;
 		}
-		ev->type = TKBD_MOUSE; // TBKB_KEY by default
+		seq->type = TKBD_MOUSE; // TBKB_KEY by default
 		if ((b & 32) != 0)
-			ev->mod |= TKBD_MOD_MOTION;
+			seq->mod |= TKBD_MOD_MOTION;
 
 		// the coord is 1,1 for upper left
-		ev->x = (uint8_t)buf[4] - 1 - 32;
-		ev->y = (uint8_t)buf[5] - 1 - 32;
+		seq->x = (uint8_t)buf[4] - 1 - 32;
+		seq->y = (uint8_t)buf[5] - 1 - 32;
 
 		return 6;
 	} else {
@@ -627,35 +627,35 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 		switch (n1 & 3) {
 		case 0:
 			if ((n1&64) != 0)
-				ev->key = TKBD_MOUSE_WHEEL_UP;
+				seq->key = TKBD_MOUSE_WHEEL_UP;
 			else
-				ev->key = TKBD_MOUSE_LEFT;
+				seq->key = TKBD_MOUSE_LEFT;
 			break;
 		case 1:
 			if ((n1&64) != 0)
-				ev->key = TKBD_MOUSE_WHEEL_DOWN;
+				seq->key = TKBD_MOUSE_WHEEL_DOWN;
 			else
-				ev->key = TKBD_MOUSE_MIDDLE;
+				seq->key = TKBD_MOUSE_MIDDLE;
 			break;
 		case 2:
-			ev->key = TKBD_MOUSE_RIGHT;
+			seq->key = TKBD_MOUSE_RIGHT;
 			break;
 		case 3:
-			ev->key = TKBD_MOUSE_RELEASE;
+			seq->key = TKBD_MOUSE_RELEASE;
 			break;
 		default:
 			return mi + 1;
 		}
 
 		if (!isM) // on xterm mouse release is signaled by lowercase m
-			ev->key = TKBD_MOUSE_RELEASE;
+			seq->key = TKBD_MOUSE_RELEASE;
 
-		ev->type = TKBD_MOUSE; // TB_EVENT_KEY by default
+		seq->type = TKBD_MOUSE; // TKBD_KEY by default
 		if ((n1&32) != 0)
-			ev->mod |= TKBD_MOD_MOTION;
+			seq->mod |= TKBD_MOD_MOTION;
 
-		ev->x = (uint8_t)n2 - 1;
-		ev->y = (uint8_t)n3 - 1;
+		seq->x = (uint8_t)n2 - 1;
+		seq->y = (uint8_t)n3 - 1;
 
 		return mi + 1;
 	}
@@ -663,21 +663,21 @@ static int parse_mouse_seq(struct tkbd_event *ev, const char *buf, int len)
 	return 0;
 }
 
-// Parse mouse, special key, alt key, or ctrl key sequence and fill event.
+// Parse mouse, special key, alt key, or ctrl key sequence and fill seq struct.
 // Order is important here since funcs like parse_alt_seq eat \033 chars.
-int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz)
+int tkbd_parse(struct tkbd_seq *seq, const char *buf, size_t sz)
 {
 	int n;
 
-	if ((n = parse_mouse_seq(ev, buf, sz)))
+	if ((n = parse_mouse_seq(seq, buf, sz)))
 		return n;
-	if ((n = parse_special_seq(ev, buf, sz)))
+	if ((n = parse_special_seq(seq, buf, sz)))
 		return n;
-	if ((n = parse_alt_seq(ev, buf, sz)))
+	if ((n = parse_alt_seq(seq, buf, sz)))
 		return n;
-	if ((n = parse_ctrl_seq(ev, buf, sz)))
+	if ((n = parse_ctrl_seq(seq, buf, sz)))
 		return n;
-	if ((n = parse_char_seq(ev, buf, sz)))
+	if ((n = parse_char_seq(seq, buf, sz)))
 		return n;
 
 	return 0;
@@ -749,14 +749,14 @@ static const char * const function_key_names[] = {
 	"F20",         // TKBD_KEY_F20               0x77
 };
 
-int tkbd_desc(char *dest, size_t sz, const struct tkbd_event *ev)
+int tkbd_desc(char *dest, size_t sz, const struct tkbd_seq *seq)
 {
-	if (ev->type != TKBD_KEY)
+	if (seq->type != TKBD_KEY)
 		return 0;
 
 	// figure out modifier string part
 	const char *modstr = "";
-	uint8_t mod = ev->mod & (TKBD_MOD_SHIFT|TKBD_MOD_ALT|
+	uint8_t mod = seq->mod & (TKBD_MOD_SHIFT|TKBD_MOD_ALT|
 	                         TKBD_MOD_CTRL|TKBD_MOD_META);
 	if (mod)
 		modstr = modifier_key_names[mod-1];
@@ -765,12 +765,12 @@ int tkbd_desc(char *dest, size_t sz, const struct tkbd_event *ev)
 	const char *keystr = "";
 	char ch[2] = {0}; // for single char keys
 
-	if (ev->key >= TKBD_KEY_UP && ev->key <= TKBD_KEY_END) {
-		keystr = special_key_names[ev->key - TKBD_KEY_UP];
-	} else if (ev->key >= TKBD_KEY_F1 && ev->key <= TKBD_KEY_F20) {
-		keystr = function_key_names[ev->key - TKBD_KEY_F1];
+	if (seq->key >= TKBD_KEY_UP && seq->key <= TKBD_KEY_END) {
+		keystr = special_key_names[seq->key - TKBD_KEY_UP];
+	} else if (seq->key >= TKBD_KEY_F1 && seq->key <= TKBD_KEY_F20) {
+		keystr = function_key_names[seq->key - TKBD_KEY_F1];
 	} else {
-		switch (ev->key) {
+		switch (seq->key) {
 		case TKBD_KEY_ESC:
 			keystr = "ESC";
 			break;
@@ -791,8 +791,9 @@ int tkbd_desc(char *dest, size_t sz, const struct tkbd_event *ev)
 			keystr = "Unknown";
 			break;
 		default:
-			assert(isprint(ev->key));
-			ch[0] = (char)ev->key;
+			// XXX need to handle better
+			assert(isprint(seq->key));
+			ch[0] = (char)seq->key;
 			keystr = ch;
 			break;
 		}

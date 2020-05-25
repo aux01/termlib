@@ -27,23 +27,23 @@ int main(int argc, char **argv)
 
 	// read keys and print info
 	for (;;) {
-		struct tkbd_event ev = {0};
-		int n = tkbd_read(&s, &ev);
+		struct tkbd_seq seq = {0};
+		int n = tkbd_read(&s, &seq);
 
 		// timeout before data arrived
 		if (n == 0)
 			continue;
 
 		char desc[64];
-		tkbd_desc(desc, sizeof(desc), &ev);
+		tkbd_desc(desc, sizeof(desc), &seq);
 
-		char seq[TKBD_SEQ_MAX*4];
-		tkbd_stresc(seq, ev.seq, ev.seqlen);
+		char seqesc[TKBD_SEQ_MAX*4];
+		tkbd_stresc(seqesc, seq.data, seq.len);
 
 		printf("%-22s %-14s key=0x%02hhx, mod=0x%02hhx, ch=0x%02hhx, sz=%d\n",
-		       desc, seq, ev.key, ev.mod, ev.ch, n);
+		       desc, seqesc, seq.key, seq.mod, seq.ch, n);
 
-		if (ev.key == TKBD_KEY_Q && ev.mod == TKBD_MOD_NONE)
+		if (seq.key == TKBD_KEY_Q && seq.mod == TKBD_MOD_NONE)
 			break;
 	}
 

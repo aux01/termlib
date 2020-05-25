@@ -28,92 +28,92 @@ static void test_parse_seq_params(void)
 static void test_parse_char_seq(void)
 {
 	int n;
-	char seq[2] = {0};
+	char buf[2] = {0};
 
 	for (char c = 'a'; c <= 'z'; c++) {
-		struct tkbd_event ev = {0};
-		seq[0] = c;
-		n = parse_char_seq(&ev, seq, 1);
+		struct tkbd_seq seq = {0};
+		buf[0] = c;
+		n = parse_char_seq(&seq, buf, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
-		       n, (int)c, ev.key);
+		       n, (int)c, seq.key);
 		assert(n == 1);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.key == TKBD_KEY_A + (c - 'a'));
-		assert(ev.mod == 0);
-		assert(ev.ch == (uint32_t)c);
-		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.key == TKBD_KEY_A + (c - 'a'));
+		assert(seq.mod == 0);
+		assert(seq.ch == (uint32_t)c);
+		assert(seq.data[0] == c && seq.data[1] == '\0');
 	}
 
 	for (char c = 'A'; c <= 'Z'; c++) {
-		struct tkbd_event ev = {0};
-		seq[0] = c;
-		n = parse_char_seq(&ev, seq, 1);
+		struct tkbd_seq seq = {0};
+		buf[0] = c;
+		n = parse_char_seq(&seq, buf, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
-		       n, (int)c, ev.key);
+		       n, (int)c, seq.key);
 		assert(n == 1);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.key == c);
-		assert(ev.mod == TKBD_MOD_SHIFT);
-		assert(ev.ch == (uint32_t)c);
-		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.key == c);
+		assert(seq.mod == TKBD_MOD_SHIFT);
+		assert(seq.ch == (uint32_t)c);
+		assert(seq.data[0] == c && seq.data[1] == '\0');
 	}
 
 	for (char c = '0'; c <= '9'; c++) {
-		struct tkbd_event ev = {0};
-		seq[0] = c;
-		n = parse_char_seq(&ev, seq, 1);
+		struct tkbd_seq seq = {0};
+		buf[0] = c;
+		n = parse_char_seq(&seq, buf, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
-		       n, (int)c, ev.key);
+		       n, (int)c, seq.key);
 		assert(n == 1);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.key == c);
-		assert(ev.mod == 0);
-		assert(ev.ch == (uint32_t)c);
-		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.key == c);
+		assert(seq.mod == 0);
+		assert(seq.ch == (uint32_t)c);
+		assert(seq.data[0] == c && seq.data[1] == '\0');
 	}
 
 	char const * const punc1 = " `-=[]\\;',./";
 	for (int i = 0; punc1[i]; i++) {
 		char c = punc1[i];
-		seq[0] = c;
-		struct tkbd_event ev = {0};
-		n = parse_char_seq(&ev, seq, 1);
+		buf[0] = c;
+		struct tkbd_seq seq = {0};
+		n = parse_char_seq(&seq, buf, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
-		       n, (int)c, ev.key);
+		       n, (int)c, seq.key);
 		assert(n == 1);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.key == c);
-		assert(ev.mod == 0);
-		assert(ev.ch == (uint32_t)c);
-		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.key == c);
+		assert(seq.mod == 0);
+		assert(seq.ch == (uint32_t)c);
+		assert(seq.data[0] == c && seq.data[1] == '\0');
 	}
 
 	char const * const punc2 = "~!@#$%^&*()_+{}|:\"<>?";
 	for (int i = 0; punc2[i]; i++) {
 		char c = punc2[i];
-		seq[0] = c;
-		struct tkbd_event ev = {0};
-		n = parse_char_seq(&ev, seq, 1);
+		buf[0] = c;
+		struct tkbd_seq seq = {0};
+		n = parse_char_seq(&seq, buf, 1);
 		printf("n=%d expect key=0x%02x, got key=0x%02x\n",
-		       n, (int)c, ev.key);
+		       n, (int)c, seq.key);
 		assert(n == 1);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.key == c);
-		assert(ev.mod == TKBD_MOD_SHIFT);
-		assert(ev.ch == (uint32_t)c);
-		assert(ev.seq[0] == c && ev.seq[1] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.key == c);
+		assert(seq.mod == TKBD_MOD_SHIFT);
+		assert(seq.ch == (uint32_t)c);
+		assert(seq.data[0] == c && seq.data[1] == '\0');
 	}
 
 	// parsing non control sequences returns zero
-	struct tkbd_event ev0 = {0};
-	char *buf = "ABCD";
-	n = parse_ctrl_seq(&ev0, buf, strlen(buf));
+	struct tkbd_seq seq0 = {0};
+	char *bufno = "ABCD";
+	n = parse_ctrl_seq(&seq0, bufno, strlen(bufno));
 	printf("n = %d\n", n);
 	assert(n == 0);
-	assert(ev0.key == 0);
-	assert(ev0.mod == 0);
-	assert(ev0.ch == 0);
-	assert(ev0.seq[0] == 0);
+	assert(seq0.key == 0);
+	assert(seq0.mod == 0);
+	assert(seq0.ch == 0);
+	assert(seq0.data[0] == 0);
 }
 
 static void test_parse_ctrl_seq(void)
@@ -140,29 +140,29 @@ static void test_parse_ctrl_seq(void)
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {
-		struct tkbd_event ev = {0};
+		struct tkbd_seq seq = {0};
 		struct key *k = &keys[i];
-		n = parse_ctrl_seq(&ev, k->seq, 1);
+		n = parse_ctrl_seq(&seq, k->seq, 1);
 		printf("n=%d expect key=0x%x, got key=0x%x\n",
-		       n, k->key, ev.key);
+		       n, k->key, seq.key);
 		assert(n == 1);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.key == k->key);
-		assert(ev.mod == k->mod);
-		assert(ev.ch == (uint32_t)k->seq[0]);
-		assert(k->seq[0] == ev.seq[0] && ev.seq[1] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.key == k->key);
+		assert(seq.mod == k->mod);
+		assert(seq.ch == (uint32_t)k->seq[0]);
+		assert(k->seq[0] == seq.data[0] && seq.data[1] == '\0');
 	}
 
 	// parsing non control sequences returns zero
-	struct tkbd_event ev0 = {0};
+	struct tkbd_seq seq0 = {0};
 	char *buf = "ABCD";
-	n = parse_ctrl_seq(&ev0, buf, strlen(buf));
+	n = parse_ctrl_seq(&seq0, buf, strlen(buf));
 	printf("n = %d\n", n);
 	assert(n == 0);
-	assert(ev0.key == 0);
-	assert(ev0.mod == 0);
-	assert(ev0.ch == 0);
-	assert(ev0.seq[0] == 0);
+	assert(seq0.key == 0);
+	assert(seq0.mod == 0);
+	assert(seq0.ch == 0);
+	assert(seq0.data[0] == 0);
 }
 
 static void test_parse_alt_seq(void)
@@ -202,143 +202,144 @@ static void test_parse_alt_seq(void)
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {
-		struct tkbd_event ev = {0};
+		struct tkbd_seq seq = {0};
 		struct key *k = &keys[i];
-		n = parse_alt_seq(&ev, k->seq, 2);
+		n = parse_alt_seq(&seq, k->seq, 2);
 		printf("n = %d, key = 0x%x\n", n, k->key);
 		assert(n == 2);
-		assert(ev.type == TKBD_KEY);
-		assert(ev.mod == k->mod);
-		assert(ev.ch == (uint32_t)ev.seq[1]);
-		assert(ev.seq[0] == '\033');
-		assert(ev.seq[1] == k->seq[1]);
-		assert(ev.seq[2] == '\0');
+		assert(seq.type == TKBD_KEY);
+		assert(seq.mod == k->mod);
+		assert(seq.ch == (uint32_t)seq.data[1]);
+		assert(seq.data[0] == '\033');
+		assert(seq.data[1] == k->seq[1]);
+		assert(seq.data[2] == '\0');
 	}
 
 	// parsing non alt sequences
-	struct tkbd_event ev0 = {0};
+	struct tkbd_seq seq0 = {0};
 	char *buf = "ABCD";
-	n = parse_alt_seq(&ev0, buf, strlen(buf));
+	n = parse_alt_seq(&seq0, buf, strlen(buf));
 	printf("n = %d\n", n);
 	assert(n == 0);
-	assert(ev0.key == 0);
-	assert(ev0.mod == 0);
-	assert(ev0.ch == 0);
-	assert(ev0.seq[0] == 0);
+	assert(seq0.key == 0);
+	assert(seq0.mod == 0);
+	assert(seq0.ch == 0);
+	assert(seq0.data[0] == 0);
 }
 
 static void test_parse_special_seq(void)
 {
-	struct tkbd_event ev;
+	struct tkbd_seq seq;
 	char buf[256] = {0};
 	int n;
 
 	// stop at null character
-	n = parse_special_seq(&ev, buf, 10);
+	n = parse_special_seq(&seq, buf, 10);
 	assert(n == 0);
 
 	// don't read past buf len
 	strcpy(buf, "\033[A");
-	n = parse_special_seq(&ev, buf, 0);
+	n = parse_special_seq(&seq, buf, 0);
 	assert(n == 0);
 
 	// read one sequence and stop
 	strcpy(buf, "\033[A\033[B");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
 	assert(n == strlen("\033[A"));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UP);
-	assert(strcmp(ev.seq, "\033[A") == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UP);
+	assert(strcmp(seq.data, "\033[A") == 0);
 
 	// parses CSI xterm sequence
 	strcpy(buf, "\033[A");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UP);
-	assert(ev.mod == TKBD_MOD_NONE);
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UP);
+	assert(seq.mod == TKBD_MOD_NONE);
+	assert(strcmp(seq.data, buf) == 0);
 
 	// parses SS3 xterm sequence
 	strcpy(buf, "\033OA");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UP);
-	assert(ev.mod == TKBD_MOD_NONE);
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UP);
+	assert(seq.mod == TKBD_MOD_NONE);
+	assert(strcmp(seq.data, buf) == 0);
 
 	// parses mod parameters in xterm style sequence (form 1)
 	strcpy(buf, "\033[7A");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UP);
-	assert(ev.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UP);
+	assert(seq.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
+	assert(strcmp(seq.data, buf) == 0);
 
 	// parses mod parameters in xterm style sequence (form 2)
 	strcpy(buf, "\033[1;7A");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UP);
-	assert(ev.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UP);
+	assert(seq.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
+	assert(strcmp(seq.data, buf) == 0);
 
 	// parses mod parameters in vt style sequence
 	strcpy(buf, "\033[24;2~");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_F12);
-	assert(ev.mod == TKBD_MOD_SHIFT);
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_F12);
+	assert(seq.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(seq.data, buf) == 0);
 
 	// handles out of range vt sequences
 	strcpy(buf, "\033[100;2~");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UNKNOWN);
-	assert(ev.mod == TKBD_MOD_SHIFT);
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UNKNOWN);
+	assert(seq.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(seq.data, buf) == 0);
 
 	// handles unmapped xterm style sequences
 	strcpy(buf, "\033[2Y");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d\n", n, ev.key, ev.mod);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UNKNOWN);
-	assert(ev.mod == TKBD_MOD_SHIFT);
-	assert(strcmp(ev.seq, buf) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UNKNOWN);
+	assert(seq.mod == TKBD_MOD_SHIFT);
+	assert(strcmp(seq.data, buf) == 0);
 
-	// try to overflow the ev->seq buffer
+	// try to overflow the seq->seq buffer
 	assert(TKBD_SEQ_MAX == 32 && "update overflow test below");
 	strcpy(buf, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Y");
-	memset(&ev, 0, sizeof(ev));
-	n = parse_special_seq(&ev, buf, strlen(buf));
-	printf("n = %d, key = %d, mod = %d, seq = %s\n", n, ev.key, ev.mod, ev.seq);
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d, seq = %s\n",
+	        n, seq.key, seq.mod, seq.data);
 	assert((size_t)n == strlen(buf));
-	assert(ev.type == TKBD_KEY);
-	assert(ev.key == TKBD_KEY_UNKNOWN);
-	assert(ev.mod == TKBD_MOD_SHIFT);
-	assert(memcmp(ev.seq, buf, ev.seqlen) == 0);
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UNKNOWN);
+	assert(seq.mod == TKBD_MOD_SHIFT);
+	assert(memcmp(seq.data, buf, seq.len) == 0);
 }
 
 static void test_parse()
@@ -399,16 +400,16 @@ static void test_parse()
 	};
 
 	for (int i = 0; i < (int)ARRAYLEN(keys); i++) {
-		struct tkbd_event ev = {0};
+		struct tkbd_seq seq = {0};
 		struct key k = keys[i];
-		n = tkbd_parse(&ev, k.seq, strlen(k.seq));
+		n = tkbd_parse(&seq, k.seq, strlen(k.seq));
 		printf("n = %d, expect key=%x, mod=%x; got key=%x, mod=%x\n",
-		       n, k.key, k.mod, ev.key, ev.mod);
+		       n, k.key, k.mod, seq.key, seq.mod);
 		assert(n == (int)strlen(k.seq));
-		assert(ev.type == TKBD_KEY);
-		assert(ev.mod == k.mod);
-		assert(ev.seqlen == (size_t)n);
-		assert(memcmp(ev.seq, k.seq, ev.seqlen) == 0);
+		assert(seq.type == TKBD_KEY);
+		assert(seq.mod == k.mod);
+		assert(seq.len == (size_t)n);
+		assert(memcmp(seq.data, k.seq, seq.len) == 0);
 	}
 }
 

@@ -3,8 +3,8 @@
  * tkbd.h - Terminal keyboard, mouse, and character input library
  * Copyright (c) 2020, Auxrelius I <aux01@aux.life>
  *
- * Read input from a terminal with support for decoding special key sequences,
- * mouse events, and utf8 character data.
+ * Read input from a terminal with support for decoding special key, mouse, and
+ * utf8 character sequences.
  *
  *
  */
@@ -21,12 +21,12 @@
 #define TKBD_SEQ_MAX 32         // max length in bytes of an escape sequence
 
 /*
- * Keyboard, mouse, or unicode character event structure.
+ * Keyboard, mouse, or unicode character sequence structure.
  *
  * The tkbd_parse() and tkbd_read() functions fill this structure with
  * information consumed from a char buffer or file descriptor.
  */
-struct tkbd_event {
+struct tkbd_seq {
 	uint8_t  type;          // TKBD_KEY or TKBD_MOUSE
 	uint8_t  mod;           // one of the TKBD_MOD_* constants
 	uint16_t key;           // one of the TKBD_KEY_* constants
@@ -34,19 +34,19 @@ struct tkbd_event {
 	int32_t  x, y;          // mouse coordinates
 
 	// raw char sequence source data
-	size_t   seqlen;
-	char     seq[TKBD_SEQ_MAX];
+	size_t   len;
+	char     data[TKBD_SEQ_MAX];
 };
 
 /*
  * Parse a single keyboard/mouse/resize sequence or UTF8 encoded character from
- * the buffer pointed to by buf and fill the event structure pointed to by ev
+ * the buffer pointed to by buf and fill the structure pointed to by seq
  * with information. No more than sz bytes will be read from buf.
  *
- * Returns the number of bytes read from buf when the event structure is filled.
- * Returns 0 when not enough data is available to decode an event.
+ * Returns the number of bytes read from buf when the structure is filled.
+ * Returns 0 when not enough data is available to decode a sequence.
  */
-int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz);
+int tkbd_parse(struct tkbd_seq *seq, const char *buf, size_t sz);
 
 /*
  * Write a key description ("Ctrl+C", "Shift+Alt+PgUp", "Z", etc.) to the buffer
@@ -56,7 +56,7 @@ int tkbd_parse(struct tkbd_event *ev, const char *buf, size_t sz);
  * the description. No more than sz bytes will be written by the function but if
  * the return value is greater than sz, the description was truncated.
  */
-int tkbd_desc(char *buf, size_t sz, const struct tkbd_event *ev);
+int tkbd_desc(char *buf, size_t sz, const struct tkbd_seq *seq);
 
 /*
  * Keyboard input stream structure.
@@ -101,23 +101,23 @@ int tkbd_detach(struct tkbd_stream *s);
 
 /*
  * Read a single keyboard, mouse, or UTF8 encoded character sequence from the
- * stream and fill the event structure pointed to by ev with information.
+ * stream and fill the structure pointed to by seq.
  *
- * Callers should be prepared to handle a filled key event or a zero return due
- * to 100ms inactivity timeout. The latter is often used to check for SIGWINCH
- * or perform other housekeeping tasks.
+ * Callers should be prepared to handle a filled key seq struct or a zero return
+ * due to 100ms inactivity timeout. The latter is often used to check for
+ * SIGWINCH or perform other housekeeping tasks.
  *
- * Returns the number of bytes consumed to fill the event on success.
+ * Returns the number of bytes consumed to fill the seq struct on success.
  * Returns 0 when 100ms has elapsed with no data arriving.
  * Returns -1 when a read error occurs and sets errno appropriately.
  */
-int tkbd_read(struct tkbd_stream *s, struct tkbd_event *ev);
+int tkbd_read(struct tkbd_stream *s, struct tkbd_seq *seq);
 
 
 /*
  * Write an escaped version of a keyboard sequence to a character buffer.
  *
- * This is most often useful when printing the tkbd_event.seq member for display
+ * This is most often useful when printing the tkbd_seq.seq member for display
  * since writing the raw characters to the terminal may be interpreted as
  * commands instead of text.
  *
@@ -131,10 +131,10 @@ int tkbd_stresc(char *buf, const char *str, size_t strsz);
 
 
 /*
- * Event types
+ * Sequence types
  */
 #define TKBD_KEY    1    // Key was pressed
-#define TKBD_MOUSE  2    // Move, scroll, or button event
+#define TKBD_MOUSE  2    // Move, scroll, or button sequence
 
 /*
  * Key modifier flags

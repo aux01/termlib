@@ -135,9 +135,11 @@ int main(void)
 		uint32_t g = (colnum*510/76);
 		uint32_t b = (colnum*255/76);
 		if (g>255) g = 510-g;
-		sgr = (struct sgr) { SGR_BG16M, 0, rgb(r, g, b) };
-		sgr_write(1, sgr);
-		sgr = (struct sgr) { SGR_FG16M, rgb(255-r, 255-g, 255-b) };
+		sgr = (struct sgr) {
+			.at = SGR_FG16M|SGR_BG16M,
+			.fg = rgb(255-r, 255-g, 255-b),
+			.bg = rgb(r, g, b)
+		};
 		sgr_write(1, sgr);
 		sz = write(1, ":", 1);
 	}

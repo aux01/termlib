@@ -251,7 +251,7 @@ static void test_parse_special_seq(void)
 	assert(seq.key == TKBD_KEY_UP);
 	assert(strcmp(seq.data, "\033[A") == 0);
 
-	// parses CSI xterm sequence
+	// parses CSI sequence
 	strcpy(buf, "\033[A");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -262,7 +262,7 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == TKBD_MOD_NONE);
 	assert(strcmp(seq.data, buf) == 0);
 
-	// parses SS3 xterm sequence
+	// parses SS3 sequence
 	strcpy(buf, "\033OA");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -273,7 +273,7 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == TKBD_MOD_NONE);
 	assert(strcmp(seq.data, buf) == 0);
 
-	// parses mod parameters in xterm style sequence (form 1)
+	// parses mod parameters in ansi style sequence (form 1)
 	strcpy(buf, "\033[7A");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -284,7 +284,7 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
 	assert(strcmp(seq.data, buf) == 0);
 
-	// parses mod parameters in xterm style sequence (form 2)
+	// parses mod parameters in ansi style sequence (form 2)
 	strcpy(buf, "\033[1;7A");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -295,7 +295,7 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == (TKBD_MOD_CTRL|TKBD_MOD_ALT));
 	assert(strcmp(seq.data, buf) == 0);
 
-	// parses mod parameters in vt style sequence
+	// parses mod parameters in DECFNK style sequence
 	strcpy(buf, "\033[24;2~");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -306,7 +306,7 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(seq.data, buf) == 0);
 
-	// handles out of range vt sequences
+	// handles out of range DECFNK sequences
 	strcpy(buf, "\033[100;2~");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -317,7 +317,7 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(seq.data, buf) == 0);
 
-	// handles unmapped xterm style sequences
+	// handles unmapped ANSI style sequences
 	strcpy(buf, "\033[2Y");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
@@ -328,7 +328,18 @@ static void test_parse_special_seq(void)
 	assert(seq.mod == TKBD_MOD_SHIFT);
 	assert(strcmp(seq.data, buf) == 0);
 
-	// try to overflow the seq->seq buffer
+	// handles out of table ANSI style sequences
+	strcpy(buf, "\033[31;45;33@");
+	memset(&seq, 0, sizeof(seq));
+	n = parse_special_seq(&seq, buf, strlen(buf));
+	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
+	assert((size_t)n == strlen(buf));
+	assert(seq.type == TKBD_KEY);
+	assert(seq.key == TKBD_KEY_UNKNOWN);
+	assert(seq.mod == TKBD_MOD_NONE);
+	assert(strcmp(seq.data, buf) == 0);
+
+	// try to overflow the seq->data buffer
 	assert(TKBD_SEQ_MAX == 32 && "update overflow test below");
 	strcpy(buf, "\033[2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Y");
 	memset(&seq, 0, sizeof(seq));
@@ -403,8 +414,8 @@ static void test_parse()
 		struct tkbd_seq seq = {0};
 		struct key k = keys[i];
 		n = tkbd_parse(&seq, k.seq, strlen(k.seq));
-		printf("n = %d, expect key=%x, mod=%x; got key=%x, mod=%x\n",
-		       n, k.key, k.mod, seq.key, seq.mod);
+		printf("n = %d, seq=%s, expect key=%x, mod=%x; got key=%x, mod=%x\n",
+		       n, k.seq, k.key, k.mod, seq.key, seq.mod);
 		assert(n == (int)strlen(k.seq));
 		assert(seq.type == TKBD_KEY);
 		assert(seq.mod == k.mod);

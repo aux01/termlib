@@ -116,9 +116,14 @@ int tkbd_read(struct tkbd_stream *s, struct tkbd_seq *seq)
 // pointed to by ar. A maximum of n parameters will be parsed and filled into
 // the array. If a parameter is blank, 0 will be set in the array.
 //
-// Returns the number of parsed parsed and filled into the array.
+// Returns the number of params parsed and filled into the array.
 static int parse_seq_params(int* ar, int n, char *pdata)
 {
+	// if first char is 0x3C..0x3F then param data is privately defined and
+	// may not conform to ECMA-48 numeric/selection param format.
+	if (*pdata >= '>' && *pdata <= '?')
+		return 0;
+
 	int i = 0;
 	while (i < n) {
 		ar[i++] = strtol(pdata, &pdata, 10);
@@ -265,9 +270,15 @@ static int parse_ctrl_seq(struct tkbd_seq *seq, const char *p, int len)
 }
 
 /*
- * vt sequences
+ * Table of DECFNK style sequences
  *
- * Table of EMCA-48 / VT special key input sequences.
+ * ESC [ KEY ; MOD ~
+ * Ex: \E[1~ = HOME, \E[1;2~ = Shift+HOME
+ *
+ * This encoding scheme was originally introduced on the DEC VT100 for the
+ * SF1-SF4 special function keys and was later extended by xterm and other
+ * emulators to cover a much wider range of keys.
+ *
  * Array elements correspond to first parameter in escape sequence.
  * Second parameter specifies mod key flags.
  *
@@ -283,7 +294,7 @@ static int parse_ctrl_seq(struct tkbd_seq *seq, const char *p, int len)
  * \E[9~  -          \E[19~  F8        \E[29~  F16
  *
  */
-static const uint16_t vt_key_table[] = {
+static const uint16_t fn_key_table[] = {
 	TKBD_KEY_UNKNOWN,
 	TKBD_KEY_HOME,
 	TKBD_KEY_INS,
@@ -322,7 +333,13 @@ static const uint16_t vt_key_table[] = {
 };
 
 /*
- * Table of xterm key input sequences.
+ * Table of ANSI style key input sequences.
+ *
+ * This encoding scheme was part of ANSI X3.64-1979 and adopted by the DEC VT100
+ * terminal as its new standard mode of operation.
+ *
+ * ESC [ MOD KEY
+ * Ex: \E[H = HOME, \E[2H = Shift+HOME
  *
  * First parameter, when given, specifies the key modifier except when 1 and
  * the second parameter is set, in which case the second parameter specifies
@@ -341,22 +358,12 @@ static const uint16_t vt_key_table[] = {
  * \E[I   -          \E[S    F4
  * \E[J   -          \E[T    -
  *
- * In some cases, SS3 is used to introduce the sequence instead of CSI. Known
- * keys of this form:
- *
- * \EOA   -          \EOK    -         \EOU   -
- * \EOB   -          \EOL    -         \EOV   -
- * \EOC   -          \EOM    -         \EOW   -
- * \EOD   -          \EON    -         \EOX   -
- * \EOE   -          \EOO    -         \EOY   -
- * \EOF   -          \EOP    F1        \EOZ   -
- * \EOG   -          \EOQ    F2
- * \EOH   -          \EOR    F3
- * \EOI   -          \EOS    F4
- * \EOJ   -          \EOT    -
- *
+ * The VT100 had the concept of "cursor mode" where SS3 is used to introduce the
+ * sequence instead of CSI (e.g., "\EOP" instead of "\E[P"). This has been
+ * carried forward and keys arrive in both styles but not necessarily due to any
+ * mode.
  */
-static const uint16_t xt_key_table[] = {
+static const uint16_t ansi_key_table[] = {
 	TKBD_KEY_UP,          // A
 	TKBD_KEY_DOWN,        // B
 	TKBD_KEY_RIGHT,       // C
@@ -416,6 +423,8 @@ static int parse_linux_seq(struct tkbd_seq *seq, const char *p, int len)
 // Returns the number of bytes read from buf to fill the seq structure.
 // Returns zero when no escape sequence is present at front of buf or when the
 // sequence is not recognized.
+//
+// Conforms to ECMA-48 Section 5.4 "Control sequences".
 static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 {
 	const char *p  = buf;
@@ -424,8 +433,6 @@ static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 	// bail if not an escape sequence
 	if (p >= pe || *p++ != '\033')
 		return 0;
-
-	// bail if we're out of chars
 	if (p >= pe)
 		return 0;
 
@@ -434,48 +441,72 @@ static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 	if (seqtype != '[' && seqtype != 'O')
 		return 0;
 
-	// special case Linux term F1-F5 keys: \E[[A - \E[[E
-	if (p < pe && *p == '[')
-		return parse_linux_seq(seq, buf, len);
-
-	// consume all numeric sequence parameters so we can get to the final
-	// byte code. we'll use later.
+	// consume all parameter bytes (0x30-0x3F)
 	int i = 0;
 	char parmdata[32] = {0};
-	while (p < pe && *p >= '0' && *p <= ';') {
-		// continue seeking if parms overflow buffer
+	while (p < pe && *p >= '0' && *p <= '?') {
+		// continue seeking if params overflow buffer
 		if (i < (int)sizeof(parmdata)-1)
 			parmdata[i++] = *p++;
 		else
 			p++;
 	}
-
-	// looked like CSI/SS3 sequence but no final byte code available; bail
 	if (p >= pe)
 		return 0;
 
-	// determine if vt or xterm style key sequence and map key and mods
-	int parms[2] = {0};
-	if (seqtype == '[' && *p == '~') {
-		// vt style sequence: (Ex: \E[5;3~ = ALT+PGUP)
+	// special case Linux term F1-F5 keys: \E[[A - \E[[E
+	// this isn't even a valid ECMA-48 sequence
+	if (*p == '[')
+		return parse_linux_seq(seq, buf, len);
+
+	// optional intermediate byte (0x20 - 0x2F)
+	//
+	// NOTE: ECMA-48 mentions that more than one intermediate byte is
+	// technically allowed but also that it shouldn't be needed and this
+	// appears to not be used in practice.
+	char interbyte = 0;
+	if (*p >= ' ' && *p <= '/')
+		interbyte = *p++;
+	(void)interbyte;
+
+	if (p >= pe)
+		return 0;
+
+	// final byte (0x40 - 0x7E)
+	char finalbyte = 0;
+	if (*p >= '@' && *p <= '~')
+		finalbyte = *p++;
+
+	// at this point we have a valid ECMA-48 CSI or SS3 sequence and will
+	// not return 0 to signal we don't understand the sequence
+	seq->type = TKBD_KEY;
+	seq->len = MIN(p-buf, TKBD_SEQ_MAX);
+	memcpy(seq->data, buf, seq->len);
+
+	// determine key sequence style and map key and mods
+	if (finalbyte == '~') {
+		// ESC [ KEY ; MOD ~
+		// Ex: \E[5;3~ = ALT+PGUP
+		int parms[2] = {0};
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
 
-		if (parms[0] < (int)ARRAYLEN(vt_key_table))
-			seq->key = vt_key_table[parms[0]];
+		if (parms[0] < (int)ARRAYLEN(fn_key_table))
+			seq->key = fn_key_table[parms[0]];
 		else
 			seq->key = TKBD_KEY_UNKNOWN;
 
 		if (parms[1])
 			seq->mod = parms[1] - 1;
 
-		p++;
-	} else if (*p >= 'A' && *p <= 'Z') {
-		// xterm style sequence (Ex: \E[3A = ALT+UP, \EOP = F1)
+	} else if (finalbyte >= 'A' && finalbyte <= 'Z') {
+		// ESC [ MOD KEY
+		// Ex: \E[3A = ALT+UP, \EOP = F1
+		int parms[2] = {0};
 		parse_seq_params(parms, ARRAYLEN(parms), parmdata);
-		seq->key = xt_key_table[*p - 'A'];
+		seq->key = ansi_key_table[finalbyte - 'A'];
 
 		// special case \E[Z = Shift+Tab
-		if (*p == 'Z')
+		if (finalbyte == 'Z')
 			seq->mod |= TKBD_MOD_SHIFT;
 
 		// handle both forms: "\E[3A" and "\E[1;3A" both = ALT+UP
@@ -484,17 +515,12 @@ static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 		else if (parms[0])
 			seq->mod = parms[0] - 1;
 
-		p++;
 	} else {
-		// we dont know how to handle this sequence type
-		return 0;
+		// we dont have a mapping for this key but we know we received a
+		// fully formed ECMA-48 CSI/SS3 sequence so let's count it.
+		seq->key = TKBD_KEY_UNKNOWN;
 	}
 
-	// copy char source data into struct seq buffer
-	seq->len = MIN(p-buf, TKBD_SEQ_MAX);
-	memcpy(seq->data, buf, seq->len);
-
-	seq->type = TKBD_KEY;
 	return p - buf;
 
 }

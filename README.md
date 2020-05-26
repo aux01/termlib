@@ -15,16 +15,6 @@ Serious use is not recommended at this time.
 
 ### Libraries
 
-#### sgr.h
-
-The sgr library includes data structures and routines for constructing
-ANSI/ECMA-48 Select Graphic Render (SGR) sequences. It supports all typographic
-attributes——<b>bold</b>, faint, <i>italic</i>, <u>underline</u>,
-<blink>blink</blink>, <del>cross-out</del>, and reverse——as well background and
-foreground colors in a variety of color modes.
-
-[Usage][sgr.h]
-
 #### tkbd.h
 
 The tkbd library decodes ECMA-48/VT/xterm keyboard, mouse, and UTF-8 character
@@ -33,6 +23,17 @@ involved with supporting the myriad encoding schemes employed by different
 popular terminal emulators.
 
 [Usage][tkbd.h]
+
+#### sgr.h
+
+The sgr library includes data structures and routines for constructing
+ANSI/ECMA-48 Select Graphic Render (SGR) sequences. It supports all typographic
+attributes——<b>bold</b>, faint, <i>italic</i>, <u>underline</u>,
+<blink>blink</blink>, <del>cross-out</del>, and reverse——as well background and
+foreground colors in 8-color, 16-color, 24-color greyscale, 216-color,
+256-color, and 16M true color modes.
+
+[Usage][sgr.h]
 
 #### ti.h
 

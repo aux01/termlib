@@ -41,7 +41,8 @@ int sgr_unpack(uint16_t codes[], struct sgr sgr)
 	if (at&SGR_STRIKE)    codes[pos++] = neg + 9;
 
 	// make it possible to loop over fg/bg colors with mode
-	struct { int mode; int16_t color; } fgbg[2] = {
+	// note that sgr.fg and bg members only have 24 bits.
+	struct { int mode; uint32_t color; } fgbg[2] = {
 		{ at&SGR_FG_MASK, sgr.fg },
 		{ at&SGR_BG_MASK, sgr.bg },
 	};
@@ -50,7 +51,7 @@ int sgr_unpack(uint16_t codes[], struct sgr sgr)
 		int mode = fgbg[i].mode;
 		if (!mode) continue;
 
-		int16_t color = fgbg[i].color;
+		uint32_t color = fgbg[i].color;
 
 		int is_bg  = mode & SGR_BG_MASK;
 		int is_8   = (mode == SGR_FG    || mode == SGR_BG);
@@ -58,6 +59,7 @@ int sgr_unpack(uint16_t codes[], struct sgr sgr)
 		int is_24  = (mode == SGR_FG24  || mode == SGR_BG24);
 		int is_216 = (mode == SGR_FG216 || mode == SGR_BG216);
 		int is_256 = (mode == SGR_FG256 || mode == SGR_BG256);
+		int is_16m = (mode == SGR_FG16M || mode == SGR_BG16M);
 
 		if (is_8 || is_16 || neg) {
 			// SGR_NEGATE specified: use default color
@@ -71,7 +73,7 @@ int sgr_unpack(uint16_t codes[], struct sgr sgr)
 			if (is_bg) color += 10;    // normal bg [4x range]
 
 			if (is_16) color += 60;    // bright fg [9x] or bg [10x]
-			codes[pos++] = color;
+			codes[pos++] = (uint16_t)color;
 
 		} else if (is_24 || is_216 || is_256) {
 			if (is_bg) codes[pos++] = 48; // set bg
@@ -89,9 +91,16 @@ int sgr_unpack(uint16_t codes[], struct sgr sgr)
 				color += 16;
 			}
 
-			codes[pos++] = color;
-		} else {
-			// TODO: invalid color mode
+			codes[pos++] = (uint16_t)color;
+		} else if (is_16m) {
+			// https://gist.github.com/XVilka/8346728
+			if (is_bg) codes[pos++] = 48; // set bg
+			else       codes[pos++] = 38; // set fg
+			codes[pos++] = 2;
+
+			codes[pos++] = (color&0xFF0000) >> 16; // red
+			codes[pos++] = (color&0x00FF00) >> 8;  // green
+			codes[pos++] = (color&0x0000FF);       // blue
 		}
 	}
 

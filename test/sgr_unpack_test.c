@@ -103,7 +103,8 @@ int main(void)
 
 	// The SGR_FG and SGR_BG attributes cause the fg and bg colors to be
 	// interpreted as 8-color mode colors. You can switch into 216-color,
-	// 256-color, and 24-color greyscale modes as well.
+	// 256-color, and 24-color greyscale modes as well as 16M true color
+	// mode.
 	//
 	// Switch to 216-color mode and apply color 172 to the fg:
 	n = sgr_unpack(codes, (struct sgr){SGR_ITALIC|SGR_FG216, 172});
@@ -118,8 +119,19 @@ int main(void)
 	assert(n == 4);
 	assert(codes[0] == 4);   // underline text
 	assert(codes[1] == 48);  // set background color
-	assert(codes[2] == 5);   // ...
-	assert(codes[3] == 242); // to color 10 (burnt orange)
+	assert(codes[2] == 5);   // 256 color selector
+	assert(codes[3] == 242); // to grey 10
+
+	// Construct colors for 16M color mode using 0xRRGGBB values:
+	sgr = (struct sgr){SGR_UNDERLINE|SGR_BG16M, 0, 0xFF9911};
+	n = sgr_unpack(codes, sgr);
+	assert(n == 6);
+	assert(codes[0] == 4);    // underline text
+	assert(codes[1] == 48);   // set background color
+	assert(codes[2] == 2);    // true color selector
+	assert(codes[3] == 0xFF); // red
+	assert(codes[4] == 0x99); // green
+	assert(codes[5] == 0x11); // blue
 
 	return 0;
 }

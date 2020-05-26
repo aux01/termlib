@@ -30,7 +30,6 @@
  * 16 bits for typographic attributes and 24 bits for each color.
  *
  */
-
 struct sgr {
         uint64_t at : 16; // attributes bitflags (defined below)
         uint64_t fg : 24; // foreground color
@@ -62,9 +61,9 @@ struct sgr {
  * All attributes are stored in the least significant 16-bits and look like this
  * in binary little endian:
  *
- *         n r b b b f f f S . R L U I F B (flag)
- *         1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 (octal position)
- *         7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
+ *         nrbbbfffS.RLUIFB (flag)
+ *         1111111100000000 (octal position)
+ *         7654321076543210
  *
  * B=bold, F=faint, I=italic, U=underline, L=blink, R=reverse, S=strike
  * f=foreground color mode, b=background color mode
@@ -114,16 +113,14 @@ struct sgr {
 #define SGR_FG24       0x0300   // fg is 24-color greyscale color
 #define SGR_FG216      0x0400   // fg is 216-color mode color
 #define SGR_FG256      0x0500   // fg is 256-color mode color
-#define SGR_FG65K      0x0600   // TODO: fg is 65K-color "high color" mode color
-#define SGR_FG16M      0x0700   // TODO: fg is 16M-color "true color" mode color
+#define SGR_FG16M      0x0600   // fg is 16M-color "true color" mode color
 
 #define SGR_BG         0x0800   // bg is normal 8-color mode color
 #define SGR_BG16       0x1000   // bg is bright 16-color mode color
 #define SGR_BG24       0x1800   // bg is 24-color greyscale color
 #define SGR_BG216      0x2000   // bg is 216-color mode color
 #define SGR_BG256      0x2800   // bg is 256-color mode color
-#define SGR_BG65K      0x3000   // TODO: bg is 65K-color "high color" mode color
-#define SGR_BG16M      0x3800   // TODO: bg is 16M-color "true color" mode color
+#define SGR_BG16M      0x3000   // bg is 16M-color "true color" mode color
 
 /*
  * Render control attributes
@@ -143,16 +140,16 @@ struct sgr {
  *
  * Use SGR_STR_MAX when allocating char buffers for sgr_str().
  */
-#define SGR_STR_MAX  128  // max bytes in a single SGR sequence string
-#define SGR_ELMS_MAX 16   // max number of format codes in a SGR sequence
+#define SGR_STR_MAX  256  // max bytes in a single SGR sequence string
+#define SGR_ELMS_MAX 32   // max number of format codes in a SGR sequence
 
 /*
  * SGR sequence construction strings
  *
  */
-#define SGR_OPEN            "\033["
-#define SGR_CLOSE           "m"
-#define SGR_SEP             ";"
+#define SGR_OPEN     "\033["
+#define SGR_CLOSE    "m"
+#define SGR_SEP      ";"
 
 /*
  * Write SGR attributes as an escape sequence to the char buffer pointed to

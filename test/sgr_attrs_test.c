@@ -21,6 +21,11 @@ static void write_attr_label(char *label, struct sgr sgr)
 
 #define writeln() do { sz=write(1, "\n", 1);(void)sz; } while(0);
 
+static uint32_t rgb(uint8_t r, uint8_t g, uint8_t b)
+{
+	return (r<<16 | g<<8 | b);
+}
+
 int main(void)
 {
 	// make stdout line buffered
@@ -115,6 +120,20 @@ int main(void)
 		if ((i < 16 && (i+1) % 8 == 0) ||
 		    (i > 16 && (i-16+1) % 12 == 0))
 			writeln();
+	}
+	writeln();
+
+	// true color mode
+	for (int colnum = 0; colnum < 77; colnum++) {
+		uint32_t r = 255-(colnum*255/76);
+		uint32_t g = (colnum*510/76);
+		uint32_t b = (colnum*255/76);
+		if (g>255) g = 510-g;
+		sgr = (struct sgr) { SGR_BG16M, 0, rgb(r, g, b) };
+		sgr_write(1, sgr);
+		sgr = (struct sgr) { SGR_FG16M, rgb(255-r, 255-g, 255-b) };
+		sgr_write(1, sgr);
+		sz = write(1, "::", 2);
 	}
 	writeln();
 

@@ -86,13 +86,19 @@ int main(void)
 	writeln();
 	writeln();
 
-	// 216-color mode
-	for (int i = 0; i < 216; i++) {
-		char buf[4];
-		sprintf(buf, "%03d", i);
-		write_attr_label(buf, (struct sgr){SGR_BG216, 0, i});
-		if ((i+1) % 12 == 0)
-			writeln();
+	// 216-color mode cube
+	for (int g = 0; g < 6; g++) {
+		for (int r = 0; r < 6; r++) {
+			for (int b = 0; b < 6; b++) {
+				int color = (r * 36) + (g * 6) + b;
+				char buf[4];
+				sprintf(buf, "%03d", color);
+				sgr = (struct sgr){ SGR_BG216, 0, color };
+				write_attr_label(buf, sgr);
+			}
+			sz = write(1, " ", 1); (void)sz;
+		}
+		writeln();
 	}
 	writeln();
 
@@ -133,7 +139,7 @@ int main(void)
 		sgr_write(1, sgr);
 		sgr = (struct sgr) { SGR_FG16M, rgb(255-r, 255-g, 255-b) };
 		sgr_write(1, sgr);
-		sz = write(1, "::", 2);
+		sz = write(1, ":", 1);
 	}
 	writeln();
 

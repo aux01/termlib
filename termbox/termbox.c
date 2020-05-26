@@ -1,5 +1,4 @@
-#define _POSIX_C_SOURCE 200112L    // sigaction
-#define _XOPEN_SOURCE              // wcwidth
+#define _XOPEN_SOURCE 700    // wcwidth, sigaction
 
 #include <assert.h>
 #include <stdlib.h>

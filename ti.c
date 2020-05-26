@@ -7,7 +7,7 @@
  *
  *
  */
-#define _POSIX_C_SOURCE 200112L    // fileno
+#define _XOPEN_SOURCE 700    // fileno
 
 #include "ti.h"
 

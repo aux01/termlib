@@ -263,13 +263,13 @@ static void test_parse_special_seq(void)
 	assert(strcmp(seq.data, buf) == 0);
 
 	// parses SS3 sequence
-	strcpy(buf, "\033OA");
+	strcpy(buf, "\033OQ");
 	memset(&seq, 0, sizeof(seq));
 	n = parse_special_seq(&seq, buf, strlen(buf));
 	printf("n = %d, key = %d, mod = %d\n", n, seq.key, seq.mod);
 	assert((size_t)n == strlen(buf));
 	assert(seq.type == TKBD_KEY);
-	assert(seq.key == TKBD_KEY_UP);
+	assert(seq.key == TKBD_KEY_F2);
 	assert(seq.mod == TKBD_MOD_NONE);
 	assert(strcmp(seq.data, buf) == 0);
 

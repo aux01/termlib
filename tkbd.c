@@ -347,21 +347,36 @@ static const uint16_t fn_key_table[] = {
  *
  * Array elements correspond to CHR - A in escape sequence table.
  *
- * \E[A   UP         \E[K    -         \E[U   -
- * \E[B   DOWN       \E[L    -         \E[V   -
- * \E[C   RIGHT      \E[M    MOUSE     \E[W   -
+ * \E[A   UP         \E[K    DEL       \E[U   -
+ * \E[B   DOWN       \E[L    ^C+INS    \E[V   -
+ * \E[C   RIGHT      \E[M    ^C+DEL    \E[W   -
  * \E[D   LEFT       \E[N    -         \E[X   -
  * \E[E   KP 5       \E[O    -         \E[Y   -
- * \E[F   END        \E[P    F1        \E[Z   Shift+Tab
- * \E[G   KP 5       \E[Q    F2
- * \E[H   HOME       \E[R    F3
- * \E[I   -          \E[S    F4
- * \E[J   -          \E[T    -
+ * \E[F   END        \E[P    DEL       \E[Z   Shift+Tab
+ * \E[G   KP 5       \E[Q    -
+ * \E[H   HOME       \E[R    -
+ * \E[I   -          \E[S    -
+ * \E[J   HOME       \E[T    -
+ *
+ * Lowercase range:
+ *
+ * \E[h   INS
  *
  * The VT100 had the concept of "cursor mode" where SS3 is used to introduce the
  * sequence instead of CSI (e.g., "\EOP" instead of "\E[P"). This has been
  * carried forward and keys arrive in both styles but not necessarily due to any
  * mode.
+ *
+ * \EOA   -          \EOK    -         \EOU   -
+ * \EOB   -          \EOL    -         \EOV   -
+ * \EOC   -          \EOM    -         \EOW   -
+ * \EOD   -          \EON    -         \EOX   -
+ * \EOE   -          \EOO    -         \EOY   -
+ * \EOF   -          \EOP    F1        \EOZ   -
+ * \EOG   -          \EOQ    F2
+ * \EOH   -          \EOR    F3
+ * \EOI   -          \EOS    F4
+ * \EOJ   -          \EOT    -
  */
 static const uint16_t ansi_key_table[] = {
 	TKBD_KEY_UP,          // A
@@ -373,16 +388,16 @@ static const uint16_t ansi_key_table[] = {
 	TKBD_KEY_UNKNOWN,     // G
 	TKBD_KEY_HOME,        // H
 	TKBD_KEY_UNKNOWN,     // I
-	TKBD_KEY_UNKNOWN,     // J
-	TKBD_KEY_UNKNOWN,     // K
-	TKBD_KEY_UNKNOWN,     // L
-	TKBD_KEY_UNKNOWN,     // M
+	TKBD_KEY_HOME,        // J
+	TKBD_KEY_DEL,         // K
+	TKBD_KEY_INS,         // L
+	TKBD_KEY_DEL,         // M
 	TKBD_KEY_UNKNOWN,     // N
 	TKBD_KEY_UNKNOWN,     // O
-	TKBD_KEY_F1,          // P
-	TKBD_KEY_F2,          // Q
-	TKBD_KEY_F3,          // R
-	TKBD_KEY_F4,          // S
+	TKBD_KEY_DEL,         // P
+	TKBD_KEY_UNKNOWN,     // Q
+	TKBD_KEY_UNKNOWN,     // R
+	TKBD_KEY_UNKNOWN,     // S
 	TKBD_KEY_UNKNOWN,     // T
 	TKBD_KEY_UNKNOWN,     // U
 	TKBD_KEY_UNKNOWN,     // V
@@ -484,7 +499,7 @@ static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 	memcpy(seq->data, buf, seq->len);
 
 	// determine key sequence style and map key and mods
-	if (finalbyte == '~') {
+	if (seqtype == '[' && finalbyte == '~') {
 		// ESC [ KEY ; MOD ~
 		// Ex: \E[5;3~ = ALT+PGUP
 		int parms[2] = {0};
@@ -498,7 +513,7 @@ static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 		if (parms[1])
 			seq->mod = parms[1] - 1;
 
-	} else if (finalbyte >= 'A' && finalbyte <= 'Z') {
+	} else if (seqtype == '[' && finalbyte >= 'A' && finalbyte <= 'Z') {
 		// ESC [ MOD KEY
 		// Ex: \E[3A = ALT+UP, \EOP = F1
 		int parms[2] = {0};
@@ -514,6 +529,10 @@ static int parse_special_seq(struct tkbd_seq *seq, const char *buf, int len)
 			seq->mod = parms[1] - 1;
 		else if (parms[0])
 			seq->mod = parms[0] - 1;
+
+	} else if (seqtype == 'O' && finalbyte >= 'P' && finalbyte <= 'S') {
+		// \E[OP-\E[OS = F1-F4
+		seq->key = TKBD_KEY_F1 + finalbyte - 'P';
 
 	} else {
 		// we dont have a mapping for this key but we know we received a
